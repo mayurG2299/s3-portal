@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    container_name: s3portal-postgres
+    environment:
+      POSTGRES_USER: s3portal
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: s3portal
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U s3portal -d s3portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - s3portal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: s3portal-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://s3portal:${DB_PASSWORD}@postgres:5432/s3portal?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - s3portal
+    command: >
+      sh -c "npx prisma migrate deploy --skip-generate && exec node server.js"
+
+networks:
+  s3portal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

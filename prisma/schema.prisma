@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AWSCredential {
+  id                            String   @id @default(cuid())
+  name                          String
+  encryptedAccessKey            String
+  encryptedSecretKey            String
+  region                        String
+  userId                        String
+  teamId                        String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  team                          Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files                         File[]
+  buckets                       AwsBucket[]
+
+  @@index([teamId])
+  @@index([userId])
+}
+
+model AccessLog {
+  id           String   @id @default(cuid())
+  linkId       String?
+  userId       String?
+  teamId       String?
+  ipAddress    String
+  userAgent    String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  success      Boolean
+  errorMessage String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  link         Link?    @relation(fields: [linkId], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
+  team         Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([ipAddress])
+  @@index([linkId])
+  @@index([userId])
+  @@index([teamId])
+  @@index([action])
+  @@index([success])
+  @@index([resourceType])
+  @@index([resourceId])
+  @@index([teamId, createdAt])
+}
+
+model File {
+  id            String        @id @default(cuid())
+  key           String
+  name          String
+  size          BigInt
+  contentType   String?
+  etag          String?
+  parentPath    String        @default("/")
+  userId        String
+  teamId        String?
+  credentialId  String
+  bucketId      String
+  metadata      Json?
+  tags          String[]      @default([])
+  description   String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  credential    AWSCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  bucket        AwsBucket     @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  team          Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links         Link[]
+  favorites     FileFavorite[]
+
+  @@unique([bucketId, key])
+  @@index([bucketId])
+  @@index([credentialId])
+  @@index([parentPath])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model AwsBucket {
+  id                            String   @id @default(cuid())
+  credentialId                  String
+  bucket                        String
+  cloudfrontDomain              String?
+  cloudfrontKeyPairId           String?
+  encryptedCloudfrontPrivateKey String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  credential                    AWSCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  files                         File[]
+
+  @@unique([credentialId, bucket])
+  @@index([credentialId])
+  @@index([bucket])
+}
+
+model FileFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  fileId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fileId])
+  @@index([fileId])
+  @@index([userId])
+}
+
+model Link {
+  id            String      @id @default(cuid())
+  hash          String      @unique
+  type          LinkType    @default(PUBLIC)
+  fileId        String
+  expiresAt     DateTime?
+  passwordHash  String?
+  maxDownloads  Int?
+  downloadCount Int         @default(0)
+  allowDownload Boolean     @default(true)
+  allowPreview  Boolean     @default(true)
+  userId        String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  accessLogs    AccessLog[]
+  file          File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([fileId])
+  @@index([hash])
+  @@index([userId])
+}
+
+model Role {
+  id             String           @id @default(cuid())
+  name           String           @unique
+  description    String?
+  level          Int              @default(1)
+  isSystem       Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  teamMembers     TeamMember[]
+  teamInvites     TeamInvite[]
+
+  @@index([level])
+  @@index([name])
+}
+
+model RolePermission {
+  id              String          @id @default(cuid())
+  roleId          String
+  screenName      ScreenName
+  permissionLevel PermissionLevel @default(VIEW)
+  createdAt       DateTime        @default(now())
+  role            Role            @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, screenName])
+  @@index([roleId])
+  @@index([screenName])
+}
+
+model ScreenPermission {
+  id              String          @id @default(cuid())
+  teamMemberId    String
+  screenName      ScreenName
+  permissionLevel PermissionLevel @default(VIEW)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  teamMember      TeamMember      @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([teamMemberId, screenName])
+  @@index([teamMemberId])
+}
+
+model Team {
+  id            String          @id @default(cuid())
+  name          String
+  slug          String          @unique
+  ownerId       String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  credentials AWSCredential[]
+  accessLogs  AccessLog[]
+  files       File[]
+  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  invites     TeamInvite[]
+
+  @@index([ownerId])
+  @@index([slug])
+}
+
+model TeamMember {
+  id               String             @id @default(cuid())
+  teamId           String
+  userId           String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  roleId           String
+  screenPermissions ScreenPermission[]
+  role              Role               @relation(fields: [roleId], references: [id])
+  team              Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([roleId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model TeamInvite {
+  id          String       @id @default(cuid())
+  teamId      String
+  email       String
+  roleId      String
+  invitedById String
+  status      InviteStatus @default(PENDING)
+  token       String       @unique
+  expiresAt   DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  role        Role         @relation(fields: [roleId], references: [id])
+  invitedBy   User         @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String?
+  passwordHash  String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+  credentials  AWSCredential[]
+  accessLogs   AccessLog[]
+  files        File[]
+  favorites    FileFavorite[]
+  links        Link[]
+  teams        Team[]
+  teamMembers  TeamMember[]
+  sentInvites  TeamInvite[]   @relation("TeamInviteSender")
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+enum LinkType {
+  PUBLIC
+  PRESIGNED
+  CLOUDFRONT
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+enum PermissionLevel {
+  VIEW
+  EDIT
+}
+
+enum ScreenName {
+  FILES_LIST
+  FILES_UPLOAD
+  FILES_DELETE
+  FILES_SHARE
+  CREDENTIALS_LIST
+  CREDENTIALS_CREATE
+  CREDENTIALS_EDIT
+  CREDENTIALS_DELETE
+  TEAM_SETTINGS
+  TEAM_MEMBERS
+  TEAM_INVITATIONS
+  TEAM_DELETE
+  LINKS_LIST
+  LINKS_CREATE
+  LINKS_DELETE
+  ADMIN_AUDIT_LOG
+  ADMIN_SETTINGS
+}
