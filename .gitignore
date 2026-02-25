@@ -1,0 +1,80 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# cache
+.cache
+.eslintcache
+.swc
+.turbo
+
+# local env files
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# uploads (if any local testing)
+/uploads
+
+# editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# markdown
+*.md
+
+# additional common ignores
+# logs
+*.log
+
+# parcel/cache/build/tooling
+.parcel-cache/
+.nyc_output/
+
+# serverless / cloud tool artifacts
+.serverless/
+.firebase/
+
+# VM / infra
+.vagrant/
+.terraform/
+
+# thumbnails
+Thumbs.db
+
+# local DBs
+*.sqlite
+*.sqlite3
+*.db
