@@ -74,14 +74,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold">Profile</h1>
-        </div>
-      </header>
+    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>Change Password</CardTitle>
@@ -96,6 +94,7 @@ export default function ProfilePage() {
                   type="password"
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
               <div className="space-y-2">
@@ -107,6 +106,7 @@ export default function ProfilePage() {
                   minLength={8}
                   required
                   disabled={isLoading}
+                  autoComplete="new-password"
                 />
                 <p className="text-xs text-muted-foreground">
                   Must include uppercase, lowercase, number, and special character.
@@ -121,6 +121,7 @@ export default function ProfilePage() {
                   minLength={8}
                   required
                   disabled={isLoading}
+                  autoComplete="new-password"
                 />
               </div>
               <Button type="submit" disabled={isLoading}>
@@ -129,7 +130,7 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   )
 }

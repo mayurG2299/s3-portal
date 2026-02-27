@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { FileUpload } from '@/components/file-upload'
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { formatFileSize, formatRelativeTime } from '@/lib/utils'
+import FilePreviewModal from '@/components/file-preview-modal'
+import { getPreviewType } from '@/lib/preview-utils'
 
 interface Bucket {
   id: string
@@ -72,6 +74,8 @@ export default function FilesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [uploadTags, setUploadTags] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
+  const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [shareSettings, setShareSettings] = useState({
     expiryMode: 'preset' as 'preset' | 'custom',
     expiresIn: '86400',
@@ -141,6 +145,10 @@ export default function FilesPage() {
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
+
+  // lazy import preview type util in client component
+  // import at top-level to classify which files can be previewed
+  // getPreviewType is a pure function
 
   useEffect(() => {
     fetchCredentials()
@@ -276,6 +284,7 @@ export default function FilesPage() {
               bucketId: selectedBucket,
               fileName: file.name,
               contentType: file.type,
+              size: file.size,
               path: currentPath,
               tags,
               description,
@@ -283,7 +292,7 @@ export default function FilesPage() {
           })
 
           if (!response.ok) throw new Error('Failed to get upload URL')
-          const { url } = await response.json()
+          const { url, fileId } = await response.json()
 
           try {
             const uploadResponse = await fetch(url, {
@@ -294,6 +303,19 @@ export default function FilesPage() {
             })
             if (!uploadResponse.ok) {
               throw new Error(`Upload failed with status ${uploadResponse.status}`)
+            }
+
+            // Verify upload with server to ensure metadata and quota are correct
+            try {
+              if (fileId) {
+                await fetch('/api/files/verify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ fileId }),
+                })
+              }
+            } catch (err) {
+              console.error('Post-upload verification failed:', err)
             }
           } catch (error: any) {
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
@@ -677,14 +699,13 @@ export default function FilesPage() {
   const availableBuckets = activeCredential?.buckets || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Files</h1>
-            <div className="flex items-center gap-4">
+    <div className="max-w-7xl mx-auto py-6 animate-fade-in">
+      <div className="space-y-4 mb-6">
+        <div className="flex flex-col gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Files</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Select value={selectedCredential} onValueChange={setSelectedCredential}>
-                <SelectTrigger className="w-64">
+              <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Select credential" />
                 </SelectTrigger>
                 <SelectContent>
@@ -700,7 +721,7 @@ export default function FilesPage() {
                 onValueChange={setSelectedBucket}
                 disabled={!selectedCredential || availableBuckets.length === 0}
               >
-                <SelectTrigger className="w-64">
+              <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Select bucket" />
                 </SelectTrigger>
                 <SelectContent>
@@ -711,7 +732,9 @@ export default function FilesPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucket}>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucket} size="sm">
                 <Upload className="mr-2 h-4 w-4" />
                 Upload
               </Button>
@@ -726,11 +749,12 @@ export default function FilesPage() {
                 }}
                 disabled={!selectedBucket || selectedFileIds.length === 0}
                 variant="secondary"
+              size="sm"
               >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Selected
               </Button>
-              <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucket} variant="outline">
+            <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucket} variant="outline" size="sm">
                 <Folder className="mr-2 h-4 w-4" />
                 New Folder
               </Button>
@@ -738,6 +762,7 @@ export default function FilesPage() {
                 onClick={handleRefresh}
                 disabled={!selectedBucket || isRefreshing}
                 variant="outline"
+              size="sm"
               >
                 <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
                 {isRefreshing ? 'Refreshing' : 'Refresh'}
@@ -762,9 +787,9 @@ export default function FilesPage() {
             </div>
           )}
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <div>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Button
@@ -831,7 +856,7 @@ export default function FilesPage() {
           <div className="space-y-2">
             {files.map((file) => (
               <Card key={file.id} className="p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1">
                     <Checkbox
                       aria-label={`Select ${file.name}`}
@@ -890,7 +915,7 @@ export default function FilesPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
@@ -906,6 +931,24 @@ export default function FilesPage() {
                         />
                       </Button>
                     )}
+                    {!isFolder(file) && (() => {
+                      const t = getPreviewType(file.contentType, file.name)
+                      if (t !== 'UNSUPPORTED') {
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setPreviewFile(file)
+                              setIsPreviewOpen(true)
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )
+                      }
+                      return null
+                    })()}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -938,7 +981,7 @@ export default function FilesPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
         <DialogContent className="max-w-2xl">
@@ -1216,6 +1259,8 @@ export default function FilesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <FilePreviewModal file={previewFile} open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} />
     </div>
   )
 }

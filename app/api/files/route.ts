@@ -16,6 +16,11 @@ import {
 } from '@/lib/aws'
 import { buildS3Key } from '@/lib/utils'
 import { z } from 'zod'
+import {
+  checkQuotaBeforeUpload,
+  incrementUsage,
+  decrementUsage,
+} from "@/lib/storage-quota";
 
 const prismaAny = prisma as any
 
@@ -23,11 +28,12 @@ const uploadSchema = z.object({
   bucketId: z.string(),
   fileName: z.string(),
   contentType: z.string().optional(),
-  path: z.string().default('/'),
+  size: z.number().int().min(0).optional(),
+  path: z.string().default("/"),
   teamId: z.string().optional(),
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   description: z.string().max(1000).optional(),
-})
+});
 
 const multipartInitSchema = z.object({
   bucketId: z.string(),
@@ -140,47 +146,95 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action } = body
 
-    if (action === 'upload') {
-      const validated = uploadSchema.parse(body)
+    if (action === "upload") {
+      const validated = uploadSchema.parse(body);
 
       // Get bucket
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        true
-      )
+        true,
+      );
 
       if (!bucket) {
         await logUserAction({
           request,
-          action: 'FILE_UPLOAD_INIT',
+          action: "FILE_UPLOAD_INIT",
           success: false,
           userId: session.user.id,
-          resourceType: 'bucket',
+          resourceType: "bucket",
           resourceId: validated.bucketId,
-          errorMessage: 'Forbidden',
-        })
-        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+          errorMessage: "Forbidden",
+        });
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
       }
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
-      const key = buildS3Key(validated.path, validated.fileName)
+      const config = decryptAWSConfig(bucket.credential, bucket);
+      const key = buildS3Key(validated.path, validated.fileName);
+
+      // Check quota before issuing presigned URL (we don't know final size yet).
+      const quotaCheck = await checkQuotaBeforeUpload(
+        validated.teamId || bucket.credential.teamId,
+        BigInt(0),
+      );
+      if (!quotaCheck.allowed) {
+        await logUserAction({
+          request,
+          action: "FILE_UPLOAD_INIT",
+          success: false,
+          userId: session.user.id,
+          teamId: validated.teamId,
+          resourceType: "file",
+          errorMessage: "Quota exceeded",
+        });
+        return NextResponse.json(
+          { message: "Storage quota exceeded" },
+          { status: 403 },
+        );
+      }
+
+      // If client provided an expected size, enforce quota now and optimistically
+      // reserve usage immediately. This requires the client to send `size`.
+      const expectedSize =
+        validated.size !== undefined ? BigInt(validated.size) : null;
+      if (expectedSize !== null) {
+        const quotaCheck = await checkQuotaBeforeUpload(
+          validated.teamId || bucket.credential.teamId,
+          expectedSize,
+        );
+        if (!quotaCheck.allowed) {
+          await logUserAction({
+            request,
+            action: "FILE_UPLOAD_INIT",
+            success: false,
+            userId: session.user.id,
+            teamId: validated.teamId,
+            resourceType: "file",
+            resourceId: null,
+            errorMessage: "Quota exceeded",
+          });
+          return NextResponse.json(
+            { message: "Storage quota exceeded" },
+            { status: 403 },
+          );
+        }
+      }
 
       const { url } = await generatePresignedUploadUrl(
         config,
         key,
-        validated.contentType
-      )
+        validated.contentType,
+      );
 
       // Create or update file record (avoid duplicate key errors)
       const normalizedTags = Array.from(
         new Set(
           (validated.tags || [])
             .map((tag) => tag.trim().toLowerCase())
-            .filter((tag) => tag.length > 0)
-        )
-      )
-      const normalizedDescription = validated.description?.trim() || null
+            .filter((tag) => tag.length > 0),
+        ),
+      );
+      const normalizedDescription = validated.description?.trim() || null;
 
       const file = await prisma.file.upsert({
         where: {
@@ -202,7 +256,7 @@ export async function POST(request: NextRequest) {
         create: {
           key,
           name: validated.fileName,
-          size: 0, // Will be updated after upload
+          size: validated.size ?? 0, // If provided, set initial size
           contentType: validated.contentType,
           parentPath: validated.path,
           userId: session.user.id,
@@ -212,15 +266,27 @@ export async function POST(request: NextRequest) {
           tags: normalizedTags,
           description: normalizedDescription,
         },
-      })
+      });
+
+      // If we reserved quota optimistically, increment usage now
+      if (expectedSize !== null && expectedSize > BigInt(0)) {
+        try {
+          await incrementUsage(
+            validated.teamId || bucket.credential.teamId,
+            expectedSize,
+          );
+        } catch (err) {
+          console.error("Failed to increment usage on upload init:", err);
+        }
+      }
 
       await logUserAction({
         request,
-        action: 'FILE_UPLOAD_INIT',
+        action: "FILE_UPLOAD_INIT",
         success: true,
         userId: session.user.id,
         teamId: validated.teamId,
-        resourceType: 'file',
+        resourceType: "file",
         resourceId: file.id,
         metadata: {
           key,
@@ -228,9 +294,9 @@ export async function POST(request: NextRequest) {
           bucketId: validated.bucketId,
           contentType: validated.contentType,
         },
-      })
+      });
 
-      return NextResponse.json({ url, key, fileId: file.id })
+      return NextResponse.json({ url, key, fileId: file.id });
     }
 
     if (action === 'multipartInit') {
@@ -365,29 +431,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ url })
     }
 
-    if (action === 'multipartComplete') {
-      const validated = multipartCompleteSchema.parse(body)
+    if (action === "multipartComplete") {
+      const validated = multipartCompleteSchema.parse(body);
 
       const file = await prisma.file.findUnique({
         where: { id: validated.fileId },
         include: { credential: true, bucket: true },
-      })
+      });
 
       if (!file) {
         await logUserAction({
           request,
-          action: 'FILE_MULTIPART_COMPLETE',
+          action: "FILE_MULTIPART_COMPLETE",
           success: false,
           userId: session.user.id,
-          resourceType: 'file',
+          resourceType: "file",
           resourceId: validated.fileId,
-          errorMessage: 'File not found',
-        })
-        return NextResponse.json({ message: 'File not found' }, { status: 404 })
+          errorMessage: "File not found",
+        });
+        return NextResponse.json(
+          { message: "File not found" },
+          { status: 404 },
+        );
       }
 
       if (file.bucketId !== validated.bucketId) {
-        return NextResponse.json({ message: 'Bucket mismatch' }, { status: 400 })
+        return NextResponse.json(
+          { message: "Bucket mismatch" },
+          { status: 400 },
+        );
       }
 
       // Verify permissions
@@ -396,50 +468,93 @@ export async function POST(request: NextRequest) {
           where: {
             teamId: file.teamId!,
             userId: session.user.id,
-            role: { name: { in: ['OWNER', 'ADMIN'] } },
+            role: { name: { in: ["OWNER", "ADMIN"] } },
           },
-        })
+        });
 
         if (!teamMember) {
           await logUserAction({
             request,
-            action: 'FILE_MULTIPART_COMPLETE',
+            action: "FILE_MULTIPART_COMPLETE",
             success: false,
             userId: session.user.id,
             teamId: file.teamId,
-            resourceType: 'file',
+            resourceType: "file",
             resourceId: file.id,
-            errorMessage: 'Forbidden',
-          })
-          return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+            errorMessage: "Forbidden",
+          });
+          return NextResponse.json({ message: "Forbidden" }, { status: 403 });
         }
       }
 
-      const config = decryptAWSConfig(file.credential, file.bucket)
-      await completeMultipartUpload(config, validated.key, validated.uploadId, validated.parts)
+      const config = decryptAWSConfig(file.credential, file.bucket);
+      await completeMultipartUpload(
+        config,
+        validated.key,
+        validated.uploadId,
+        validated.parts,
+      );
 
-      // Update file size/contentType after completion
-      const meta = await getS3ObjectMetadata(config, validated.key)
+      // Update file size/contentType after completion and adjust quota
+      const meta = await getS3ObjectMetadata(config, validated.key);
+      const newSize = BigInt(meta.size);
+      const oldSize = BigInt(file.size || 0);
+      const delta = newSize > oldSize ? newSize - oldSize : BigInt(0);
+
+      if (delta > BigInt(0)) {
+        const quotaCheck = await checkQuotaBeforeUpload(
+          file.teamId || file.credential.teamId,
+          delta,
+        );
+        if (!quotaCheck.allowed) {
+          await logUserAction({
+            request,
+            action: "FILE_MULTIPART_COMPLETE",
+            success: false,
+            userId: session.user.id,
+            teamId: file.teamId,
+            resourceType: "file",
+            resourceId: file.id,
+            errorMessage: "Quota exceeded",
+          });
+          return NextResponse.json(
+            { message: "Storage quota exceeded" },
+            { status: 403 },
+          );
+        }
+      }
+
       await prisma.file.update({
         where: { id: validated.fileId },
-        data: { size: meta.size, contentType: meta.contentType ?? file.contentType },
-      })
+        data: {
+          size: meta.size,
+          contentType: meta.contentType ?? file.contentType,
+        },
+      });
+
+      if (delta > BigInt(0)) {
+        try {
+          await incrementUsage(file.teamId || file.credential.teamId, delta);
+        } catch (err) {
+          console.error("Failed to increment usage:", err);
+        }
+      }
 
       await logUserAction({
         request,
-        action: 'FILE_MULTIPART_COMPLETE',
+        action: "FILE_MULTIPART_COMPLETE",
         success: true,
         userId: session.user.id,
         teamId: file.teamId,
-        resourceType: 'file',
+        resourceType: "file",
         resourceId: file.id,
         metadata: {
           key: validated.key,
           uploadId: validated.uploadId,
         },
-      })
+      });
 
-      return NextResponse.json({ success: true })
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'list') {
@@ -1051,50 +1166,50 @@ export async function POST(request: NextRequest) {
 // Delete file
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       await logUserAction({
         request,
-        action: 'FILE_DELETE',
+        action: "FILE_DELETE",
         success: false,
-        errorMessage: 'Unauthorized',
-      })
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+        errorMessage: "Unauthorized",
+      });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
     if (!id) {
       await logUserAction({
         request,
-        action: 'FILE_DELETE',
+        action: "FILE_DELETE",
         success: false,
         userId: session.user.id,
-        errorMessage: 'File ID is required',
-      })
+        errorMessage: "File ID is required",
+      });
       return NextResponse.json(
-        { message: 'File ID is required' },
-        { status: 400 }
-      )
+        { message: "File ID is required" },
+        { status: 400 },
+      );
     }
 
     const file = await prisma.file.findUnique({
       where: { id },
       include: { credential: true, bucket: true },
-    })
+    });
 
     if (!file) {
       await logUserAction({
         request,
-        action: 'FILE_DELETE',
+        action: "FILE_DELETE",
         success: false,
         userId: session.user.id,
-        resourceType: 'file',
+        resourceType: "file",
         resourceId: id,
-        errorMessage: 'File not found',
-      })
-      return NextResponse.json({ message: 'File not found' }, { status: 404 })
+        errorMessage: "File not found",
+      });
+      return NextResponse.json({ message: "File not found" }, { status: 404 });
     }
 
     // Verify permissions
@@ -1103,42 +1218,52 @@ export async function DELETE(request: NextRequest) {
         where: {
           teamId: file.teamId!,
           userId: session.user.id,
-          role: { name: { in: ['OWNER', 'ADMIN'] } },
+          role: { name: { in: ["OWNER", "ADMIN"] } },
         },
-      })
+      });
 
       if (!teamMember) {
         await logUserAction({
           request,
-          action: 'FILE_DELETE',
+          action: "FILE_DELETE",
           success: false,
           userId: session.user.id,
           teamId: file.teamId,
-          resourceType: 'file',
+          resourceType: "file",
           resourceId: file.id,
-          errorMessage: 'Forbidden',
-        })
-        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+          errorMessage: "Forbidden",
+        });
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
       }
     }
 
-    const config = decryptAWSConfig(file.credential, file.bucket)
-    await deleteS3Object(config, file.key)
+    const config = decryptAWSConfig(file.credential, file.bucket);
+    await deleteS3Object(config, file.key);
 
-    await prisma.file.delete({ where: { id } })
+    // Decrement quota usage (if any) then delete DB record
+    try {
+      const size = BigInt(file.size || 0);
+      if (size > BigInt(0)) {
+        await decrementUsage(file.teamId || file.credential.teamId, size);
+      }
+    } catch (err) {
+      console.error("Failed to decrement usage:", err);
+    }
+
+    await prisma.file.delete({ where: { id } });
 
     await logUserAction({
       request,
-      action: 'FILE_DELETE',
+      action: "FILE_DELETE",
       success: true,
       userId: session.user.id,
       teamId: file.teamId,
-      resourceType: 'file',
+      resourceType: "file",
       resourceId: file.id,
       metadata: { key: file.key },
-    })
+    });
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting file:', error)
     await logUserAction({

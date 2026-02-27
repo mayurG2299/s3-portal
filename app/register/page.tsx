@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
+import { Cloud, Shield, Zap } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -25,17 +26,16 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const data = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      password: formData.get('password') as string,
-    }
 
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          password: formData.get('password'),
+        }),
       })
 
       if (!response.ok) {
@@ -44,11 +44,10 @@ export default function RegisterPage() {
       }
 
       toast({
-        title: 'Success!',
-        description: 'Account created. Redirecting to login...',
+        title: 'Success',
+        description: 'Account created! Please sign in.',
       })
-
-      setTimeout(() => router.push('/login'), 1500)
+      router.push('/login')
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -61,63 +60,136 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Enter your details to get started with S3 Portal
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={onSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                placeholder="John Doe"
-                required
-                disabled={isLoading}
-              />
+    <div className="min-h-screen flex">
+      {/* Branded panel - hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-indigo-700 to-indigo-800 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzMuMzE0IDAgNi0yLjY4NiA2LTZzLTIuNjg2LTYtNi02LTYgMi42ODYtNiA2IDIuNjg2IDYgNiA2em0wIDJjLTQuNDE4IDAtOC0zLjU4Mi04LThzMy41ODItOCA4LTggOCAzLjU4MiA4IDgtMy41ODIgOC04IDh6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 animate-fade-in">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <span className="text-white font-bold text-lg">S3</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="john@example.com"
-                required
-                disabled={isLoading}
-              />
+            <h1 className="text-3xl font-bold text-white">S3 Portal</h1>
+          </div>
+          <p className="text-xl text-indigo-100 mb-12 leading-relaxed">
+            Get started in minutes.
+            <br />
+            Your team&apos;s file portal awaits.
+          </p>
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <Cloud className="h-5 w-5 text-indigo-200" />
+              </div>
+              <div>
+                <p className="font-medium text-white">Bring Your Own Bucket</p>
+                <p className="text-sm text-indigo-200">AWS S3 and compatible storage</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                minLength={8}
-                disabled={isLoading}
-              />
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-indigo-200" />
+              </div>
+              <div>
+                <p className="font-medium text-white">Team Management</p>
+                <p className="text-sm text-indigo-200">Roles, permissions, and audit trails</p>
+              </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
-            </Button>
-            <p className="text-sm text-center text-muted-foreground">
-              Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-indigo-200" />
+              </div>
+              <div>
+                <p className="font-medium text-white">Secure Sharing</p>
+                <p className="text-sm text-indigo-200">Password-protected, expiring links</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white p-6">
+        <div className="w-full max-w-md animate-slide-up">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+              <span className="text-white font-bold text-sm">S3</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">S3 Portal</h1>
+          </div>
+
+          <Card className="border-0 shadow-xl shadow-slate-200/50">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+              <CardDescription>
+                Sign up to start managing your files
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={onSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="John Doe"
+                    required
+                    disabled={isLoading}
+                    autoComplete="name"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    required
+                    disabled={isLoading}
+                    autoComplete="email"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    minLength={8}
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                    className="h-11"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 8 characters
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 transition-all duration-200"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Creating account...' : 'Create account'}
+                </Button>
+                <p className="text-sm text-center text-muted-foreground">
+                  Already have an account?{' '}
+                  <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                    Sign in
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

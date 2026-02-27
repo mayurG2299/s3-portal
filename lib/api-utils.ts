@@ -93,6 +93,21 @@ export async function checkScreenPermission(
 }
 
 /**
+ * Require screen permission and throw a NextResponse (403) on failure.
+ * Returns the auth context on success.
+ */
+export async function requireScreenPermission(
+  session: Session | null,
+  teamId: string,
+  screenName: ScreenName,
+  permissionLevel: 'VIEW' | 'EDIT' = 'VIEW'
+) {
+  const res = await checkScreenPermission(session, teamId, screenName, permissionLevel)
+  if (res.error) throw res.error
+  return res.auth!
+}
+
+/**
  * Response helpers
  */
 export const ApiResponse = {

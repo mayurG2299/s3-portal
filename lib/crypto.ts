@@ -9,7 +9,41 @@ const KEY_LENGTH = 32
 /**
  * Derives an encryption key from the master secret
  */
+/**
+ * Modern key derivation (used for v1: prefixed data)
+ */
 function getEncryptionKey(): Buffer {
+  const secret = process.env.ENCRYPTION_KEY
+  if (!secret) {
+    throw new Error("ENCRYPTION_KEY environment variable is required");
+  }
+
+  // Accept raw UTF-8, hex or base64 encoded secrets.
+  let buf: Buffer;
+  if (/^[0-9a-fA-F]+$/.test(secret) && secret.length >= 64) {
+    buf = Buffer.from(secret, "hex");
+  } else if (/^[A-Za-z0-9+/=]+$/.test(secret) && secret.length % 4 === 0) {
+    try {
+      buf = Buffer.from(secret, "base64");
+    } catch (_) {
+      buf = Buffer.from(secret, "utf-8");
+    }
+  } else {
+    buf = Buffer.from(secret, "utf-8");
+  }
+
+  if (buf.length < KEY_LENGTH) {
+    throw new Error("ENCRYPTION_KEY must decode to at least 32 bytes (256 bits)");
+  }
+
+  return buf.slice(0, KEY_LENGTH);
+}
+
+/**
+ * Legacy key derivation (used for data encrypted WITHOUT v1: prefix)
+ * Uses the original simple UTF-8 slicing of the secret.
+ */
+function getLegacyEncryptionKey(): Buffer {
   const secret = process.env.ENCRYPTION_KEY
   if (!secret || secret.length < 32) {
     throw new Error('ENCRYPTION_KEY must be at least 32 characters')
@@ -23,29 +57,36 @@ function getEncryptionKey(): Buffer {
  */
 export function encrypt(plaintext: string): string {
   try {
-    const key = getEncryptionKey()
-    const iv = crypto.randomBytes(IV_LENGTH)
-    const salt = crypto.randomBytes(SALT_LENGTH)
+    const key = getEncryptionKey();
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const salt = crypto.randomBytes(SALT_LENGTH);
 
     // Derive key with salt
-    const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha512')
+    // Use a higher iteration count for PBKDF2 to increase KDF cost
+    const derivedKey = crypto.pbkdf2Sync(
+      key,
+      salt,
+      150000,
+      KEY_LENGTH,
+      "sha512",
+    );
 
-    const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv)
+    const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv);
 
-    let encrypted = cipher.update(plaintext, 'utf8', 'hex')
-    encrypted += cipher.final('hex')
+    let encrypted = cipher.update(plaintext, "utf8", "hex");
+    encrypted += cipher.final("hex");
 
-    const tag = cipher.getAuthTag()
+    const tag = cipher.getAuthTag();
 
-    // Combine all parts
-    const result = Buffer.concat([
+    // Combine all parts and prefix with a version marker for future upgrades (legacy compatibility supported)
+    const payload = Buffer.concat([
       salt,
       iv,
       tag,
-      Buffer.from(encrypted, 'hex'),
-    ])
+      Buffer.from(encrypted, "hex"),
+    ]);
 
-    return result.toString('base64')
+    return `v1:${payload.toString("base64")}`;
   } catch (error) {
     throw new Error('Failed to encrypt data')
   }
@@ -56,20 +97,33 @@ export function encrypt(plaintext: string): string {
  */
 export function decrypt(ciphertext: string): string {
   try {
-    const key = getEncryptionKey()
-    const data = Buffer.from(ciphertext, 'base64')
+    // Detect format by v1: prefix
+    const isV1 = ciphertext.startsWith('v1:')
+    const payloadBase64 = isV1 ? ciphertext.slice(3) : ciphertext
+
+    let key: Buffer
+    let iterations: number
+
+    if (isV1) {
+      // New format: uses enhanced multi-format key derivation + 150k iterations
+      key = getEncryptionKey()
+      iterations = 150000
+    } else {
+      // Legacy format: uses simple UTF-8 key slice + 100k iterations
+      key = getLegacyEncryptionKey()
+      iterations = 100000
+    }
+
+    const data = Buffer.from(payloadBase64, 'base64')
 
     // Extract parts
     const salt = data.subarray(0, SALT_LENGTH)
     const iv = data.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH)
-    const tag = data.subarray(
-      SALT_LENGTH + IV_LENGTH,
-      SALT_LENGTH + IV_LENGTH + TAG_LENGTH
-    )
+    const tag = data.subarray(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH)
     const encrypted = data.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH)
 
-    // Derive key with salt
-    const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha512')
+    // Derive per-message key with salt
+    const derivedKey = crypto.pbkdf2Sync(key, salt, iterations, KEY_LENGTH, 'sha512')
 
     const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv)
     decipher.setAuthTag(tag)

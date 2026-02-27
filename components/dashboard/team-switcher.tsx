@@ -49,7 +49,7 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
   return (
     <div className="flex items-center gap-2">
       <Select value={optimisticTeamId} onValueChange={handleTeamChange} disabled={isPending}>
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-full bg-slate-800/50 border-white/10 text-white hover:bg-slate-700/50 transition-colors">
           <SelectValue placeholder="Select team" />
         </SelectTrigger>
         <SelectContent>
@@ -61,7 +61,7 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
         </SelectContent>
       </Select>
 
-      <Button variant="ghost" size="icon" asChild title="Create new team">
+      <Button variant="ghost" size="icon" asChild title="Create new team" className="text-slate-400 hover:text-white hover:bg-white/10">
         <Link href="/dashboard/teams/new">
           <Plus className="h-4 w-4" />
         </Link>

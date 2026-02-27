@@ -94,16 +94,16 @@ describe('RBAC - Role-Based Access Control', () => {
 
   describe('Team-Based Access Control', () => {
     it('should restrict access to team resources', () => {
-      const userTeamId = 'team-1'
-      const resourceTeamId = 'team-1'
+      const userTeamId: string = 'team-1'
+      const resourceTeamId: string = 'team-1'
       
       const hasAccess = userTeamId === resourceTeamId
       expect(hasAccess).toBe(true)
     })
 
     it('should prevent cross-team access', () => {
-      const userTeamId = 'team-1'
-      const resourceTeamId = 'team-2'
+      const userTeamId: string = 'team-1'
+      const resourceTeamId: string = 'team-2'
       
       const hasAccess = userTeamId === resourceTeamId
       expect(hasAccess).toBe(false)
@@ -138,7 +138,7 @@ describe('RBAC - Role-Based Access Control', () => {
       const file = { userId: 'user-1', teamId: 'team-1' }
       const requestUserId = 'user-2'
       const requestUserTeamId = 'team-1'
-      const userRole = 'ADMIN'
+      const userRole: string = 'ADMIN'
       
       const isTeamMember = file.teamId === requestUserTeamId
       const canWrite = isTeamMember && (userRole === 'ADMIN' || userRole === 'OWNER')
@@ -149,14 +149,14 @@ describe('RBAC - Role-Based Access Control', () => {
     it('should prevent unauthorized file deletion', () => {
       const file = { userId: 'user-1', teamId: 'team-1' }
       const requestUserId = 'user-2'
-      const userRole = 'VIEWER'
+      const userRole: string = 'VIEWER'
       
       const canDelete = file.userId === requestUserId && userRole === 'OWNER'
       expect(canDelete).toBe(false)
     })
 
     it('should allow viewers to download files', () => {
-      const userRole = 'VIEWER'
+      const userRole: string = 'VIEWER'
       const canDownload = userRole === 'VIEWER' || userRole === 'ADMIN' || userRole === 'OWNER'
       
       expect(canDownload).toBe(true)
@@ -183,7 +183,7 @@ describe('RBAC - Role-Based Access Control', () => {
     it('should enforce team credential ownership', () => {
       const credential = { teamId: 'team-1', ownerId: 'user-1' }
       const requestUserTeamId = 'team-1'
-      const requestUserRole = 'VIEWER'
+      const requestUserRole: string = 'VIEWER'
       
       const canModify = requestUserRole === 'OWNER' || requestUserRole === 'ADMIN'
       expect(canModify).toBe(false)

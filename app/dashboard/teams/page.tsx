@@ -42,10 +42,10 @@ export default async function TeamsPage() {
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Teams</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Teams</h1>
+        <p className="text-slate-500 mt-2">
           Manage your team, invite members, and adjust roles.
         </p>
       </div>

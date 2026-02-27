@@ -106,14 +106,13 @@ export default function LinksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold">Shared Links</h1>
-        </div>
-      </header>
+    <div className="max-w-7xl mx-auto py-6 animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Shared Links</h1>
+        <p className="text-slate-500 mt-1">Manage your shared file links</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {isLoading ? (
           <Card className="p-12 text-center">
             <p className="text-gray-500">Loading...</p>
@@ -136,7 +135,7 @@ export default function LinksPage() {
               return (
                 <Card key={link.id} className={isInactive ? 'opacity-60' : ''}>
                   <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg mb-1">
                           {link.file.name}
@@ -217,7 +216,7 @@ export default function LinksPage() {
             })}
           </div>
         )}
-      </main>
+      </div>
     </div>
   )
 }

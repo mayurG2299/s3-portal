@@ -236,7 +236,7 @@ describe('File Sharing - Share Links', () => {
     })
 
     it('should handle invalid password hash', () => {
-      const passwordHash = ''
+      const passwordHash: string | null = ''
       const isValid = !!(passwordHash && passwordHash.includes(':'))
       
       expect(isValid).toBe(false)

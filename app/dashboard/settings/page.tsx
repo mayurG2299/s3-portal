@@ -233,20 +233,18 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold">AWS Credentials</h1>
-        </div>
-      </header>
+    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">AWS Credentials</h1>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>Add AWS Credentials</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCredentialSubmit} className="space-y-4">
+            <form onSubmit={handleCredentialSubmit} className="space-y-4" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" placeholder="Production bucket" required />
@@ -260,6 +258,7 @@ export default function SettingsPage() {
                   placeholder="AKIA..."
                   required
                   disabled={isSavingCredential}
+                  autoComplete="off"
                 />
               </div>
 
@@ -272,6 +271,7 @@ export default function SettingsPage() {
                   placeholder="••••••••"
                   required
                   disabled={isSavingCredential}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -444,7 +444,7 @@ export default function SettingsPage() {
             )}
           </CardContent>
         </Card>
-      </main>
+      </div>
 
       <Dialog
         open={!!editingCredential}
@@ -463,7 +463,7 @@ export default function SettingsPage() {
             </DialogDescription>
           </DialogHeader>
           {editingCredential && (
-            <form onSubmit={handleUpdateCredential} className="space-y-4">
+            <form onSubmit={handleUpdateCredential} className="space-y-4" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="editName">Name</Label>
                 <Input
@@ -489,11 +489,11 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="editAccessKey">Access Key (optional)</Label>
-                  <Input id="editAccessKey" name="editAccessKey" placeholder="AKIA..." />
+                  <Input id="editAccessKey" name="editAccessKey" placeholder="AKIA..." autoComplete="off" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="editSecretKey">Secret Access Key (optional)</Label>
-                  <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" />
+                  <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" />
                 </div>
               </div>
 

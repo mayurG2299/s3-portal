@@ -57,7 +57,7 @@ describe('Auth Flows', () => {
     it('should reject duplicate email registration', async () => {
       const mockPrisma = prisma as jest.Mocked<typeof prisma>
       
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      ;(mockPrisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
         id: 'existing-user-id',
         email: 'test@example.com',
         name: 'Existing User',
@@ -92,7 +92,7 @@ describe('Auth Flows', () => {
       mockHashPassword.mockResolvedValueOnce('hashed_password')
       
       const ownerRole = { id: 'owner-role-id', name: 'OWNER' }
-      mockPrisma.role.findUnique.mockResolvedValueOnce(ownerRole as any)
+      ;(mockPrisma.role.findUnique as jest.Mock).mockResolvedValueOnce(ownerRole as any)
 
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         const tx = {
@@ -243,7 +243,7 @@ describe('Auth Flows', () => {
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
       const mockPrisma = prisma as jest.Mocked<typeof prisma>
-      mockPrisma.user.findUnique.mockRejectedValueOnce(new Error('Database error'))
+      ;(mockPrisma.user.findUnique as jest.Mock).mockRejectedValueOnce(new Error('Database error'))
 
       await expect(
         mockPrisma.user.findUnique({ where: { email: 'test@example.com' } })

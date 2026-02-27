@@ -52,9 +52,6 @@ prisma/dev.db-journal
 *.swp
 *.swo
 
-# markdown
-*.md
-
 # additional common ignores
 # logs
 *.log
@@ -78,3 +75,5 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 *.db
+
+/docs

@@ -34,10 +34,10 @@ export default async function AuditLogPage() {
   })) as AuditLogRow[]
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Audit Logs</h1>
+        <p className="text-slate-500 mt-2">
           Recent user actions for your team (last 100 entries)
         </p>
       </div>
