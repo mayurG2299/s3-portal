@@ -193,13 +193,24 @@ model Team {
   updatedAt   DateTime        @updatedAt
   credentials AWSCredential[]
   accessLogs  AccessLog[]
-  files       File[]
-  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  invites     TeamInvite[]
-  members     TeamMember[]
+  files        File[]
+  owner        User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  invites      TeamInvite[]
+  members      TeamMember[]
+  storageQuota StorageQuota?
 
   @@index([ownerId])
   @@index([slug])
+}
+
+model StorageQuota {
+  id         String   @id @default(cuid())
+  teamId     String   @unique
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  limitBytes BigInt?
+  usedBytes  BigInt   @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model TeamMember {

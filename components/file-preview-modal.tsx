@@ -5,13 +5,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { getPreviewType, PreviewType } from '@/lib/preview-utils'
-import { RefreshCw, Maximize, Minimize } from 'lucide-react'
+import { RefreshCw, Maximize, Minimize, FileJson, Loader2 } from 'lucide-react'
 import { formatFileSize } from '@/lib/utils'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import ReactMarkdown from 'react-markdown'
 
 type FileRecord = {
   id: string
   name: string
   contentType?: string | null
+}
+
+// Map extensions to Prism languages
+const getLanguageFromFilename = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const map: Record<string, string> = {
+    js: 'javascript', jsx: 'jsx', ts: 'typescript', tsx: 'tsx',
+    py: 'python', rb: 'ruby', go: 'go', rs: 'rust',
+    java: 'java', c: 'c', cpp: 'cpp', cs: 'csharp',
+    html: 'html', css: 'css', scss: 'scss', less: 'less',
+    json: 'json', xml: 'xml', yaml: 'yaml', yml: 'yaml',
+    sh: 'bash', bash: 'bash', zsh: 'bash',
+    sql: 'sql', md: 'markdown', mdx: 'markdown'
+  }
+  return ext && map[ext] ? map[ext] : 'text'
 }
 
 export default function FilePreviewModal({ file, open, onClose }: { file: FileRecord | null; open: boolean; onClose: () => void }) {
@@ -122,7 +140,15 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
         </DialogHeader>
 
         <div className={`mt-4 ${isFullscreen ? 'flex-1 min-h-0 flex flex-col overflow-auto' : ''}`}>
-          {loading && <div className="text-sm text-gray-500 text-center py-8">Loading preview…</div>}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full blur-xl bg-blue-500/20 animate-pulse"></div>
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin relative z-10" />
+              </div>
+              <p className="text-sm font-medium text-gray-500 animate-pulse">Loading preview...</p>
+            </div>
+          )}
 
           {!loading && type === 'IMAGE' && previewUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -142,19 +168,35 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
           )}
 
           {!loading && type === 'TEXT' && isTooLarge && (
-            <div className="bg-yellow-50 text-yellow-800 p-4 rounded text-sm text-center border border-yellow-200">
-              <p className="font-medium text-base mb-2">File too large to preview (&gt;1MB)</p>
-              <p>Please download the file instead.</p>
-              <div className="mt-4">
+            <div className="bg-yellow-50 text-yellow-800 p-8 rounded-lg text-sm text-center border border-yellow-200 shadow-sm flex flex-col items-center">
+              <FileJson className="w-12 h-12 mb-4 text-yellow-500" />
+              <p className="font-semibold text-lg mb-2">File too large to preview (&gt;1MB)</p>
+              <p className="text-yellow-700/80 mb-6">We&apos;ve restricted previews for very large files to maintain browser performance. Please download the file to view its contents.</p>
+              <div>
                 <a href={`/api/files/download?id=${file.id}`} className="inline-block">
-                  <Button variant="outline" className="bg-white border-yellow-300 text-yellow-800 hover:bg-yellow-100">Download File</Button>
+                  <Button className="bg-yellow-600 hover:bg-yellow-700 text-white border-transparent">Download File</Button>
                 </a>
               </div>
             </div>
           )}
 
           {!loading && type === 'TEXT' && !isTooLarge && (textContent !== null) && (
-            <pre className={`whitespace-pre-wrap overflow-auto border bg-gray-50 p-4 rounded ${isFullscreen ? 'h-full flex-1 min-h-0' : 'max-h-[70vh]'}`}>{textContent}</pre>
+            getLanguageFromFilename(file.name) === 'markdown' ? (
+              <div className={`overflow-auto border bg-white p-6 rounded prose prose-slate max-w-none ${isFullscreen ? 'h-full flex-1 min-h-0' : 'max-h-[70vh]'}`}>
+                <ReactMarkdown>{textContent}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className={`overflow-auto border rounded text-sm ${isFullscreen ? 'h-full flex-1 min-h-0' : 'max-h-[70vh]'}`}>
+                <SyntaxHighlighter
+                  language={getLanguageFromFilename(file.name)}
+                  style={vscDarkPlus}
+                  customStyle={{ margin: 0, minHeight: '100%', borderRadius: 0 }}
+                  showLineNumbers={true}
+                >
+                  {textContent}
+                </SyntaxHighlighter>
+              </div>
+            )
           )}
 
           {!loading && type === 'CSV' && csvRows && (

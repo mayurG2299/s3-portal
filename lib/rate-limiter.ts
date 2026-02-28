@@ -10,9 +10,9 @@ let redisClient: any | null = null
 let useRedis = false
 try {
   if (process.env.REDIS_URL) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+    // @ts-ignore
     const IORedis = require('ioredis')
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    // @ts-ignore
     redisClient = new IORedis(process.env.REDIS_URL)
     useRedis = true
   }
