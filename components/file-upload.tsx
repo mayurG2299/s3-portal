@@ -178,119 +178,159 @@ export function FileUpload({
   }
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('space-y-6', className)}>
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
+          'relative group border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-500 overflow-hidden',
           isUploading && 'opacity-50 cursor-not-allowed',
           isDragActive
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-primary/50'
+            ? 'border-[#8c2bee] bg-[#8c2bee]/5 shadow-[0_0_30px_rgba(99,102,241,0.1)]'
+            : 'border-white/10 bg-white/[0.02] hover:border-[#8c2bee]/30 hover:bg-white/[0.04]'
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        {isDragActive ? (
-          <p className="text-lg font-medium">Drop files here...</p>
-        ) : (
-          <>
-            <p className="text-lg font-medium mb-2">
-              Drag & drop files here, or click to select
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Max {maxFiles} files, up to {formatFileSize(maxSize)} each
-            </p>
-          </>
-        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#8c2bee]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        <div className="relative z-10">
+          <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6 text-slate-400 group-hover:text-[#b673ff] group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-500">
+            <Upload size={28} strokeWidth={2.5} />
+          </div>
+
+          {isDragActive ? (
+            <p className="text-lg font-black text-[#b673ff] uppercase tracking-widest animate-pulse">Release to Ingest</p>
+          ) : (
+            <>
+                <p className="text-lg font-black text-white uppercase tracking-tight mb-2">
+                  Drop Resources <span className="text-slate-500">or</span> <span className="gradient-text">Browse Files</span>
+                </p>
+              <div className="flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span>Max {maxFiles} Entities</span>
+                <div className="h-1 w-1 rounded-full bg-slate-700" />
+                <span>Limit {formatFileSize(maxSize)}</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {files.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">
-              {files.length} file{files.length !== 1 ? 's' : ''}
-            </h3>
+        <div className="space-y-4 animate-slide-up">
+          <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                Transmission Queue / {files.length} Item{files.length !== 1 ? 's' : ''}
+              </h3>
+            </div>
             {files.some((f) => f.status === 'success' || f.status === 'error') && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearCompleted}
                 disabled={isUploading}
+                className="h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5"
               >
-                Clear completed
+                Flush Queue
               </Button>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             {files.map((uploadFile, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 p-3 border rounded-lg"
+                className="group relative flex items-center gap-4 p-4 glass-card border-white/5 hover:border-white/10 transition-all duration-300 overflow-hidden"
               >
-                <File className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {uploadFile.file.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(uploadFile.file.size)}
-                  </p>
+                {uploadFile.status === 'success' && (
+                  <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
+                )}
+
+                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-white transition-colors">
+                  <File size={18} strokeWidth={2.5} />
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">
+                      {uploadFile.file.name}
+                    </p>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      {formatFileSize(uploadFile.file.size)}
+                    </p>
+                  </div>
+
                   {uploadFile.status === 'uploading' && (
-                    <>
-                      <Progress value={uploadFile.progress} className="mt-2" />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {Math.round(uploadFile.progress)}%
-                      </p>
-                    </>
+                    <div className="space-y-1.5 animate-fade-in">
+                      <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#8c2bee] via-violet-500 to-[#6a1bbf] transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                          style={{ width: `${uploadFile.progress}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-[#b673ff]">
+                        <span>Uploading Payload</span>
+                        <span>{Math.round(uploadFile.progress)}%</span>
+                      </div>
+                    </div >
                   )}
+
                   {uploadFile.status === 'error' && uploadFile.error && (
-                    <p className="text-xs text-destructive mt-1">
-                      {uploadFile.error}
+                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-tight italic">
+                      Error: {uploadFile.error}
                     </p>
                   )}
                 </div>
-                <div className="flex-shrink-0 flex gap-2">
+
+                <div className="flex-shrink-0 flex items-center gap-2 relative z-10">
                   {uploadFile.status === 'success' && (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <div className="h-8 w-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                      <CheckCircle2 size={16} strokeWidth={3} />
+                    </div>
                   )}
+
                   {uploadFile.status === 'error' && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRetry(index)}
+                        className="h-8 w-8 rounded-xl text-[#b673ff] hover:text-white hover:bg-white/5 border border-white/0 hover:border-white/5 transition-all"
                         title="Retry upload"
                       >
-                        <RotateCcw className="h-4 w-4" />
+                        <RotateCcw size={14} strokeWidth={2.5} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(index)}
+                        className="h-8 w-8 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-white/0 hover:border-rose-500/10 transition-all"
                       >
-                        <X className="h-4 w-4" />
+                        <X size={14} strokeWidth={2.5} />
                       </Button>
                     </div>
                   )}
+
                   {uploadFile.status === 'uploading' && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleAbort(index)}
-                      title="Cancel upload"
+                      className="h-8 w-8 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                      title="Abort"
                     >
-                      <X className="h-4 w-4" />
+                      <X size={14} strokeWidth={2.5} />
                     </Button>
                   )}
+
                   {uploadFile.status === 'pending' && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removeFile(index)}
+                      className="h-8 w-8 rounded-xl text-slate-500 hover:text-white transition-all"
                     >
-                      <X className="h-4 w-4" />
+                      <X size={14} strokeWidth={2.5} />
                     </Button>
                   )}
                 </div>

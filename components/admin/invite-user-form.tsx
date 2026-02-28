@@ -161,22 +161,36 @@ export function InviteUserForm({ teamId }: Props) {
   }
 
   const getRoleIcon = (level: number) => {
-    if (level >= 100) return <Crown className="h-4 w-4 text-yellow-600" />
-    if (level >= 50) return <Shield className="h-4 w-4 text-blue-600" />
-    return <Eye className="h-4 w-4 text-gray-600" />
+    if (level >= 100) return (
+      <div className="h-6 w-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+        <Crown size={10} strokeWidth={3} />
+      </div>
+    )
+    if (level >= 50) return (
+      <div className="h-6 w-6 rounded-lg bg-[#8c2bee]/10 border border-[#8c2bee]/20 flex items-center justify-center text-[#8c2bee]">
+        <Shield size={10} strokeWidth={3} />
+      </div>
+    )
+    return (
+      <div className="h-6 w-6 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400">
+        <Eye size={10} strokeWidth={3} />
+      </div>
+    )
   }
 
   return (
-    <form className="space-y-6 max-w-2xl">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] items-end">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address *</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Identity Endpoint (Email)</Label>
+          <div className="relative group">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
+              <Mail size={16} />
+            </div>
             <Input
               id="email"
               type="email"
-              placeholder="user@example.com"
+              placeholder="operator@system.io"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
@@ -184,69 +198,78 @@ export function InviteUserForm({ teamId }: Props) {
                 setFoundUser(null)
               }}
               required
-              className="pl-9"
+              className="h-12 pl-12 bg-white/5 border-white/10 rounded-xl text-sm font-bold text-white focus:border-[#8c2bee]/30 placeholder:text-slate-600 transition-all"
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className="invisible" htmlFor="check-email">Check</Label>
-          <Button
-            id="check-email"
-            type="button"
-            variant="outline"
-            onClick={handleLookup}
-            disabled={!email || loading}
-            className="w-full"
-          >
-            {lookupStatus === 'checking' ? 'Checking...' : 'Check'}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          onClick={handleLookup}
+          disabled={!email || loading}
+          className="h-12 px-8 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+        >
+          {lookupStatus === 'checking' ? (
+            <div className="h-4 w-4 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
+          ) : 'Check System'}
+        </Button>
       </div>
 
       {lookupStatus === 'found' && foundUser && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-          <div className="flex items-center gap-2 text-sm text-emerald-900">
-            <User className="h-4 w-4" />
-            <span className="font-medium">User found:</span>
-            <span>{foundUser.name || foundUser.email}</span>
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(16,185,129,0.05)]">
+          <div className="flex items-center gap-3 text-emerald-400">
+            <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <User size={16} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Entity Recognized</p>
+              <p className="text-sm font-bold">{foundUser.name || foundUser.email}</p>
+            </div>
           </div>
         </div>
       )}
 
       {lookupStatus === 'member' && foundUser && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <div className="flex items-center gap-2 text-sm text-amber-900">
-            <User className="h-4 w-4" />
-            <span className="font-medium">Already a member:</span>
-            <span>{foundUser.name || foundUser.email}</span>
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(245,158,11,0.05)]">
+          <div className="flex items-center gap-3 text-amber-400">
+            <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Shield size={16} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Redundant Operation</p>
+              <p className="text-sm font-bold">{foundUser.name || foundUser.email} is already synced.</p>
+            </div>
           </div>
         </div>
       )}
 
       {lookupStatus === 'not-found' && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <div className="flex items-center gap-2 text-sm text-blue-900">
-            <Mail className="h-4 w-4" />
-            <span className="font-medium">No account found.</span>
-            <span>Send an invite to join this team.</span>
+        <div className="rounded-2xl border border-[#8c2bee]/20 bg-[#8c2bee]/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(140,43,238,0.05)]">
+          <div className="flex items-center gap-3 text-[#8c2bee]">
+            <div className="h-8 w-8 rounded-full bg-[#8c2bee]/10 flex items-center justify-center">
+              <Mail size={16} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">External Identity</p>
+              <p className="text-sm font-bold">No records found. Protocol: System Invitation.</p>
+            </div>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="role">Role *</Label>
+        <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Authority Archetype *</Label>
         <Select value={roleId} onValueChange={(value) => setRoleId(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a role" />
+          <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-sm font-bold text-white focus:border-[#8c2bee]/30">
+            <SelectValue placeholder="Assign level" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
             {roles.map(role => (
-              <SelectItem key={role.id} value={role.id}>
-                <div className="flex items-center gap-2">
+              <SelectItem key={role.id} value={role.id} className="focus:bg-white/10 rounded-lg p-2.5">
+                <div className="flex items-center gap-3">
                   {getRoleIcon(role.level)}
                   <div>
-                    <div className="font-medium">{role.name}</div>
-                    <div className="text-xs text-gray-500">{role.description}</div>
+                    <p className="text-xs font-black text-white uppercase tracking-tight leading-none">{role.name}</p>
+                    <p className="text-[10px] font-medium text-slate-500 mt-1 italic">{role.description}</p>
                   </div>
                 </div>
               </SelectItem>
@@ -255,7 +278,7 @@ export function InviteUserForm({ teamId }: Props) {
         </Select>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-4 pt-4 border-t border-white/5">
         <Button
           type="button"
           disabled={
@@ -272,18 +295,26 @@ export function InviteUserForm({ teamId }: Props) {
               handleSendInvite()
             }
           }}
+          className="flex-1 btn-primary-gradient h-12 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
         >
-          {lookupStatus === 'found' && <UserPlus className="mr-2 h-4 w-4" />}
-          {lookupStatus === 'not-found' ? 'Send Invite' : 'Add to Team'}
+          {loading ? (
+            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              {lookupStatus === 'found' ? <UserPlus size={16} strokeWidth={3} /> : <Mail size={16} strokeWidth={3} />}
+              {lookupStatus === 'not-found' ? 'Transmit Invite' : 'Authorize Entrance'}
+            </>
+          )}
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={resetForm}
+          className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white"
         >
-          Clear
+          Reset
         </Button>
       </div>
-    </form>
+    </div>
   )
 }

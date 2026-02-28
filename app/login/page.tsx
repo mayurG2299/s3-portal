@@ -7,16 +7,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
-import { Eye, EyeOff, Cloud, Shield, Zap } from 'lucide-react'
+import { Eye, EyeOff, Cloud, Shield, Zap, ArrowRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
   return (
@@ -70,132 +63,145 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#030712] text-slate-200 selection:bg-[#8c2bee]/30">
       {/* Branded panel - hidden on mobile */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzMuMzE0IDAgNi0yLjY4NiA2LTZzLTIuNjg2LTYtNi02LTYgMi42ODYtNiA2IDIuNjg2IDYgNiA2em0wIDJjLTQuNDE4IDAtOC0zLjU4Mi04LThzMy41ODItOCA4LTggOCAzLjU4MiA4IDgtMy41ODIgOC04IDh6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 animate-fade-in">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S3</span>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0a0514] via-slate-950 to-[#0a0514] relative overflow-hidden border-r border-white/5">
+        {/* Animated Background Elements */}
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#8c2bee]/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-violet-600/20 rounded-full blur-[120px] animate-pulse delay-700" />
+
+        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24">
+          <div className="flex items-center gap-4 mb-12 animate-fade-in">
+            <div className="w-14 h-14 bg-gradient-to-br from-[#8c2bee] to-violet-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-[#8c2bee]/40 transform hover:scale-105 transition-transform duration-300">
+              <span className="text-white font-black text-2xl tracking-tighter">S3</span>
             </div>
-            <h1 className="text-3xl font-bold text-white">S3 Portal</h1>
+            <div>
+              <h1 className="text-4xl font-black text-white tracking-tight">S3 Portal</h1>
+              <p className="text-[#b673ff] font-medium tracking-widest text-xs uppercase">v2.0</p>
+            </div>
           </div>
-          <p className="text-xl text-indigo-100 mb-12 leading-relaxed">
-            Self-hosted file portal for teams.
-            <br />
-            Secure, fast, and built for production.
-          </p>
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Cloud className="h-5 w-5 text-indigo-200" />
+
+          <div className="space-y-2 mb-16 animate-slide-up">
+            <h2 className="text-5xl font-bold text-white leading-[1.1] tracking-tight">
+              High-performance <span className="gradient-text">cloud storage</span> for modern teams.
+            </h2>
+            <p className="text-xl text-slate-400 max-w-lg leading-relaxed pt-4">
+              Manage your global data infrastructure with enterprise-grade security and blazing-fast access.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            {[
+              { icon: Cloud, title: "Direct S3 Integration", desc: "Connect any S3-compatible provider" },
+              { icon: Shield, title: "Zero-Trust Security", desc: "Role-based access with audit logs" },
+              { icon: Zap, title: "Parallel Uploads", desc: "Blazing fast multipart transfers" }
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-6 group">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[#8c2bee]/10 group-hover:border-[#8c2bee]/30 transition-all duration-300">
+                  <item.icon className="h-6 w-6 text-[#b673ff] group-hover:text-[#d8b4fe]" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg text-white group-hover:text-[#b673ff] transition-colors uppercase tracking-tight text-sm">{item.title}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-white">Direct S3 Integration</p>
-                <p className="text-sm text-indigo-200">Connect any S3-compatible bucket</p>
-              </div>
+            ))}
+          </div>
+
+          <div className="mt-20 pt-10 border-t border-white/5 flex items-center gap-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-9 h-9 rounded-full border-2 border-slate-900 bg-slate-800" />
+              ))}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-indigo-200" />
-              </div>
-              <div>
-                <p className="font-medium text-white">Zero-Trust Security</p>
-                <p className="text-sm text-indigo-200">Role-based access with audit logs</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-indigo-200" />
-              </div>
-              <div>
-                <p className="font-medium text-white">Parallel Uploads</p>
-                <p className="text-sm text-indigo-200">Blazing fast multipart file transfers</p>
-              </div>
-            </div>
+            <p className="text-sm text-slate-500 font-medium italic">Trusted by world class engineering teams.</p>
           </div>
         </div>
       </div>
 
       {/* Form panel */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white p-6">
+      <div className="flex-1 flex items-center justify-center p-8 relative">
         <div className="w-full max-w-md animate-slide-up">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <span className="text-white font-bold text-sm">S3</span>
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/25">
+              <span className="text-white font-bold text-sm tracking-tighter">S3</span>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">S3 Portal</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">S3 Portal</h1>
           </div>
 
-          <Card className="border-0 shadow-xl shadow-slate-200/50">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-              <CardDescription>
-                Sign in to your account to continue
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={onSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+          <div className="glass-morphic p-8 sm:p-10 rounded-3xl border border-white/10 relative z-10 shadow-3xl">
+            <div className="mb-10 text-center sm:text-left">
+              <h3 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h3>
+              <p className="text-slate-400">Please enter your credentials to access the portal.</p>
+            </div>
+
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  required
+                  disabled={isLoading}
+                  autoComplete="email"
+                  className="h-12 bg-white/5 border-white/10 focus:border-[#8c2bee]/50 focus:ring-[#8c2bee]/20 transition-all duration-300 text-white placeholder:text-slate-600 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center ml-1">
+                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500">Password</Label>
+                  <Link href="#" className="text-xs font-semibold text-[#b673ff] hover:text-[#d8b4fe] transition-colors">Forgot password?</Link>
+                </div>
+                <div className="relative">
                   <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="john@example.com"
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
                     required
                     disabled={isLoading}
-                    autoComplete="email"
-                    className="h-11"
+                    autoComplete="current-password"
+                    className="h-12 bg-white/5 border-white/10 focus:border-[#8c2bee]/50 focus:ring-[#8c2bee]/20 transition-all duration-300 text-white placeholder:text-slate-600 pr-12 rounded-xl"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#b673ff] p-1 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      required
-                      disabled={isLoading}
-                      autoComplete="current-password"
-                      className="pr-10 h-11"
-                    />
-                    <button
-                      type="button"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </Button>
-                <p className="text-sm text-center text-muted-foreground">
-                  Don&apos;t have an account?{' '}
-                  <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
-                    Create one
-                  </Link>
-                </p>
-              </CardFooter>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 btn-primary-gradient rounded-xl font-bold text-base gap-2 group"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : 'Secure Sign In'}
+                {!isLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
+              </Button>
             </form>
-          </Card>
+
+            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+              <p className="text-sm text-slate-500">
+                New to S3 Portal?{' '}
+                <Link href="/register" className="font-bold text-white hover:text-[#b673ff] underline underline-offset-4 decoration-[#8c2bee]/30 hover:decoration-[#b673ff] transition-all duration-300">
+                  Create an account
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex justify-center gap-6 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Help Center</Link>
+          </div>
         </div>
       </div>
     </div>

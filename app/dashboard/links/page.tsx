@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Link as LinkIcon, Copy, Trash2, Clock, Download } from 'lucide-react'
+import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { formatRelativeTime, formatFileSize } from '@/lib/utils'
 
@@ -106,112 +106,162 @@ export default function LinksPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Shared Links</h1>
-        <p className="text-slate-500 mt-1">Manage your shared file links</p>
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-10 animate-fade-in text-center lg:text-left">
+        <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+          Shared <span className="gradient-text">Links</span>
+        </h2>
+        <p className="text-slate-400 font-medium">
+          Manage and monitor your active file sharing endpoints.
+        </p>
       </div>
 
-      <div>
+      <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
         {isLoading ? (
-          <Card className="p-12 text-center">
-            <p className="text-gray-500">Loading...</p>
-          </Card>
+          <div className="glass-card p-20 text-center">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 mb-4 animate-pulse">
+              <LinkIcon className="h-6 w-6 text-slate-500" />
+            </div>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Synchronizing Link Data...</p>
+          </div>
         ) : links.length === 0 ? (
-          <Card className="p-12 text-center">
-            <LinkIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-2">No shared links yet</p>
-            <p className="text-sm text-gray-400">
-              Share files from the Files page to create links
+            <div className="glass-card p-20 text-center">
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800/50 mb-6">
+                <LinkIcon className="h-10 w-10 text-slate-600" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Active Links</h3>
+              <p className="text-slate-500 max-w-xs mx-auto font-medium mb-8">
+                You haven't shared any files yet. Go to your Files Explorer to generate secure links.
             </p>
-          </Card>
+              <Button
+                asChild
+                className="btn-primary-gradient h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs"
+              >
+                <a href="/dashboard/files">Go to Explorer</a>
+              </Button>
+            </div>
         ) : (
-          <div className="space-y-4">
-            {links.map((link) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {links.map((link, idx) => {
               const expired = isExpired(link.expiresAt)
               const limitReached = isLimitReached(link)
               const isInactive = expired || limitReached
 
               return (
-                <Card key={link.id} className={isInactive ? 'opacity-60' : ''}>
-                  <div className="p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">
-                          {link.file.name}
-                        </h3>
-                        <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            {formatFileSize(Number(link.file.size))}
-                          </span>
-                          {link.file.contentType && (
-                            <span>{link.file.contentType}</span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Download className="h-3 w-3" />
-                            {link.downloadCount}
-                            {link.maxDownloads && ` / ${link.maxDownloads}`} downloads
-                          </span>
-                        </div>
+                <div
+                  key={link.id}
+                  className={cn(
+                    "glass-card !p-0 overflow-hidden flex flex-col transition-all group hover:scale-[1.02] hover:-translate-y-1",
+                    isInactive && "opacity-60 grayscale-[0.5]"
+                  )}
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <div className="p-6 flex-1">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className={cn(
+                        "h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110",
+                        isInactive ? "bg-slate-800 text-slate-500" : "bg-[#8c2bee]/10 text-[#b673ff]"
+                      )}>
+                        <LinkIcon size={22} strokeWidth={2.5} />
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
                           onClick={() => handleCopyLink(link.hash)}
                           disabled={isInactive}
                         >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Link
+                          <Copy className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-9 w-9 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-500"
                           onClick={() => handleDelete(link.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        Created {formatRelativeTime(new Date(link.createdAt))}
-                      </span>
-                      {link.expiresAt && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {expired ? (
-                            <span className="text-red-600 font-medium">Expired</span>
-                          ) : (
-                            `Expires ${formatRelativeTime(new Date(link.expiresAt))}`
-                          )}
+                    <h3 className="font-bold text-white tracking-tight text-lg mb-2 truncate group-hover:text-[#d8b4fe] transition-colors">
+                      {link.file.name}
+                    </h3>
+
+                    <div className="flex flex-wrap gap-3 mb-6">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                          {formatFileSize(Number(link.file.size))}
                         </span>
-                      )}
-                      {limitReached && (
-                        <span className="text-red-600 font-medium">
-                          Download limit reached
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
+                        <Download className="h-3 w-3 text-slate-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                          {link.downloadCount}{link.maxDownloads ? ` / ${link.maxDownloads}` : ''}
                         </span>
-                      )}
-                      {link.passwordHash && (
-                        <span className="text-amber-600">Password protected</span>
-                      )}
-                      {!link.allowDownload && (
-                        <span className="text-amber-600">Preview only</span>
-                      )}
-                      {!link.allowPreview && (
-                        <span className="text-amber-600">Preview disabled</span>
-                      )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-slate-500">Status</span>
+                        {expired ? (
+                          <span className="text-rose-500">Expired</span>
+                        ) : limitReached ? (
+                          <span className="text-rose-500">Limit Reached</span>
+                        ) : (
+                          <span className="text-emerald-400 flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Active
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-slate-500">Valid Until</span>
+                        <span className={cn("text-slate-300", expired && "text-rose-500/50")}>
+                          {link.expiresAt ? formatRelativeTime(new Date(link.expiresAt)) : 'Permanent'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Features Bar */}
+                  <div className="px-6 py-4 bg-black/20 border-t border-white/5 flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <div className={cn(
+                        "p-1.5 rounded-lg border transition-colors",
+                        link.passwordHash ? "bg-amber-400/10 border-amber-400/20 text-amber-400" : "bg-white/5 border-white/5 text-slate-600"
+                      )} title={link.passwordHash ? "Password Protected" : "No Password"}>
+                        <Lock size={12} strokeWidth={2.5} />
+                      </div>
+                      <div className={cn(
+                        "p-1.5 rounded-lg border transition-colors",
+                        link.allowDownload ? "bg-[#b673ff]/10 border-[#b673ff]/20 text-[#b673ff]" : "bg-white/5 border-white/5 text-slate-600"
+                      )} title={link.allowDownload ? "Downloads Allowed" : "Preview Only"}>
+                        <Download size={12} strokeWidth={2.5} />
+                      </div>
+                      <div className={cn(
+                        "p-1.5 rounded-lg border transition-colors",
+                        link.allowPreview ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400" : "bg-white/5 border-white/5 text-slate-600"
+                      )} title={link.allowPreview ? "Preview Active" : "Preview Disabled"}>
+                        <Shield size={12} strokeWidth={2.5} />
+                      </div>
                     </div>
 
                     {!isInactive && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded border font-mono text-xs break-all">
-                        {process.env.NEXT_PUBLIC_APP_URL || window.location.origin}
-                        /share/{link.hash}
-                      </div>
+                      <button
+                        onClick={() => handleCopyLink(link.hash)}
+                        className="text-[10px] font-black uppercase tracking-widest text-[#b673ff] hover:text-[#d8b4fe] transition-colors flex items-center gap-1.5"
+                      >
+                        Copy Share URL
+                        <ExternalLink size={10} />
+                      </button>
                     )}
                   </div>
-                </Card>
+                </div>
               )
             })}
           </div>

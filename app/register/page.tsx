@@ -79,29 +79,29 @@ export default function RegisterPage() {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Cloud className="h-5 w-5 text-indigo-200" />
+                <Cloud className="h-5 w-5 text-[#e9d5ff]" />
               </div>
               <div>
                 <p className="font-medium text-white">Bring Your Own Bucket</p>
-                <p className="text-sm text-indigo-200">AWS S3 and compatible storage</p>
+                <p className="text-sm text-[#e9d5ff]">AWS S3 and compatible storage</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-indigo-200" />
+                <Shield className="h-5 w-5 text-[#e9d5ff]" />
               </div>
               <div>
                 <p className="font-medium text-white">Team Management</p>
-                <p className="text-sm text-indigo-200">Roles, permissions, and audit trails</p>
+                <p className="text-sm text-[#e9d5ff]">Roles, permissions, and audit trails</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-indigo-200" />
+                <Zap className="h-5 w-5 text-[#e9d5ff]" />
               </div>
               <div>
                 <p className="font-medium text-white">Secure Sharing</p>
-                <p className="text-sm text-indigo-200">Password-protected, expiring links</p>
+                <p className="text-sm text-[#e9d5ff]">Password-protected, expiring links</p>
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md animate-slide-up">
           {/* Mobile logo */}
           <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/25">
               <span className="text-white font-bold text-sm">S3</span>
             </div>
             <h1 className="text-xl font-bold text-slate-900">S3 Portal</h1>
@@ -174,14 +174,14 @@ export default function RegisterPage() {
               <CardFooter className="flex flex-col space-y-4">
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 transition-all duration-200"
+                  className="w-full h-11 bg-gradient-to-r from-[#8c2bee] to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-[#8c2bee]/25 transition-all duration-200"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Creating account...' : 'Create account'}
                 </Button>
                 <p className="text-sm text-center text-muted-foreground">
                   Already have an account?{' '}
-                  <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                  <Link href="/login" className="font-medium text-[#8c2bee] hover:text-indigo-700 transition-colors">
                     Sign in
                   </Link>
                 </p>

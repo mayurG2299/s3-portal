@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type Credential = {
   id: string
@@ -233,58 +234,73 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-6 animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">AWS Credentials</h1>
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-10 animate-fade-in text-center lg:text-left">
+        <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+          Platform <span className="gradient-text">Configuration</span>
+        </h2>
+        <p className="text-slate-400 font-medium">
+          Connect and manage your cloud infrastructure integrations.
+        </p>
       </div>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Add AWS Credentials</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCredentialSubmit} className="space-y-4" autoComplete="off">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" placeholder="Production bucket" required />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-5 space-y-8">
+          <div className="glass-card animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-12 w-12 rounded-2xl bg-[#8c2bee]/10 flex items-center justify-center text-[#b673ff] border border-[#8c2bee]/20">
+                <ShieldCheck size={24} strokeWidth={2} />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accessKey">Access Key</Label>
-                <Input
-                  id="accessKey"
-                  name="accessKey"
-                  placeholder="AKIA..."
-                  required
-                  disabled={isSavingCredential}
-                  autoComplete="off"
-                />
+              <div>
+                <h3 className="text-xl font-bold text-white tracking-tight">New Credentials</h3>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Link a new AWS environment</p>
               </div>
+            </div>
 
+            <form onSubmit={handleCredentialSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
-                <Label htmlFor="secretKey">Secret Access Key</Label>
-                <Input
-                  id="secretKey"
-                  name="secretKey"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  disabled={isSavingCredential}
-                  autoComplete="new-password"
-                />
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Environment Name</Label>
+                <Input name="name" placeholder="e.g., Production Assets" required className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-medium text-white placeholder:text-slate-600" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="region">Region</Label>
-                  <Input id="region" name="region" placeholder="ap-south-1" required />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Access Key</Label>
+                  <Input
+                    name="accessKey"
+                    placeholder="AKIA..."
+                    required
+                    disabled={isSavingCredential}
+                    autoComplete="off"
+                    className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-white placeholder:text-slate-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Region</Label>
+                  <Input name="region" placeholder="ap-south-1" required className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-white placeholder:text-slate-700" />
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Secret Access Key</Label>
+                <Input
+                  name="secretKey"
+                  type="password"
+                  placeholder="••••••••••••••••"
+                  required
+                  disabled={isSavingCredential}
+                  autoComplete="new-password"
+                  className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all text-white placeholder:text-slate-700 font-mono tracking-widest"
+                />
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-white/5">
                 <div className="flex items-center justify-between">
-                  <Label>Bucket(s)</Label>
+                  <div>
+                    <Label className="text-xs font-bold text-white tracking-tight">Bucket Mapping</Label>
+                    <p className="text-[10px] text-slate-500 font-medium">Configure target S3 buckets</p>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
@@ -295,155 +311,193 @@ export default function SettingsPage() {
                         { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
                       ])
                     }
+                    className="h-8 rounded-lg bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest text-[#b673ff] hover:bg-white/10"
                   >
-                    Add Bucket
+                    <Plus size={14} className="mr-1.5" />
+                    Expand
                   </Button>
                 </div>
-                {newBuckets.map((bucket, index) => (
-                  <div key={`new-bucket-${index}`} className="rounded-lg border p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor={`bucket-${index}`}>Bucket Name</Label>
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  {newBuckets.map((bucket, index) => (
+                    <div key={`new-bucket-${index}`} className="rounded-xl bg-black/20 border border-white/5 p-4 space-y-4 animate-fade-in relative group/bucket">
                       {newBuckets.length > 1 && (
-                        <Button
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setNewBuckets((prev) => prev.filter((_, idx) => idx !== index))
-                          }
+                          onClick={() => setNewBuckets((prev) => prev.filter((_, idx) => idx !== index))}
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center opacity-0 group-hover/bucket:opacity-100 transition-opacity shadow-lg shadow-black/50"
                         >
-                          Remove
-                        </Button>
+                          <Trash2 size={12} strokeWidth={2.5} />
+                        </button>
                       )}
-                    </div>
-                    <Input
-                      id={`bucket-${index}`}
-                      placeholder="my-bucket"
-                      value={bucket.bucket}
-                      onChange={(event) =>
-                        setNewBuckets((prev) =>
-                          prev.map((item, idx) =>
-                            idx === index ? { ...item, bucket: event.target.value } : item
-                          )
-                        )
-                      }
-                      required={index === 0}
-                    />
-                    <div className="space-y-2">
-                      <Label htmlFor={`cdn-domain-${index}`}>CloudFront Domain (optional)</Label>
-                      <Input
-                        id={`cdn-domain-${index}`}
-                        placeholder="dxxxx.cloudfront.net"
-                        value={bucket.cloudfrontDomain}
-                        onChange={(event) =>
-                          setNewBuckets((prev) =>
-                            prev.map((item, idx) =>
-                              idx === index
-                                ? { ...item, cloudfrontDomain: event.target.value }
-                                : item
-                            )
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`cdn-keypair-${index}`}>Key Pair ID (optional)</Label>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Target Bucket</Label>
                         <Input
-                          id={`cdn-keypair-${index}`}
-                          value={bucket.cloudfrontKeyPairId}
+                          placeholder="primary-assets-sync"
+                          value={bucket.bucket}
                           onChange={(event) =>
                             setNewBuckets((prev) =>
                               prev.map((item, idx) =>
-                                idx === index
-                                  ? { ...item, cloudfrontKeyPairId: event.target.value }
-                                  : item
+                                idx === index ? { ...item, bucket: event.target.value } : item
                               )
                             )
                           }
+                          required={index === 0}
+                          className="h-9 bg-white/5 border-white/5 rounded-lg text-xs font-bold text-white focus:border-[#8c2bee]/30"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`cdn-private-${index}`}>Private Key (optional)</Label>
-                        <Input
-                          id={`cdn-private-${index}`}
-                          type="password"
-                          value={bucket.cloudfrontPrivateKey}
-                          onChange={(event) =>
-                            setNewBuckets((prev) =>
-                              prev.map((item, idx) =>
-                                idx === index
-                                  ? { ...item, cloudfrontPrivateKey: event.target.value }
-                                  : item
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">CDN Endpoint</Label>
+                          <Input
+                            placeholder="dxxxx.cloudfront.net"
+                            value={bucket.cloudfrontDomain}
+                            onChange={(event) =>
+                              setNewBuckets((prev) =>
+                                prev.map((item, idx) =>
+                                  idx === index
+                                    ? { ...item, cloudfrontDomain: event.target.value }
+                                    : item
+                                )
                               )
-                            )
-                          }
-                        />
+                            }
+                            className="h-9 bg-white/5 border-white/5 rounded-lg text-[10px] font-medium text-slate-300 focus:border-[#8c2bee]/30"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Key Pair ID</Label>
+                          <Input
+                            placeholder="KXXXXXXXXX"
+                            value={bucket.cloudfrontKeyPairId}
+                            onChange={(event) =>
+                              setNewBuckets((prev) =>
+                                prev.map((item, idx) =>
+                                  idx === index
+                                    ? { ...item, cloudfrontKeyPairId: event.target.value }
+                                    : item
+                                )
+                              )
+                            }
+                            className="h-9 bg-white/5 border-white/5 rounded-lg text-[10px] font-medium text-slate-300 focus:border-[#8c2bee]/30 font-mono tracking-tighter"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              <Button type="submit" disabled={isSavingCredential}>
-                {isSavingCredential ? 'Saving...' : 'Save Credentials'}
+              <Button
+                type="submit"
+                disabled={isSavingCredential}
+                className="w-full btn-primary-gradient h-12 rounded-xl font-black uppercase tracking-widest text-xs"
+              >
+                {isSavingCredential ? 'Establishing Connection...' : 'Activate Integration'}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Saved Credentials</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <div className="lg:col-span-7 space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white tracking-tight">Saved Connections</h3>
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Active infrastructure endpoints</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {credentials.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No credentials yet.</p>
+              <div className="col-span-full glass-card p-12 text-center">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 mb-4 opacity-50">
+                  <Key className="h-8 w-8 text-slate-500" />
+                </div>
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No active integrations found.</p>
+              </div>
             ) : (
               credentials.map((credential) => (
-                <div key={credential.id} className="flex items-center justify-between border rounded-lg p-4">
-                  <div>
-                    <div className="font-medium">{credential.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {(credential.buckets.length > 0
-                        ? `${credential.buckets[0].bucket}${
-                            credential.buckets.length > 1
-                              ? ` +${credential.buckets.length - 1}`
-                              : ''
-                          }`
-                        : 'No buckets')}{' '}
-                      • {credential.region}
-                    </div>
-                    {credential.buckets.some((bucket) => bucket.cloudfrontDomain) && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        CDN configured for {credential.buckets.filter((bucket) => bucket.cloudfrontDomain).length}{' '}
-                        bucket{credential.buckets.filter((bucket) => bucket.cloudfrontDomain).length !== 1 ? 's' : ''}
+                <div key={credential.id} className="glass-card !p-0 overflow-hidden flex flex-col group hover:border-[#8c2bee]/30 transition-all">
+                  <div className="p-6 flex-1">
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 border border-white/5 group-hover:text-[#b673ff] group-hover:bg-[#8c2bee]/10 group-hover:border-[#8c2bee]/20 transition-all">
+                        <Key size={20} />
                       </div>
-                    )}
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                          onClick={() => setEditingCredential(credential)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-500"
+                          onClick={() => handleDeleteCredential(credential.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <h4 className="font-bold text-white tracking-tight mb-1 truncate text-lg group-hover:text-[#d8b4fe] transition-colors">
+                      {credential.name}
+                    </h4>
+
+                    <div className="flex items-center gap-2 mb-6">
+                      <Globe size={11} className="text-slate-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{credential.region}</span>
+                    </div>
+
+                    <div className="space-y-2 pt-4 border-t border-white/5">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-slate-600">Infrastructure</span>
+                        <span className="text-white">AWS S3</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-slate-600">Resources</span>
+                        <span className="text-[#b673ff]">{credential.buckets.length} Buckets</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingCredential(credential)}
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteCredential(credential.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
+
+                  {credential.buckets.length > 0 && (
+                    <div className="px-6 py-4 bg-black/20 border-t border-white/5">
+                      <div className="flex flex-wrap gap-2">
+                        {credential.buckets.slice(0, 2).map((b, bi) => (
+                          <span key={bi} className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                            {b.bucket}
+                          </span>
+                        ))}
+                        {credential.buckets.length > 2 && (
+                          <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-[#b673ff] uppercase tracking-tighter">
+                            +{credential.buckets.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          <div className="glass-card !bg-amber-500/[0.03] border-amber-500/10 p-5 rounded-2xl flex gap-4">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex-shrink-0 flex items-center justify-center text-amber-500">
+              <AlertCircle size={20} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-amber-200 tracking-tight">Security Protocol</h4>
+              <p className="text-xs text-amber-500/80 mt-1 leading-relaxed">
+                Credentials are encrypted using AES-256 before storage. Ensure your IAM policies follow the principle of least privilege for maximum security.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Dialog
@@ -455,160 +509,160 @@ export default function SettingsPage() {
           }
         }}
       >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit AWS Credentials</DialogTitle>
-            <DialogDescription>
-              Update bucket, region, or CDN settings. Leave access key and secret empty to keep them unchanged.
+        <DialogContent className="max-w-2xl bg-slate-900 border-white/10 text-white rounded-3xl p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="p-8 pb-4">
+            <DialogTitle className="text-2xl font-black tracking-tight">Edit <span className="gradient-text">Connection</span></DialogTitle>
+            <DialogDescription className="text-slate-400 font-medium">
+              Update endpoints and configuration for this integration.
             </DialogDescription>
           </DialogHeader>
-          {editingCredential && (
-            <form onSubmit={handleUpdateCredential} className="space-y-4" autoComplete="off">
-              <div className="space-y-2">
-                <Label htmlFor="editName">Name</Label>
-                <Input
-                  id="editName"
-                  name="editName"
-                  defaultValue={editingCredential.name}
-                  required
-                />
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editRegion">Region</Label>
-                  <Input
-                    id="editRegion"
-                    name="editRegion"
-                    defaultValue={editingCredential.region}
-                    required
-                  />
+          <div className="px-8 pb-8 pt-4">
+            {editingCredential && (
+              <form onSubmit={handleUpdateCredential} className="space-y-6" autoComplete="off">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Integration Name</Label>
+                    <Input
+                      id="editName"
+                      name="editName"
+                      defaultValue={editingCredential.name}
+                      required
+                      className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold tracking-tight"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">AWS Region</Label>
+                    <Input
+                      id="editRegion"
+                      name="editRegion"
+                      defaultValue={editingCredential.region}
+                      required
+                      className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editAccessKey">Access Key (optional)</Label>
-                  <Input id="editAccessKey" name="editAccessKey" placeholder="AKIA..." autoComplete="off" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Access Key (Optional)</Label>
+                    <Input id="editAccessKey" name="editAccessKey" placeholder="Leave empty to keep current" autoComplete="off" className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Secret Key (Optional)</Label>
+                    <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editSecretKey">Secret Access Key (optional)</Label>
-                  <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" />
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Bucket(s)</Label>
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mapped Buckets</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setEditBuckets((prev) => [
+                          ...prev,
+                          { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
+                        ])
+                      }
+                      className="h-7 px-3 rounded-lg bg-[#8c2bee]/10 border-[#8c2bee]/20 text-[9px] font-black uppercase tracking-widest text-[#b673ff] hover:bg-[#8c2bee]/20"
+                    >
+                      Add Resource
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                    {editBuckets.map((bucket, index) => (
+                      <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-black/40 border border-white/5 p-4 space-y-4 relative group/edit-bucket">
+                        {!bucket.id && editBuckets.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setEditBuckets((prev) => prev.filter((_, idx) => idx !== index))}
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg"
+                          >
+                            <Trash2 size={12} strokeWidth={2.5} />
+                          </button>
+                        )}
+
+                        <div className="space-y-1.5">
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">S3 Destination Name</Label>
+                          <Input
+                            value={bucket.bucket}
+                            onChange={(event) =>
+                              setEditBuckets((prev) =>
+                                prev.map((item, idx) =>
+                                  idx === index ? { ...item, bucket: event.target.value } : item
+                                )
+                              )
+                            }
+                            required={index === 0}
+                            className="h-10 bg-white/5 border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#8c2bee]/30"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">CDN Link (optional)</Label>
+                            <Input
+                              placeholder="dxxxx.cloudfront.net"
+                              value={bucket.cloudfrontDomain}
+                              onChange={(event) =>
+                                setEditBuckets((prev) =>
+                                  prev.map((item, idx) =>
+                                    idx === index
+                                      ? { ...item, cloudfrontDomain: event.target.value }
+                                      : item
+                                  )
+                                )
+                              }
+                              className="h-10 bg-white/5 border-white/10 rounded-xl text-[10px] font-medium text-slate-300"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">Key Pair ID</Label>
+                            <Input
+                              placeholder="KXXXXXXXXX"
+                              value={bucket.cloudfrontKeyPairId}
+                              onChange={(event) =>
+                                setEditBuckets((prev) =>
+                                  prev.map((item, idx) =>
+                                    idx === index
+                                      ? { ...item, cloudfrontKeyPairId: event.target.value }
+                                      : item
+                                  )
+                                )
+                              }
+                              className="h-10 bg-white/5 border-white/10 rounded-xl text-[10px] font-medium text-slate-300 font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setEditBuckets((prev) => [
-                        ...prev,
-                        { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
-                      ])
-                    }
+                    variant="ghost"
+                    onClick={() => setEditingCredential(null)}
+                    className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:bg-white/5"
                   >
-                    Add Bucket
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isUpdatingCredential}
+                    className="h-11 px-8 rounded-xl bg-[#8c2bee] hover:bg-[#8c2bee] text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#8c2bee]/20"
+                  >
+                    {isUpdatingCredential ? 'Applying Changes...' : 'Save Configuration'}
                   </Button>
                 </div>
-                {editBuckets.map((bucket, index) => (
-                  <div key={`edit-bucket-${bucket.id || index}`} className="rounded-lg border p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor={`edit-bucket-${index}`}>Bucket Name</Label>
-                      {!bucket.id && editBuckets.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditBuckets((prev) => prev.filter((_, idx) => idx !== index))
-                          }
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                    <Input
-                      id={`edit-bucket-${index}`}
-                      value={bucket.bucket}
-                      onChange={(event) =>
-                        setEditBuckets((prev) =>
-                          prev.map((item, idx) =>
-                            idx === index ? { ...item, bucket: event.target.value } : item
-                          )
-                        )
-                      }
-                      required={index === 0}
-                    />
-                    <div className="space-y-2">
-                      <Label htmlFor={`edit-cdn-domain-${index}`}>CloudFront Domain (optional)</Label>
-                      <Input
-                        id={`edit-cdn-domain-${index}`}
-                        placeholder="dxxxx.cloudfront.net"
-                        value={bucket.cloudfrontDomain}
-                        onChange={(event) =>
-                          setEditBuckets((prev) =>
-                            prev.map((item, idx) =>
-                              idx === index
-                                ? { ...item, cloudfrontDomain: event.target.value }
-                                : item
-                            )
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`edit-cdn-keypair-${index}`}>Key Pair ID (optional)</Label>
-                        <Input
-                          id={`edit-cdn-keypair-${index}`}
-                          value={bucket.cloudfrontKeyPairId}
-                          onChange={(event) =>
-                            setEditBuckets((prev) =>
-                              prev.map((item, idx) =>
-                                idx === index
-                                  ? { ...item, cloudfrontKeyPairId: event.target.value }
-                                  : item
-                              )
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`edit-cdn-private-${index}`}>Private Key (optional)</Label>
-                        <Input
-                          id={`edit-cdn-private-${index}`}
-                          type="password"
-                          value={bucket.cloudfrontPrivateKey}
-                          onChange={(event) =>
-                            setEditBuckets((prev) =>
-                              prev.map((item, idx) =>
-                                idx === index
-                                  ? { ...item, cloudfrontPrivateKey: event.target.value }
-                                  : item
-                              )
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setEditingCredential(null)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isUpdatingCredential}>
-                  {isUpdatingCredential ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </form>
-          )}
+              </form>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

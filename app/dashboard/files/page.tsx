@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { FileUpload } from '@/components/file-upload'
 import {
   Dialog,
@@ -699,236 +700,271 @@ export default function FilesPage() {
   const availableBuckets = activeCredential?.buckets || []
 
   return (
-    <div className="max-w-7xl mx-auto py-6 animate-fade-in">
-      <div className="space-y-4 mb-6">
-        <div className="flex flex-col gap-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Files</h1>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header & Controls */}
+      <div className="mb-10 animate-fade-in">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
+          <div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+              File <span className="gradient-text">Explorer</span>
+            </h2>
+            <p className="text-slate-400 font-medium">
+              Manage and collaborate on your S3 objects with ease.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex bg-slate-900/40 p-1 rounded-xl border border-white/5 backdrop-blur-sm">
               <Select value={selectedCredential} onValueChange={setSelectedCredential}>
-              <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Select credential" />
+                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-300">
+                  <SelectValue placeholder="Source" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-slate-900 border-white/10">
                   {credentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id}>
+                    <SelectItem key={cred.id} value={cred.id} className="text-xs font-bold uppercase tracking-tight hover:bg-white/5 cursor-pointer">
                       {cred.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <div className="w-px h-6 bg-white/10 self-center mx-1" />
               <Select
                 value={selectedBucket}
                 onValueChange={setSelectedBucket}
                 disabled={!selectedCredential || availableBuckets.length === 0}
               >
-              <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Select bucket" />
+                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-300">
+                  <SelectValue placeholder="Bucket" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-slate-900 border-white/10">
                   {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id}>
+                    <SelectItem key={bucket.id} value={bucket.id} className="text-xs font-bold uppercase tracking-tight hover:bg-white/5 cursor-pointer">
                       {bucket.bucket}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucket} size="sm">
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-              <Button
-                onClick={() => {
-                  const targets = files.filter(
-                    (file) => selectedFileIds.includes(file.id) && !isFolder(file)
-                  )
-                  if (targets.length === 0) return
-                  setShareTargets(targets)
-                  setIsShareOpen(true)
-                }}
-                disabled={!selectedBucket || selectedFileIds.length === 0}
-                variant="secondary"
-              size="sm"
-              >
-                <Share2 className="mr-2 h-4 w-4" />
-                Share Selected
-              </Button>
-            <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucket} variant="outline" size="sm">
-                <Folder className="mr-2 h-4 w-4" />
-                New Folder
-              </Button>
-              <Button
-                onClick={handleRefresh}
-                disabled={!selectedBucket || isRefreshing}
-                variant="outline"
-              size="sm"
-              >
-                <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-                {isRefreshing ? 'Refreshing' : 'Refresh'}
-              </Button>
             </div>
-          </div>
 
-          {/* Breadcrumb navigation */}
-          {selectedBucket && (
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              {getBreadcrumbs().map((crumb, index) => (
-                <div key={crumb.path} className="flex items-center gap-2">
-                  {index > 0 && <span className="text-gray-400">/</span>}
-                  <button
-                    onClick={() => setCurrentPath(crumb.path)}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {crumb.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+            <Button
+              onClick={() => handleRefresh()}
+              disabled={!selectedBucket || isRefreshing}
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 text-slate-300 transition-all border-none"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+          </div>
         </div>
 
-
-      <div>
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="glass-card !p-4 flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
-              variant={viewMode === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('all')}
+              onClick={() => setIsUploadOpen(true)}
+              disabled={!selectedBucket}
+              className="btn-primary-gradient h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-widest gap-2"
             >
-              All
+              <Upload size={14} strokeWidth={2.5} />
+              Upload
             </Button>
             <Button
-              variant={viewMode === 'favorites' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('favorites')}
+              onClick={() => setIsFolderDialogOpen(true)}
+              disabled={!selectedBucket}
+              variant="outline"
+              className="h-10 px-5 rounded-xl bg-white/5 border-white/5 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-300 border-none"
             >
-              Favorites
+              <Folder size={14} strokeWidth={2.5} />
+              New Folder
             </Button>
+            <div className="w-px h-6 bg-white/10 mx-2" />
             <Button
-              variant={viewMode === 'recents' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('recents')}
+              onClick={() => {
+                const targets = files.filter(
+                  (file) => selectedFileIds.includes(file.id) && !isFolder(file)
+                )
+                if (targets.length === 0) return
+                setShareTargets(targets)
+                setIsShareOpen(true)
+              }}
+              disabled={!selectedBucket || selectedFileIds.length === 0}
+              variant="secondary"
+              className="h-10 px-5 rounded-xl bg-[#8c2bee]/10 hover:bg-[#8c2bee]/20 text-[#b673ff] transition-all font-bold text-xs uppercase tracking-widest gap-2 border-none"
             >
-              Recents
+              <Share2 size={14} strokeWidth={2.5} />
+              Share ({selectedFileIds.length})
             </Button>
           </div>
-          <Input
-            placeholder="Filter by tag"
-            value={tagFilter}
-            onChange={(event) => setTagFilter(event.target.value)}
-            className="max-w-xs"
-          />
-          <Input
-            placeholder="Search files"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="max-w-xs"
-          />
-          {tagFilter && (
-            <Button variant="ghost" size="sm" onClick={() => setTagFilter('')}>
-              Clear
-            </Button>
-          )}
-          {searchQuery && (
-            <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
-              Clear Search
-            </Button>
-          )}
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="relative group w-full sm:w-auto">
+              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-[#b673ff] transition-colors" />
+              <Input
+                placeholder="TAG FILTER"
+                value={tagFilter}
+                onChange={(event) => setTagFilter(event.target.value)}
+                className="h-10 w-full sm:w-40 bg-white/5 border-white/5 focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-600 border-none"
+              />
+            </div>
+            <div className="relative group w-full sm:w-auto">
+              <RefreshCw className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+              <Input
+                placeholder="SEARCH OBJECTS"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-10 w-full sm:w-52 bg-white/5 border-white/5 focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-600 border-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Breadcrumb navigation */}
+        {selectedBucket && (
+          <div className="mt-6 flex flex-wrap items-center gap-2 p-3 px-4 rounded-xl bg-white/5 border border-white/5 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            {getBreadcrumbs().map((crumb, index) => (
+              <div key={crumb.path} className="flex items-center gap-2">
+                {index > 0 && <span className="text-slate-700 font-bold">/</span>}
+                <button
+                  onClick={() => setCurrentPath(crumb.path)}
+                  className={cn(
+                    "text-[10px] font-black uppercase tracking-widest transition-colors hover:text-[#b673ff]",
+                    crumb.path === currentPath ? "text-[#b673ff]" : "text-slate-500"
+                  )}
+                >
+                  {crumb.name}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: '150ms' }}>
+          {[
+            { id: 'all', label: 'All Objects' },
+            { id: 'favorites', label: 'Starred' },
+            { id: 'recents', label: 'Recent' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setViewMode(tab.id as any)}
+              className={cn(
+                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                viewMode === tab.id
+                  ? "bg-white/10 text-white shadow-lg shadow-black/20"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
         {!selectedBucket ? (
-          <Card className="p-12 text-center">
-            <p className="text-gray-500">
-              Please select a credential and bucket to browse files
+          <div className="glass-card p-20 text-center animate-fade-in">
+            <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[#8c2bee]/10 mb-6 transition-transform hover:scale-110">
+              <Database className="h-10 w-10 text-[#b673ff]" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">System Offline</h3>
+            <p className="text-slate-500 max-w-xs mx-auto font-medium">
+              Please select a credential and bucket from the toolbar above to start browsing.
             </p>
-          </Card>
+          </div>
         ) : files.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Folder className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">No files yet</p>
-            <Button onClick={() => setIsUploadOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Files
+            <div className="glass-card p-20 text-center animate-fade-in">
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800/50 mb-6">
+                <Folder className="h-10 w-10 text-slate-600" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Objects Found</h3>
+              <p className="text-slate-500 max-w-xs mx-auto font-medium mb-8">
+                This bucket is currently empty. Start by uploading your first file.
+              </p>
+              <Button
+                onClick={() => setIsUploadOpen(true)}
+                className="btn-primary-gradient h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs"
+              >
+                <Upload className="mr-3 h-4 w-4" />
+                Upload Now
             </Button>
-          </Card>
+            </div>
         ) : (
-          <div className="space-y-2">
-            {files.map((file) => (
-              <Card key={file.id} className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    <Checkbox
-                      aria-label={`Select ${file.name}`}
-                      checked={selectedFileIds.includes(file.id)}
-                      disabled={isFolder(file)}
-                      onCheckedChange={(checked) => {
-                        if (isFolder(file)) return
-                        setSelectedFileIds((prev) => {
-                          if (checked === true) return [...prev, file.id]
-                          return prev.filter((id) => id !== file.id)
-                        })
-                      }}
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isFolder(file)) {
-                              navigateToFolder(`${currentPath}${file.name}/`)
-                            }
-                          }}
-                          className={
-                            isFolder(file)
-                              ? 'font-medium text-blue-700 hover:underline'
-                              : 'font-medium'
-                          }
-                        >
-                          {file.name}
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {isFolder(file)
-                          ? 'Folder'
-                          : `${formatFileSize(Number(file.size))} • ${formatRelativeTime(
-                              new Date(file.createdAt)
-                            )}`}
-                      </p>
-                      {file.description && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {file.description}
-                        </p>
-                      )}
-                      {!!file.tags?.length && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {file.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
-                            >
-                              {tag}
-                            </span>
-                          ))}
+              <div className="space-y-3">
+                {files.map((file, idx) => (
+                  <div
+                    key={file.id}
+                    className="glass-card !p-4 group/item hover:bg-white/[0.04] transition-all animate-slide-up"
+                    style={{ animationDelay: `${200 + idx * 50}ms` }}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center justify-center h-5 w-5">
+                          <Checkbox
+                            aria-label={`Select ${file.name}`}
+                            checked={selectedFileIds.includes(file.id)}
+                            disabled={isFolder(file)}
+                            onCheckedChange={(checked) => {
+                              if (isFolder(file)) return
+                              setSelectedFileIds((prev) => {
+                                if (checked === true) return [...prev, file.id]
+                                return prev.filter((id) => id !== file.id)
+                              })
+                            }}
+                            className="rounded-md border-slate-700 bg-slate-900/50 data-[state=checked]:bg-[#8c2bee] data-[state=checked]:border-[#8c2bee]"
+                          />
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1 sm:gap-2">
+
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={cn(
+                            "h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover/item:scale-105",
+                            isFolder(file) ? "bg-[#8c2bee]/10 text-[#b673ff]" : "bg-white/5 text-slate-400"
+                          )}>
+                            {isFolder(file) ? (
+                              <Folder size={20} strokeWidth={2} />
+                            ) : (
+                              <Upload size={20} strokeWidth={2} className="opacity-60" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isFolder(file)) {
+                                    navigateToFolder(`${currentPath}${file.name}/`)
+                                  }
+                                }}
+                                className={cn(
+                                  "font-bold text-sm tracking-tight transition-colors truncate",
+                                  isFolder(file) ? "text-[#b673ff] font-black" : "text-white group-hover/item:text-[#d8b4fe]"
+                                )}
+                              >
+                                {file.name}
+                              </button>
+                              {file.isFavorite && <Star className="h-3 w-3 text-amber-400 fill-amber-400" />}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                                {isFolder(file) ? 'DIRECTORY' : formatFileSize(Number(file.size))}
+                              </span>
+                              <span className="text-slate-800">•</span>
+                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
+                                {formatRelativeTime(new Date(file.createdAt))}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all transform translate-x-2 group-hover/item:translate-x-0">
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                            size="icon"
+                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-amber-400 transition-colors"
                         onClick={() => handleToggleFavorite(file)}
                       >
-                        <Star
-                          className={
-                            file.isFavorite
-                              ? 'h-4 w-4 text-yellow-500'
-                              : 'h-4 w-4 text-gray-400'
-                          }
-                        />
+                            <Star className={cn("h-4 w-4", file.isFavorite && "fill-current")} />
                       </Button>
                     )}
                     {!isFolder(file) && (() => {
@@ -937,7 +973,8 @@ export default function FilesPage() {
                         return (
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors"
                             onClick={() => {
                               setPreviewFile(file)
                               setIsPreviewOpen(true)
@@ -951,7 +988,8 @@ export default function FilesPage() {
                     })()}
                     <Button
                       variant="ghost"
-                      size="sm"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-[#b673ff] transition-colors"
                       onClick={() => setEditingTagsFile(file)}
                     >
                       <Tag className="h-4 w-4" />
@@ -959,7 +997,8 @@ export default function FilesPage() {
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                            size="icon"
+                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-violet-400 transition-colors"
                         onClick={() => {
                           setShareTargets([file])
                           setIsShareOpen(true)
@@ -970,14 +1009,35 @@ export default function FilesPage() {
                     )}
                     <Button
                       variant="ghost"
-                      size="sm"
+                          size="icon"
+                          className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-rose-500 transition-colors"
                       onClick={() => handleDelete(file)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              </Card>
+
+                    {/* Secondary Info Area */}
+                    {(file.description || (file.tags && file.tags.length > 0)) && (
+                      <div className="mt-4 pt-4 border-t border-white/[0.03] flex flex-wrap items-center gap-4">
+                        {file.description && (
+                          <p className="text-[11px] text-slate-500 italic max-w-lg truncate">
+                            "{file.description}"
+                          </p>
+                        )}
+                        {file.tags && file.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {file.tags.map(tag => (
+                              <span key={tag} className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md bg-[#8c2bee]/10 text-[#b673ff] border border-[#8c2bee]/10">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
             ))}
           </div>
         )}

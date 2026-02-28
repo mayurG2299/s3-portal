@@ -34,9 +34,40 @@ export default async function DashboardLayout({
   // Get current team ID (from session or first team)
   const currentTeamId = session.user.teamId || teams[0]?.id
 
+  // Identify Role Title
+  let roleTitle = 'Viewer'
+  if (isOwner) roleTitle = 'Administrator'
+  else if (isAdmin) roleTitle = 'Manager'
+
+  const rawName = session.user.name || ''
+  const displayName = rawName.length > 0 ? rawName : (session.user.email?.split('@')[0] || 'User')
+
+  // Calculate Storage Quota and Usage
+  let storageLimitBytes = 1099511627776 // Default 1TB (1024 * 1024 * 1024 * 1024)
+  let storageUsedBytes = 0
+
+  if (currentTeamId) {
+    const quota = await prisma.storageQuota.findUnique({
+      where: { teamId: currentTeamId }
+    })
+    if (quota && quota.limitBytes) {
+      storageLimitBytes = Number(quota.limitBytes)
+    }
+
+    const usageResult = await prisma.file.aggregate({
+      where: { teamId: currentTeamId },
+      _sum: { size: true }
+    })
+    storageUsedBytes = Number(usageResult._sum.size || 0)
+  }
+
   return (
     <DashboardChrome 
+      name={displayName}
       email={session.user.email || ''} 
+      roleTitle={roleTitle}
+      storageUsedBytes={storageUsedBytes}
+      storageLimitBytes={storageLimitBytes}
       isAdmin={isAdmin} 
       isOwner={isOwner}
       teams={teams}

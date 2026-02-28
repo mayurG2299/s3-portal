@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 234 89% 58%;
+    --primary: 262 83% 60%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 220 14% 96%;
@@ -22,7 +22,7 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 262 83% 58%;
+    --accent: 262 83% 64%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84% 60%;
@@ -30,39 +30,39 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 234 89% 58%;
+    --ring: 262 83% 60%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 224 71% 2%;
     --foreground: 210 40% 98%;
 
-    --card: 224 71% 4%;
+    --card: 224 71% 2%;
     --card-foreground: 210 40% 98%;
 
     --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 234 89% 64%;
-    --primary-foreground: 224 71% 4%;
+    --primary: 262 83% 60%;
+      --primary-foreground: 210 40% 98%;
 
-    --secondary: 215 28% 17%;
+    --secondary: 215 28% 10%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 28% 17%;
+    --muted: 215 28% 10%;
     --muted-foreground: 218 11% 65%;
 
     --accent: 262 83% 64%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 234 89% 64%;
+    --border: 215 28% 12%;
+      --input: 215 28% 12%;
+      --ring: 262 83% 60%;
   }
 }
 
@@ -71,52 +71,91 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased selection:bg-[#8c2bee]/30;
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  .glass-morphic {
+      @apply bg-slate-950/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
   }
 
-  .glass-dark {
-    @apply bg-slate-900/70 backdrop-blur-xl border border-white/10;
+    .glass-navbar {
+      @apply sticky top-0 z-50 bg-slate-950/60 backdrop-blur-xl border-b border-white/5;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent;
+    .glow-accent {
+      @apply relative after:absolute after:inset-0 after:rounded-full after:bg-[#8c2bee]/10 after:blur-2xl after:opacity-0 hover:after:opacity-100 after:transition-opacity;
   }
 
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+    .btn-primary-gradient {
+      @apply bg-gradient-to-r from-[#8c2bee] to-[#6a1bbf] hover:shadow-[0_0_20px_rgba(140,43,238,0.4)] shadow-lg border-none text-white transition-all duration-500 active:scale-95;
+    }
+  
+    .glass-card {
+      @apply bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)];
+    }
+  
+    .glass-panel {
+      @apply bg-slate-950/20 backdrop-blur-lg border border-white/5 rounded-3xl p-6;
+    }
+  
+    .gradient-text {
+      @apply bg-gradient-to-r from-[#8c2bee] via-[#b673ff] to-[#8c2bee] bg-clip-text text-transparent font-black tracking-tight;
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.5s ease-out forwards;
+    animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-pulse-slow {
+    animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+    
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
   }
 }
 
 @keyframes fadeIn {
   from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+      opacity: 0;
+    }
+  
+    to {
+      opacity: 1;
+    }
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+    box-shadow: 0 0 15px rgba(140, 43, 238, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.2);
+    box-shadow: 0 0 25px rgba(140, 43, 238, 0.6);
   }
 }

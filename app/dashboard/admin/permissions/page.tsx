@@ -35,19 +35,24 @@ export default async function PermissionsPage() {
   })
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Permission Management</h1>
-        <p className="text-slate-500 mt-2">
-          Manage user roles and screen-level permissions for your team
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-10 animate-fade-in text-center lg:text-left">
+        <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+          Access <span className="gradient-text">Permissions</span>
+        </h2>
+        <p className="text-slate-400 font-medium">
+          Control team synergy through precise role and screen access management.
         </p>
       </div>
 
-      <PermissionManagement 
-        teamMembers={teamMembers} 
-        currentUserId={session.user.id!}
-        teamId={session.user.teamId!}
-      />
+      <div className="animate-slide-up">
+        <PermissionManagement
+          teamMembers={teamMembers}
+          currentUserId={session.user.id!}
+          teamId={session.user.teamId!}
+        />
+      </div>
     </div>
   )
 }
