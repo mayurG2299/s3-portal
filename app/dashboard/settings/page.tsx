@@ -81,12 +81,15 @@ export default function SettingsPage() {
 
     const formData = new FormData(e.currentTarget)
     const buckets = newBuckets
-      .map((bucket) => ({
-        bucket: bucket.bucket.trim(),
-        cloudfrontDomain: bucket.cloudfrontDomain?.trim() || undefined,
-        cloudfrontKeyPairId: bucket.cloudfrontKeyPairId?.trim() || undefined,
-        cloudfrontPrivateKey: bucket.cloudfrontPrivateKey?.trim() || undefined,
-      }))
+      .map((bucket, index) => {
+        const fallbackBucket = (formData.get(`targetBucket_${index}`) as string) || ''
+        return {
+          bucket: (bucket.bucket || fallbackBucket).trim(),
+          cloudfrontDomain: bucket.cloudfrontDomain?.trim() || undefined,
+          cloudfrontKeyPairId: bucket.cloudfrontKeyPairId?.trim() || undefined,
+          cloudfrontPrivateKey: bucket.cloudfrontPrivateKey?.trim() || undefined,
+        }
+      })
       .filter((bucket) => bucket.bucket.length > 0)
 
     if (buckets.length === 0) {
@@ -180,13 +183,16 @@ export default function SettingsPage() {
       name: formData.get('editName'),
       region: formData.get('editRegion'),
       buckets: editBuckets
-        .map((bucket) => ({
-          id: bucket.id,
-          bucket: bucket.bucket.trim(),
-          cloudfrontDomain: bucket.cloudfrontDomain?.trim() || undefined,
-          cloudfrontKeyPairId: bucket.cloudfrontKeyPairId?.trim() || undefined,
-          cloudfrontPrivateKey: bucket.cloudfrontPrivateKey?.trim() || undefined,
-        }))
+        .map((bucket, index) => {
+          const fallbackBucket = (formData.get(`editTargetBucket_${index}`) as string) || ''
+          return {
+            id: bucket.id,
+            bucket: (bucket.bucket || fallbackBucket).trim(),
+            cloudfrontDomain: bucket.cloudfrontDomain?.trim() || undefined,
+            cloudfrontKeyPairId: bucket.cloudfrontKeyPairId?.trim() || undefined,
+            cloudfrontPrivateKey: bucket.cloudfrontPrivateKey?.trim() || undefined,
+          }
+        })
         .filter((bucket) => bucket.bucket.length > 0),
     }
 
@@ -236,7 +242,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left">
+      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
         <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
           Platform <span className="gradient-text">Configuration</span>
         </h2>
@@ -318,7 +324,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
 
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                   {newBuckets.map((bucket, index) => (
                     <div key={`new-bucket-${index}`} className="rounded-xl bg-black/20 border border-white/5 p-4 space-y-4 animate-fade-in relative group/bucket">
                       {newBuckets.length > 1 && (
@@ -334,6 +340,7 @@ export default function SettingsPage() {
                       <div className="space-y-1.5">
                         <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Target Bucket</Label>
                         <Input
+                          name={`targetBucket_${index}`}
                           placeholder="primary-assets-sync"
                           value={bucket.bucket}
                           onChange={(event) =>
@@ -573,7 +580,7 @@ export default function SettingsPage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                     {editBuckets.map((bucket, index) => (
                       <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-black/40 border border-white/5 p-4 space-y-4 relative group/edit-bucket">
                         {!bucket.id && editBuckets.length > 1 && (
@@ -589,6 +596,7 @@ export default function SettingsPage() {
                         <div className="space-y-1.5">
                           <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">S3 Destination Name</Label>
                           <Input
+                            name={`editTargetBucket_${index}`}
                             value={bucket.bucket}
                             onChange={(event) =>
                               setEditBuckets((prev) =>

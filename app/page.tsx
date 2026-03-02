@@ -24,7 +24,7 @@ export default async function HomePage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">Documentation</Link>
+            <Link href="/dashboard" className="text-sm font-semibold text-slate-400 hover:text-[#b673ff] hover:drop-shadow-[0_0_8px_rgba(182,115,255,0.8)] transition-all duration-300">Documentation</Link>
             {session ? (
               <Link href="/dashboard">
                 <Button className="btn-primary-gradient rounded-full px-6 text-sm font-bold h-10">

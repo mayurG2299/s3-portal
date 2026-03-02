@@ -704,7 +704,7 @@ export default function FilesPage() {
       {/* Header & Controls */}
       <div className="mb-10 animate-fade-in">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
-          <div>
+          <div className="hidden md:block">
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
               File <span className="gradient-text">Explorer</span>
             </h2>
@@ -763,7 +763,7 @@ export default function FilesPage() {
             <Button
               onClick={() => setIsUploadOpen(true)}
               disabled={!selectedBucket}
-              className="btn-primary-gradient h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-widest gap-2"
+              className="btn-primary-gradient h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-widest gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload size={14} strokeWidth={2.5} />
               Upload
@@ -772,7 +772,7 @@ export default function FilesPage() {
               onClick={() => setIsFolderDialogOpen(true)}
               disabled={!selectedBucket}
               variant="outline"
-              className="h-10 px-5 rounded-xl bg-white/5 border-white/5 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-300 border-none"
+              className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-300 border-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Folder size={14} strokeWidth={2.5} />
               New Folder
@@ -789,7 +789,7 @@ export default function FilesPage() {
               }}
               disabled={!selectedBucket || selectedFileIds.length === 0}
               variant="secondary"
-              className="h-10 px-5 rounded-xl bg-[#8c2bee]/10 hover:bg-[#8c2bee]/20 text-[#b673ff] transition-all font-bold text-xs uppercase tracking-widest gap-2 border-none"
+              className="h-10 px-5 rounded-xl bg-[#8c2bee]/10 hover:bg-[#8c2bee]/20 text-[#b673ff] transition-all font-bold text-xs uppercase tracking-widest gap-2 border-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Share2 size={14} strokeWidth={2.5} />
               Share ({selectedFileIds.length})

@@ -26,6 +26,7 @@ function LoginPageContent() {
   const [showPassword, setShowPassword] = useState(false)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const errorParam = searchParams.get('error')
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -134,6 +135,11 @@ function LoginPageContent() {
             <div className="mb-10 text-center sm:text-left">
               <h3 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h3>
               <p className="text-slate-400">Please enter your credentials to access the portal.</p>
+              {errorParam === 'unauthorized' && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500 font-medium animate-fade-in">
+                  You must be logged in to access that page.
+                </div>
+              )}
             </div>
 
             <form onSubmit={onSubmit} className="space-y-6">
@@ -197,7 +203,7 @@ function LoginPageContent() {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center gap-6 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <Link href="#" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
             <Link href="#" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
             <Link href="#" className="hover:text-slate-400 transition-colors">Help Center</Link>

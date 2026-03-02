@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,6 +37,11 @@ type ProfileActionsProps = {
 
 export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
   const [members, setMembers] = useState<Member[]>([])
   const [isOwner, setIsOwner] = useState(false)
   const [transferToUserId, setTransferToUserId] = useState('')
@@ -94,7 +100,7 @@ export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100',
+          'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors duration-200',
           isCollapsed && 'justify-center'
         )}
         aria-expanded={open}
@@ -114,7 +120,7 @@ export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
           <Link
             href="/dashboard/profile"
             className={cn(
-              'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100',
+              'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors duration-200',
               isCollapsed && 'justify-center'
             )}
             title={isCollapsed ? 'Change Password' : undefined}
@@ -128,7 +134,7 @@ export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
               <button
                 type="button"
                 className={cn(
-                  'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50',
+                  'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors duration-200',
                   isCollapsed && 'justify-center'
                 )}
                 title={isCollapsed ? 'Delete Account' : undefined}
@@ -192,7 +198,7 @@ export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
             type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
             className={cn(
-              'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-100',
+              'w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors duration-200',
               isCollapsed && 'justify-center'
             )}
             title={isCollapsed ? 'Sign out' : undefined}

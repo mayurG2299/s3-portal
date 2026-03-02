@@ -109,18 +109,18 @@ export function Sidebar({
         )}
       >
         {/* Header */}
-        <div className="relative px-6 py-8">
+        <div className="relative px-4 py-8 md:px-6">
           {sidebarExpanded ? (
             <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-3 group" onClick={handleNavClick}>
-                <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/20 group-hover:scale-110 transition-transform duration-500">
+              <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleNavClick}>
+                <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/20 group-hover:scale-110 transition-transform duration-500">
                   <span className="text-white font-black text-sm tracking-tighter">S3</span>
                 </div>
-                <div className="flex flex-col">
-                  <h1 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none">
+                <div className="flex flex-col min-w-0">
+                  <h1 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none truncate block">
                     Admin
                   </h1>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Console</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate block">Console</span>
                 </div>
               </Link>
             </div>

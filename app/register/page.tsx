@@ -20,6 +20,7 @@ import { Cloud, Shield, Zap } from 'lucide-react'
 export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -43,12 +44,14 @@ export default function RegisterPage() {
         throw new Error(error.message || 'Registration failed')
       }
 
+      setErrorMsg(null) // clear any previous errors
       toast({
         title: 'Success',
         description: 'Account created! Please sign in.',
       })
       router.push('/login')
     } catch (error: any) {
+      setErrorMsg(error.message)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -125,6 +128,11 @@ export default function RegisterPage() {
               <CardDescription>
                 Sign up to start managing your files
               </CardDescription>
+              {errorMsg && (
+                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500 font-medium">
+                  {errorMsg}
+                </div>
+              )}
             </CardHeader>
             <form onSubmit={onSubmit}>
               <CardContent className="space-y-4">

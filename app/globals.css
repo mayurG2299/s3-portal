@@ -89,7 +89,7 @@
   }
 
     .btn-primary-gradient {
-      @apply bg-gradient-to-r from-[#8c2bee] to-[#6a1bbf] hover:shadow-[0_0_20px_rgba(140,43,238,0.4)] shadow-lg border-none text-white transition-all duration-500 active:scale-95;
+      @apply bg-gradient-to-r from-[#8c2bee] to-[#6a1bbf] hover:shadow-[0_0_20px_#8c2bee66] shadow-lg border-none text-white transition-all duration-500 hover:brightness-110 active:scale-95;
     }
   
     .glass-card {

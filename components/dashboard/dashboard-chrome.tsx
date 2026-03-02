@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './sidebar'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ interface DashboardChromeProps {
 export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, isAdmin, isOwner, teams, currentTeamId, children }: DashboardChromeProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -39,6 +41,13 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
     mq.addEventListener('change', update)
     return () => mq.removeEventListener('change', update)
   }, [])
+
+  // Robustly close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }, [pathname, isMobile])
 
   const handleToggle = useCallback(() => {
     setSidebarOpen((prev) => !prev)
@@ -66,24 +75,48 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
 
       <div
         className={cn(
-          "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-[margin] duration-500 ease-in-out z-0",
+          "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-[margin] duration-500 ease-in-out",
           isMobile ? "ml-0" : (sidebarOpen ? "ml-64" : "ml-20")
         )}
       >
         {/* Top Navigation Bar */}
         <header className="h-16 flex-shrink-0 glass-navbar flex items-center justify-between px-6 lg:px-8">
-          <div className="flex-1 flex items-center">
-            {isMobile && (
-              <button
-                onClick={handleToggle}
-                className="mr-4 p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all"
-                aria-label="Open menu"
-              >
-                <Menu size={20} />
-              </button>
-            )}
+          <div className="flex-1 flex items-center min-w-0 pr-4">
+            <button
+              onClick={handleToggle}
+              className="md:hidden mr-3 p-2 shrink-0 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all focus:outline-none"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
 
-            <div className="max-w-md w-full relative group hidden sm:block">
+            {/* Title / Subtitle for mobile view */}
+            <div className="md:hidden flex-1 min-w-0 flex flex-col justify-center">
+              <h2 className="text-sm font-black text-white truncate leading-tight tracking-tight">
+                {(() => {
+                  if (pathname.includes('/settings')) return <><span className="text-slate-300">Platform</span> <span className="text-[#b673ff]">Configuration</span></>
+                  if (pathname.includes('/files')) return <><span className="text-slate-300">File</span> <span className="text-[#b673ff]">Explorer</span></>
+                  if (pathname.includes('/teams')) return <><span className="text-slate-300">Team</span> <span className="text-[#b673ff]">Workspace</span></>
+                  if (pathname.includes('/links')) return <><span className="text-slate-300">Shared</span> <span className="text-[#b673ff]">Links</span></>
+                  if (pathname.includes('/admin/permissions')) return <><span className="text-slate-300">Access</span> <span className="text-[#b673ff]">Permissions</span></>
+                  if (pathname.includes('/admin/audit')) return <><span className="text-slate-300">Audit</span> <span className="text-[#b673ff]">Logs</span></>
+                  return <><span className="text-slate-300">System</span> <span className="text-[#b673ff]">Overview</span></>
+                })()}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-medium truncate">
+                {(() => {
+                  if (pathname.includes('/settings')) return 'Manage cloud endpoints'
+                  if (pathname.includes('/files')) return 'Explore objects'
+                  if (pathname.includes('/teams')) return 'Team collaboration'
+                  if (pathname.includes('/links')) return 'Externally shared items'
+                  if (pathname.includes('/admin/permissions')) return 'Role and access logic'
+                  if (pathname.includes('/admin/audit')) return 'Monitor platform activity'
+                  return 'Infrastructure telemetry'
+                })()}
+              </p>
+            </div>
+
+            <div className="max-w-md w-full relative group hidden md:block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

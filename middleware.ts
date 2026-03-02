@@ -50,6 +50,7 @@ export async function middleware(request: NextRequest) {
   if (!token && !isAuthPage) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
+    loginUrl.searchParams.set('error', 'unauthorized')
     return NextResponse.redirect(loginUrl)
   }
 

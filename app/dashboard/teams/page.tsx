@@ -46,7 +46,7 @@ export default async function TeamsPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left">
+      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
         <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
           Team <span className="gradient-text">Management</span>
         </h2>

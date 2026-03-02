@@ -82,7 +82,7 @@ export default async function DashboardPage() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="mb-10 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div>
+          <div className="hidden md:block">
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
               Welcome back, <span className="gradient-text">{session.user.name || 'Admin'}</span>
             </h2>
