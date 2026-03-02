@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle, Cloud, Server } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Credential = {
@@ -243,10 +243,10 @@ export default function SettingsPage() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
           Platform <span className="gradient-text">Configuration</span>
         </h2>
-        <p className="text-slate-400 font-medium">
+        <p className="text-slate-500 dark:text-slate-400 font-medium">
           Connect and manage your cloud infrastructure integrations.
         </p>
       </div>
@@ -259,37 +259,37 @@ export default function SettingsPage() {
                 <ShieldCheck size={24} strokeWidth={2} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">New Credentials</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Credentials</h3>
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Link a new AWS environment</p>
               </div>
             </div>
 
             <form onSubmit={handleCredentialSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Environment Name</Label>
-                <Input name="name" placeholder="e.g., Production Assets" required className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-medium text-white placeholder:text-slate-600" />
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Environment Name</Label>
+                <Input name="name" placeholder="e.g., Production Assets" required className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Access Key</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Access Key</Label>
                   <Input
                     name="accessKey"
                     placeholder="AKIA..."
                     required
                     disabled={isSavingCredential}
                     autoComplete="off"
-                    className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-white placeholder:text-slate-700"
+                    className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Region</Label>
-                  <Input name="region" placeholder="ap-south-1" required className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-white placeholder:text-slate-700" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Region</Label>
+                  <Input name="region" placeholder="ap-south-1" required className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Secret Access Key</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Secret Access Key</Label>
                 <Input
                   name="secretKey"
                   type="password"
@@ -297,14 +297,14 @@ export default function SettingsPage() {
                   required
                   disabled={isSavingCredential}
                   autoComplete="new-password"
-                  className="bg-white/5 border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all text-white placeholder:text-slate-700 font-mono tracking-widest"
+                  className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700 font-mono tracking-widest"
                 />
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-xs font-bold text-white tracking-tight">Bucket Mapping</Label>
+                    <Label className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Bucket Mapping</Label>
                     <p className="text-[10px] text-slate-500 font-medium">Configure target S3 buckets</p>
                   </div>
                   <Button
@@ -317,7 +317,7 @@ export default function SettingsPage() {
                         { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
                       ])
                     }
-                    className="h-8 rounded-lg bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-widest text-[#b673ff] hover:bg-white/10"
+                    className="h-8 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-[#8c2bee] dark:text-[#b673ff] hover:bg-slate-200 dark:hover:bg-white/10"
                   >
                     <Plus size={14} className="mr-1.5" />
                     Expand
@@ -326,7 +326,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                   {newBuckets.map((bucket, index) => (
-                    <div key={`new-bucket-${index}`} className="rounded-xl bg-black/20 border border-white/5 p-4 space-y-4 animate-fade-in relative group/bucket">
+                    <div key={`new-bucket-${index}`} className="rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 p-4 space-y-4 animate-fade-in relative group/bucket">
                       {newBuckets.length > 1 && (
                         <button
                           type="button"
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                             )
                           }
                           required={index === 0}
-                          className="h-9 bg-white/5 border-white/5 rounded-lg text-xs font-bold text-white focus:border-[#8c2bee]/30"
+                          className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
                         />
                       </div>
 
@@ -370,7 +370,7 @@ export default function SettingsPage() {
                                 )
                               )
                             }
-                            className="h-9 bg-white/5 border-white/5 rounded-lg text-[10px] font-medium text-slate-300 focus:border-[#8c2bee]/30"
+                            className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-[10px] font-medium text-slate-900 dark:text-slate-300 focus:border-[#8c2bee]/30"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -387,7 +387,7 @@ export default function SettingsPage() {
                                 )
                               )
                             }
-                            className="h-9 bg-white/5 border-white/5 rounded-lg text-[10px] font-medium text-slate-300 focus:border-[#8c2bee]/30 font-mono tracking-tighter"
+                            className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-[10px] font-medium text-slate-900 dark:text-slate-300 focus:border-[#8c2bee]/30 font-mono tracking-tighter"
                           />
                         </div>
                       </div>
@@ -410,7 +410,7 @@ export default function SettingsPage() {
         <div className="lg:col-span-7 space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-white tracking-tight">Saved Connections</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Saved Connections</h3>
               <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Active infrastructure endpoints</p>
             </div>
           </div>
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                          className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-900 dark:hover:text-white"
                           onClick={() => setEditingCredential(credential)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -451,7 +451,11 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <h4 className="font-bold text-white tracking-tight mb-1 truncate text-lg group-hover:text-[#d8b4fe] transition-colors">
+                    <div className="flex items-center gap-3 mb-1">
+                      <Cloud className="text-[#8c2bee] h-5 w-5" />
+                    </div>
+
+                    <h4 className="font-bold text-slate-900 dark:text-white tracking-tight mb-1 truncate text-lg group-hover:text-[#8c2bee] dark:group-hover:text-[#d8b4fe] transition-colors">
                       {credential.name}
                     </h4>
 
@@ -462,8 +466,14 @@ export default function SettingsPage() {
 
                     <div className="space-y-2 pt-4 border-t border-white/5">
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                        <span className="text-slate-600">Infrastructure</span>
-                        <span className="text-white">AWS S3</span>
+                        <div className="flex items-center gap-2">
+                          <Server size={11} className="text-[#8c2bee]" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[#a65eee] dark:text-[#b673ff]">Infrastructure</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                          <span className="text-slate-900 dark:text-white">AWS S3</span>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                         <span className="text-slate-600">Resources</span>
@@ -493,13 +503,13 @@ export default function SettingsPage() {
             )}
           </div>
 
-          <div className="glass-card !bg-amber-500/[0.03] border-amber-500/10 p-5 rounded-2xl flex gap-4">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex-shrink-0 flex items-center justify-center text-amber-500">
+          <div className="glass-card bg-amber-50/50 dark:bg-amber-500/[0.03] border border-amber-500/20 dark:border-amber-500/10 p-5 rounded-2xl flex gap-4">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/20 dark:bg-amber-500/10 flex-shrink-0 flex items-center justify-center text-amber-600 dark:text-amber-500">
               <AlertCircle size={20} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-amber-200 tracking-tight">Security Protocol</h4>
-              <p className="text-xs text-amber-500/80 mt-1 leading-relaxed">
+              <h4 className="text-sm font-bold text-amber-700 dark:text-amber-200 tracking-tight">Security Protocol</h4>
+              <p className="text-xs text-amber-600 dark:text-amber-500/80 mt-1 leading-relaxed">
                 Credentials are encrypted using AES-256 before storage. Ensure your IAM policies follow the principle of least privilege for maximum security.
               </p>
             </div>
@@ -516,10 +526,10 @@ export default function SettingsPage() {
           }
         }}
       >
-        <DialogContent className="max-w-2xl bg-slate-900 border-white/10 text-white rounded-3xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-3xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 pb-4">
             <DialogTitle className="text-2xl font-black tracking-tight">Edit <span className="gradient-text">Connection</span></DialogTitle>
-            <DialogDescription className="text-slate-400 font-medium">
+            <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium">
               Update endpoints and configuration for this integration.
             </DialogDescription>
           </DialogHeader>
@@ -535,7 +545,7 @@ export default function SettingsPage() {
                       name="editName"
                       defaultValue={editingCredential.name}
                       required
-                      className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold tracking-tight"
+                      className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold tracking-tight"
                     />
                   </div>
                   <div className="space-y-2">
@@ -545,23 +555,23 @@ export default function SettingsPage() {
                       name="editRegion"
                       defaultValue={editingCredential.region}
                       required
-                      className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs"
+                      className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-white/5">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Access Key (Optional)</Label>
-                    <Input id="editAccessKey" name="editAccessKey" placeholder="Leave empty to keep current" autoComplete="off" className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs" />
+                    <Input id="editAccessKey" name="editAccessKey" placeholder="Leave empty to keep current" autoComplete="off" className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs placeholder:text-slate-400 dark:placeholder:text-slate-600" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Secret Key (Optional)</Label>
-                    <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" className="bg-white/5 border-white/10 rounded-xl h-11 text-white focus:border-[#8c2bee]/30 transition-all" />
+                    <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" />
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-white/5">
                   <div className="flex items-center justify-between">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mapped Buckets</Label>
                     <Button
@@ -582,7 +592,7 @@ export default function SettingsPage() {
 
                   <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                     {editBuckets.map((bucket, index) => (
-                      <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-black/40 border border-white/5 p-4 space-y-4 relative group/edit-bucket">
+                      <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-slate-50 border-slate-200 dark:bg-black/40 dark:border-white/5 border p-4 space-y-4 relative group/edit-bucket">
                         {!bucket.id && editBuckets.length > 1 && (
                           <button
                             type="button"
@@ -606,7 +616,7 @@ export default function SettingsPage() {
                               )
                             }
                             required={index === 0}
-                            className="h-10 bg-white/5 border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#8c2bee]/30"
+                            className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
                           />
                         </div>
 
@@ -625,7 +635,7 @@ export default function SettingsPage() {
                                   )
                                 )
                               }
-                              className="h-10 bg-white/5 border-white/10 rounded-xl text-[10px] font-medium text-slate-300"
+                              className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-[10px] font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -642,7 +652,7 @@ export default function SettingsPage() {
                                   )
                                 )
                               }
-                              className="h-10 bg-white/5 border-white/10 rounded-xl text-[10px] font-medium text-slate-300 font-mono"
+                              className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-[10px] font-medium text-slate-700 dark:text-slate-300 font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             />
                           </div>
                         </div>
@@ -651,12 +661,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => setEditingCredential(null)}
-                    className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-400 hover:bg-white/5"
+                    className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
                   >
                     Cancel
                   </Button>

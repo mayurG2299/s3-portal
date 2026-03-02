@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './sidebar'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { cn } from '@/lib/utils'
 
 interface Team {
@@ -92,15 +93,15 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
 
             {/* Title / Subtitle for mobile view */}
             <div className="md:hidden flex-1 min-w-0 flex flex-col justify-center">
-              <h2 className="text-sm font-black text-white truncate leading-tight tracking-tight">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white truncate leading-tight tracking-tight">
                 {(() => {
-                  if (pathname.includes('/settings')) return <><span className="text-slate-300">Platform</span> <span className="text-[#b673ff]">Configuration</span></>
-                  if (pathname.includes('/files')) return <><span className="text-slate-300">File</span> <span className="text-[#b673ff]">Explorer</span></>
-                  if (pathname.includes('/teams')) return <><span className="text-slate-300">Team</span> <span className="text-[#b673ff]">Workspace</span></>
-                  if (pathname.includes('/links')) return <><span className="text-slate-300">Shared</span> <span className="text-[#b673ff]">Links</span></>
-                  if (pathname.includes('/admin/permissions')) return <><span className="text-slate-300">Access</span> <span className="text-[#b673ff]">Permissions</span></>
-                  if (pathname.includes('/admin/audit')) return <><span className="text-slate-300">Audit</span> <span className="text-[#b673ff]">Logs</span></>
-                  return <><span className="text-slate-300">System</span> <span className="text-[#b673ff]">Overview</span></>
+                  if (pathname.includes('/settings')) return <><span className="text-slate-500 dark:text-slate-300">Platform</span> <span className="text-[#b673ff]">Configuration</span></>
+                  if (pathname.includes('/files')) return <><span className="text-slate-500 dark:text-slate-300">File</span> <span className="text-[#b673ff]">Explorer</span></>
+                  if (pathname.includes('/teams')) return <><span className="text-slate-500 dark:text-slate-300">Team</span> <span className="text-[#b673ff]">Workspace</span></>
+                  if (pathname.includes('/links')) return <><span className="text-slate-500 dark:text-slate-300">Shared</span> <span className="text-[#b673ff]">Links</span></>
+                  if (pathname.includes('/admin/permissions')) return <><span className="text-slate-500 dark:text-slate-300">Access</span> <span className="text-[#b673ff]">Permissions</span></>
+                  if (pathname.includes('/admin/audit')) return <><span className="text-slate-500 dark:text-slate-300">Audit</span> <span className="text-[#b673ff]">Logs</span></>
+                  return <><span className="text-slate-500 dark:text-slate-300">System</span> <span className="text-[#b673ff]">Overview</span></>
                 })()}
               </h2>
               <p className="text-[10px] text-slate-400 font-medium truncate">
@@ -125,25 +126,26 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               <input
                 type="text"
                 placeholder="Search buckets, files, metadata..."
-                className="block w-full pl-10 pr-3 py-2 bg-white/[0.03] border border-white/5 rounded-2xl text-xs font-medium text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white/[0.05] transition-all"
+                className="block w-full pl-10 pr-3 py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm dark:shadow-none"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <ThemeToggle />
+            <button className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all h-9 w-9 flex items-center justify-center">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </button>
-            <div className="h-8 w-px bg-white/5 hidden sm:block" />
+            <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-white uppercase tracking-tighter">{name}</p>
+                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter">{name}</p>
                 <p className="text-[8px] font-bold text-[#8c2bee] uppercase tracking-widest">{roleTitle}</p>
               </div>
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px]">
-                <div className="h-full w-full rounded-[10px] bg-slate-900 flex items-center justify-center text-[10px] font-black text-white">
+                <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-[#8c2bee] dark:text-white">
                   {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
                 </div>
               </div>

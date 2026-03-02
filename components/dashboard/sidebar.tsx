@@ -103,7 +103,7 @@ export function Sidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 bg-slate-950 flex flex-col z-50 border-r border-white/5 transition-all duration-500 ease-in-out',
+          'fixed inset-y-0 left-0 bg-white dark:bg-slate-950 flex flex-col z-50 border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out',
           sidebarExpanded ? 'w-64' : 'w-20',
           isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'
         )}
@@ -117,7 +117,7 @@ export function Sidebar({
                   <span className="text-white font-black text-sm tracking-tighter">S3</span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h1 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none truncate block">
+                  <h1 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] leading-none truncate block">
                     Admin
                   </h1>
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate block">Console</span>
@@ -138,7 +138,7 @@ export function Sidebar({
         {/* Team Switcher */}
         {sidebarExpanded && teams.length > 0 && (
           <div className="px-4 pb-6 px-6">
-            <div className="p-1 rounded-2xl bg-white/[0.03] border border-white/5">
+            <div className="p-1 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-white/[0.03] dark:border-white/5">
               <TeamSwitcher
                 teams={teams}
                 currentTeamId={currentTeamId || ''}
@@ -161,8 +161,8 @@ export function Sidebar({
                 className={cn(
                   'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
                   isActive
-                    ? 'bg-white/[0.05] text-white shadow-xl'
-                    : 'text-slate-500 hover:text-slate-200 hover:bg-white/[0.02]',
+                    ? 'bg-slate-100 text-[#8c2bee] shadow-xl dark:bg-white/[0.05] dark:text-white'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
                   sidebarExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
                 )}
                 aria-label={label}
@@ -186,28 +186,28 @@ export function Sidebar({
 
         {/* Storage Metrics - New Section */}
         {sidebarExpanded && (
-          <div className="px-6 py-8 border-t border-white/5 bg-gradient-to-t from-slate-900/40 to-transparent">
+          <div className="px-6 py-8 border-t border-slate-200 dark:border-white/5 bg-gradient-to-t from-slate-50 to-transparent dark:from-slate-900/40 dark:to-transparent">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Main Usage Plan</span>
-              <span className="text-[10px] font-black text-white px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.05)]">
+              <span className="text-[10px] font-black text-slate-900 dark:text-white px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-[0_0_10px_rgba(0,0,0,0.05)] dark:shadow-[0_0_10px_rgba(255,255,255,0.05)]">
                 {Math.min(100, Math.round((storageUsedBytes / storageLimitBytes) * 100))}%
               </span>
             </div>
-            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-3 p-[1px]">
+            <div className="h-2 w-full bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden mb-3 p-[1px]">
               <div
                 className="h-full bg-gradient-to-r from-[#8c2bee] via-[#b673ff] to-[#8c2bee] transition-all duration-1000 shadow-[0_0_15px_rgba(140,43,238,0.4)] rounded-full animate-pulse-slow"
                 style={{ width: `${Math.min(100, Math.max(0, (storageUsedBytes / storageLimitBytes) * 100))}%` }}
               />
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[9px] font-black text-white uppercase tracking-tighter">{formatBytes(storageUsedBytes)}</span>
+              <span className="text-[9px] font-black text-slate-900 dark:text-white uppercase tracking-tighter">{formatBytes(storageUsedBytes)}</span>
               <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{formatBytes(storageLimitBytes)} Limit</span>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className="px-4 py-6 border-t border-white/5">
+        <div className="px-4 py-6 border-t border-slate-200 dark:border-white/5">
           <ProfileActions isCollapsed={!sidebarExpanded} />
         </div>
       </aside>

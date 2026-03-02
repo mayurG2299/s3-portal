@@ -109,10 +109,10 @@ export default function LinksPage() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
           Shared <span className="gradient-text">Links</span>
         </h2>
-        <p className="text-slate-400 font-medium">
+        <p className="text-slate-500 dark:text-slate-400 font-medium">
           Manage and monitor your active file sharing endpoints.
         </p>
       </div>
@@ -120,19 +120,19 @@ export default function LinksPage() {
       <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
         {isLoading ? (
           <div className="glass-card p-20 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 mb-4 animate-pulse">
-              <LinkIcon className="h-6 w-6 text-slate-500" />
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-white/5 mb-4 animate-pulse">
+              <LinkIcon className="h-6 w-6 text-slate-400 dark:text-slate-500" />
             </div>
             <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Synchronizing Link Data...</p>
           </div>
         ) : links.length === 0 ? (
             <div className="glass-card p-20 text-center">
-              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800/50 mb-6">
-                <LinkIcon className="h-10 w-10 text-slate-600" />
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100 dark:bg-slate-800/50 mb-6">
+                <LinkIcon className="h-10 w-10 text-slate-400 dark:text-slate-600" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Active Links</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">No Active Links</h3>
               <p className="text-slate-500 max-w-xs mx-auto font-medium mb-8">
-                You haven't shared any files yet. Go to your Files Explorer to generate secure links.
+                You haven&apos;t shared any files yet. Go to your Files Explorer to generate secure links.
             </p>
               <Button
                 asChild
@@ -161,7 +161,7 @@ export default function LinksPage() {
                     <div className="flex items-start justify-between mb-6">
                       <div className={cn(
                         "h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110",
-                        isInactive ? "bg-slate-800 text-slate-500" : "bg-[#8c2bee]/10 text-[#b673ff]"
+                        isInactive ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500" : "bg-[#8c2bee]/10 text-[#b673ff]"
                       )}>
                         <LinkIcon size={22} strokeWidth={2.5} />
                       </div>
@@ -169,7 +169,7 @@ export default function LinksPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white"
+                          className="h-9 w-9 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                           onClick={() => handleCopyLink(link.hash)}
                           disabled={isInactive}
                         >
@@ -178,7 +178,7 @@ export default function LinksPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-500"
+                          className="h-9 w-9 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-500"
                           onClick={() => handleDelete(link.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -186,19 +186,19 @@ export default function LinksPage() {
                       </div>
                     </div>
 
-                    <h3 className="font-bold text-white tracking-tight text-lg mb-2 truncate group-hover:text-[#d8b4fe] transition-colors">
+                    <h3 className="font-bold text-slate-900 dark:text-white tracking-tight text-lg mb-2 truncate group-hover:text-[#8c2bee] dark:group-hover:text-[#d8b4fe] transition-colors">
                       {link.file.name}
                     </h3>
 
                     <div className="flex flex-wrap gap-3 mb-6">
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                           {formatFileSize(Number(link.file.size))}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                         <Download className="h-3 w-3 text-slate-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">
                           {link.downloadCount}{link.maxDownloads ? ` / ${link.maxDownloads}` : ''}
                         </span>
                       </div>
@@ -221,7 +221,7 @@ export default function LinksPage() {
 
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                         <span className="text-slate-500">Valid Until</span>
-                        <span className={cn("text-slate-300", expired && "text-rose-500/50")}>
+                        <span className={cn("text-slate-700 dark:text-slate-300", expired && "text-rose-500/50")}>
                           {link.expiresAt ? formatRelativeTime(new Date(link.expiresAt)) : 'Permanent'}
                         </span>
                       </div>
@@ -229,23 +229,23 @@ export default function LinksPage() {
                   </div>
 
                   {/* Security Features Bar */}
-                  <div className="px-6 py-4 bg-black/20 border-t border-white/5 flex items-center justify-between">
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 dark:bg-black/20 dark:border-white/5 flex items-center justify-between">
                     <div className="flex gap-2">
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
-                        link.passwordHash ? "bg-amber-400/10 border-amber-400/20 text-amber-400" : "bg-white/5 border-white/5 text-slate-600"
+                        link.passwordHash ? "bg-amber-400/10 border-amber-400/20 text-amber-500 dark:text-amber-400" : "bg-white border-slate-200 text-slate-400 dark:bg-white/5 dark:border-white/5 dark:text-slate-600"
                       )} title={link.passwordHash ? "Password Protected" : "No Password"}>
                         <Lock size={12} strokeWidth={2.5} />
                       </div>
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
-                        link.allowDownload ? "bg-[#b673ff]/10 border-[#b673ff]/20 text-[#b673ff]" : "bg-white/5 border-white/5 text-slate-600"
+                        link.allowDownload ? "bg-[#b673ff]/10 border-[#b673ff]/20 text-[#8c2bee] dark:text-[#b673ff]" : "bg-white border-slate-200 text-slate-400 dark:bg-white/5 dark:border-white/5 dark:text-slate-600"
                       )} title={link.allowDownload ? "Downloads Allowed" : "Preview Only"}>
                         <Download size={12} strokeWidth={2.5} />
                       </div>
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
-                        link.allowPreview ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-400" : "bg-white/5 border-white/5 text-slate-600"
+                        link.allowPreview ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-500 dark:text-emerald-400" : "bg-white border-slate-200 text-slate-400 dark:bg-white/5 dark:border-white/5 dark:text-slate-600"
                       )} title={link.allowPreview ? "Preview Active" : "Preview Disabled"}>
                         <Shield size={12} strokeWidth={2.5} />
                       </div>

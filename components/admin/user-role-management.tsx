@@ -116,14 +116,14 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId }: Props
         return (
           <div
             key={member.id}
-            className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-[#8c2bee]/30 hover:bg-white/[0.04] transition-all duration-300 animate-fade-in"
+            className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-[#8c2bee]/30 dark:hover:border-[#8c2bee]/30 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all duration-300 animate-fade-in"
             style={{ animationDelay: `${idx * 20}ms` }}
           >
             <div className="flex items-center gap-4 mb-4 sm:mb-0">
               {getRoleIcon(member.role.name, member.role.level)}
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-white tracking-tight">
+                  <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
                     {member.user.email}
                   </span>
                   {isCurrentUser && (
@@ -153,14 +153,14 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId }: Props
                   onValueChange={(value) => updateUserRole(member.userId, member.id, value)}
                   disabled={isCurrentUser || updating === member.id || loadingRoles}
                 >
-                  <SelectTrigger className="w-full sm:w-44 h-10 bg-white/5 border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#8c2bee]/30">
+                  <SelectTrigger className="w-full sm:w-44 h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-white/10 backdrop-blur-xl">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 backdrop-blur-xl">
                     {availableRoles
                       .sort((a, b) => b.level - a.level)
                       .map(role => (
-                        <SelectItem key={role.id} value={role.id} className="text-xs font-bold text-slate-300 focus:bg-white/10 focus:text-white">
+                        <SelectItem key={role.id} value={role.id} className="text-xs font-bold text-slate-700 dark:text-slate-300 focus:bg-slate-100 dark:focus:bg-white/10 focus:text-slate-900 dark:focus:text-white">
                           <div className="flex items-center gap-2.5">
                             {role.name}
                           </div>
@@ -181,8 +181,8 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId }: Props
       })}
 
       {teamMembers.length === 0 && (
-        <div className="text-center py-20 bg-white/[0.01] rounded-3xl border border-dashed border-white/10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+        <div className="text-center py-20 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-slate-200 dark:border-white/10">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-600">
             Collective database empty.
           </p>
         </div>

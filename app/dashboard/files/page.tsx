@@ -705,40 +705,40 @@ export default function FilesPage() {
       <div className="mb-10 animate-fade-in">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
           <div className="hidden md:block">
-            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-2">
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
               File <span className="gradient-text">Explorer</span>
             </h2>
-            <p className="text-slate-400 font-medium">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
               Manage and collaborate on your S3 objects with ease.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-slate-900/40 p-1 rounded-xl border border-white/5 backdrop-blur-sm">
+            <div className="flex bg-white dark:bg-slate-900/40 p-1 rounded-xl border border-slate-200 dark:border-white/5 backdrop-blur-sm shadow-sm dark:shadow-none">
               <Select value={selectedCredential} onValueChange={setSelectedCredential}>
-                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-300">
+                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 shadow-none">
                   <SelectValue placeholder="Source" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10">
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
                   {credentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id} className="text-xs font-bold uppercase tracking-tight hover:bg-white/5 cursor-pointer">
+                    <SelectItem key={cred.id} value={cred.id} className="text-xs font-bold uppercase tracking-tight hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer text-slate-900 dark:text-white">
                       {cred.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <div className="w-px h-6 bg-white/10 self-center mx-1" />
+              <div className="w-px h-6 bg-slate-200 dark:bg-white/10 self-center mx-1" />
               <Select
                 value={selectedBucket}
                 onValueChange={setSelectedBucket}
                 disabled={!selectedCredential || availableBuckets.length === 0}
               >
-                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-300">
+                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 shadow-none">
                   <SelectValue placeholder="Bucket" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10">
+                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
                   {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id} className="text-xs font-bold uppercase tracking-tight hover:bg-white/5 cursor-pointer">
+                    <SelectItem key={bucket.id} value={bucket.id} className="text-xs font-bold uppercase tracking-tight hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer text-slate-900 dark:text-white">
                       {bucket.bucket}
                     </SelectItem>
                   ))}
@@ -751,7 +751,7 @@ export default function FilesPage() {
               disabled={!selectedBucket || isRefreshing}
               variant="outline"
               size="icon"
-              className="h-11 w-11 rounded-xl bg-white/5 border-white/10 hover:bg-white/10 text-slate-300 transition-all border-none"
+              className="h-11 w-11 rounded-xl bg-slate-100 border-slate-200 hover:bg-slate-200 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all border-none"
             >
               <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
             </Button>
@@ -772,12 +772,12 @@ export default function FilesPage() {
               onClick={() => setIsFolderDialogOpen(true)}
               disabled={!selectedBucket}
               variant="outline"
-              className="h-10 px-5 rounded-xl bg-white/5 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-300 border-none disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-10 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-700 dark:text-slate-300 border-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Folder size={14} strokeWidth={2.5} />
               New Folder
             </Button>
-            <div className="w-px h-6 bg-white/10 mx-2" />
+            <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-2" />
             <Button
               onClick={() => {
                 const targets = files.filter(
@@ -803,7 +803,7 @@ export default function FilesPage() {
                 placeholder="TAG FILTER"
                 value={tagFilter}
                 onChange={(event) => setTagFilter(event.target.value)}
-                className="h-10 w-full sm:w-40 bg-white/5 border-white/5 focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-600 border-none"
+                className="h-10 w-full sm:w-40 bg-slate-100 border-slate-200 focus:bg-slate-200 dark:bg-white/5 dark:border-white/5 dark:focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-500 border-none shadow-sm dark:shadow-none"
               />
             </div>
             <div className="relative group w-full sm:w-auto">
@@ -812,7 +812,7 @@ export default function FilesPage() {
                 placeholder="SEARCH OBJECTS"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-10 w-full sm:w-52 bg-white/5 border-white/5 focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-slate-600 border-none"
+                className="h-10 w-full sm:w-52 bg-slate-100 border-slate-200 focus:bg-slate-200 dark:bg-white/5 dark:border-white/5 dark:focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-500 border-none shadow-sm dark:shadow-none"
               />
             </div>
           </div>
@@ -820,7 +820,7 @@ export default function FilesPage() {
 
         {/* Breadcrumb navigation */}
         {selectedBucket && (
-          <div className="mt-6 flex flex-wrap items-center gap-2 p-3 px-4 rounded-xl bg-white/5 border border-white/5 animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <div className="mt-6 flex flex-wrap items-center gap-2 p-3 px-4 rounded-xl bg-slate-50 border border-slate-200 dark:bg-white/5 dark:border-white/5 animate-slide-up" style={{ animationDelay: '100ms' }}>
             {getBreadcrumbs().map((crumb, index) => (
               <div key={crumb.path} className="flex items-center gap-2">
                 {index > 0 && <span className="text-slate-700 font-bold">/</span>}
@@ -852,8 +852,8 @@ export default function FilesPage() {
               className={cn(
                 "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                 viewMode === tab.id
-                  ? "bg-white/10 text-white shadow-lg shadow-black/20"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                  ? "bg-slate-200 text-slate-900 shadow-md dark:shadow-black/20 dark:bg-white/10 dark:text-white"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-white/5"
               )}
             >
               {tab.label}
@@ -865,17 +865,17 @@ export default function FilesPage() {
             <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[#8c2bee]/10 mb-6 transition-transform hover:scale-110">
               <Database className="h-10 w-10 text-[#b673ff]" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">System Offline</h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">System Offline</h3>
             <p className="text-slate-500 max-w-xs mx-auto font-medium">
               Please select a credential and bucket from the toolbar above to start browsing.
             </p>
           </div>
         ) : files.length === 0 ? (
             <div className="glass-card p-20 text-center animate-fade-in">
-              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-800/50 mb-6">
-                <Folder className="h-10 w-10 text-slate-600" />
+              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100 dark:bg-slate-800/50 mb-6">
+                <Folder className="h-10 w-10 text-slate-400 dark:text-slate-600" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Objects Found</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">No Objects Found</h3>
               <p className="text-slate-500 max-w-xs mx-auto font-medium mb-8">
                 This bucket is currently empty. Start by uploading your first file.
               </p>
@@ -892,7 +892,7 @@ export default function FilesPage() {
                 {files.map((file, idx) => (
                   <div
                     key={file.id}
-                    className="glass-card !p-4 group/item hover:bg-white/[0.04] transition-all animate-slide-up"
+                    className="glass-card !p-4 group/item hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all animate-slide-up"
                     style={{ animationDelay: `${200 + idx * 50}ms` }}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -909,14 +909,14 @@ export default function FilesPage() {
                                 return prev.filter((id) => id !== file.id)
                               })
                             }}
-                            className="rounded-md border-slate-700 bg-slate-900/50 data-[state=checked]:bg-[#8c2bee] data-[state=checked]:border-[#8c2bee]"
+                            className="rounded-md border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/50 data-[state=checked]:bg-[#8c2bee] data-[state=checked]:border-[#8c2bee]"
                           />
                         </div>
 
                         <div className="flex items-center gap-4 flex-1">
                           <div className={cn(
                             "h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover/item:scale-105",
-                            isFolder(file) ? "bg-[#8c2bee]/10 text-[#b673ff]" : "bg-white/5 text-slate-400"
+                            isFolder(file) ? "bg-[#8c2bee]/10 text-[#b673ff]" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400"
                           )}>
                             {isFolder(file) ? (
                               <Folder size={20} strokeWidth={2} />
@@ -936,7 +936,7 @@ export default function FilesPage() {
                                 }}
                                 className={cn(
                                   "font-bold text-sm tracking-tight transition-colors truncate",
-                                  isFolder(file) ? "text-[#b673ff] font-black" : "text-white group-hover/item:text-[#d8b4fe]"
+                                  isFolder(file) ? "text-[#b673ff] font-black" : "text-slate-900 group-hover/item:text-[#8c2bee] dark:text-white dark:group-hover/item:text-[#d8b4fe]"
                                 )}
                               >
                                 {file.name}
@@ -961,7 +961,7 @@ export default function FilesPage() {
                       <Button
                         variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-amber-400 transition-colors"
+                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-amber-400 dark:hover:text-amber-400 transition-colors"
                         onClick={() => handleToggleFavorite(file)}
                       >
                             <Star className={cn("h-4 w-4", file.isFavorite && "fill-current")} />
@@ -974,7 +974,7 @@ export default function FilesPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-emerald-400 transition-colors"
+                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-emerald-400 dark:hover:text-emerald-400 transition-colors"
                             onClick={() => {
                               setPreviewFile(file)
                               setIsPreviewOpen(true)
@@ -989,7 +989,7 @@ export default function FilesPage() {
                     <Button
                       variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-[#b673ff] transition-colors"
+                          className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-[#b673ff] dark:hover:text-[#b673ff] transition-colors"
                       onClick={() => setEditingTagsFile(file)}
                     >
                       <Tag className="h-4 w-4" />
@@ -998,10 +998,10 @@ export default function FilesPage() {
                       <Button
                         variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-violet-400 transition-colors"
-                        onClick={() => {
-                          setShareTargets([file])
-                          setIsShareOpen(true)
+                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-violet-400 dark:hover:text-violet-400 transition-colors"
+                            onClick={() => {
+                              setShareTargets([file])
+                              setIsShareOpen(true)
                         }}
                       >
                         <Share2 className="h-4 w-4" />
@@ -1010,7 +1010,7 @@ export default function FilesPage() {
                     <Button
                       variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-xl hover:bg-white/5 text-slate-400 hover:text-rose-500 transition-colors"
+                          className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-500 transition-colors"
                       onClick={() => handleDelete(file)}
                     >
                           <Trash2 className="h-4 w-4" />
@@ -1020,10 +1020,10 @@ export default function FilesPage() {
 
                     {/* Secondary Info Area */}
                     {(file.description || (file.tags && file.tags.length > 0)) && (
-                      <div className="mt-4 pt-4 border-t border-white/[0.03] flex flex-wrap items-center gap-4">
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.03] flex flex-wrap items-center gap-4">
                         {file.description && (
                           <p className="text-[11px] text-slate-500 italic max-w-lg truncate">
-                            "{file.description}"
+                            &quot;{file.description}&quot;
                           </p>
                         )}
                         {file.tags && file.tags.length > 0 && (

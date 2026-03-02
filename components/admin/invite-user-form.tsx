@@ -198,7 +198,7 @@ export function InviteUserForm({ teamId }: Props) {
                 setFoundUser(null)
               }}
               required
-              className="h-12 pl-12 bg-white/5 border-white/10 rounded-xl text-sm font-bold text-white focus:border-[#8c2bee]/30 placeholder:text-slate-600 transition-all"
+              className="h-12 pl-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all"
             />
           </div>
         </div>
@@ -206,10 +206,10 @@ export function InviteUserForm({ teamId }: Props) {
           type="button"
           onClick={handleLookup}
           disabled={!email || loading}
-          className="h-12 px-8 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+          className="h-12 px-8 rounded-xl bg-slate-100 border-slate-200 dark:bg-white/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white transition-all disabled:opacity-50"
         >
           {lookupStatus === 'checking' ? (
-            <div className="h-4 w-4 border-2 border-slate-500 border-t-white rounded-full animate-spin" />
+            <div className="h-4 w-4 border-2 border-slate-500 border-t-slate-900 dark:border-t-white rounded-full animate-spin" />
           ) : 'Check System'}
         </Button>
       </div>
@@ -259,16 +259,16 @@ export function InviteUserForm({ teamId }: Props) {
       <div className="space-y-2">
         <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Authority Archetype *</Label>
         <Select value={roleId} onValueChange={(value) => setRoleId(value)}>
-          <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-sm font-bold text-white focus:border-[#8c2bee]/30">
+          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30">
             <SelectValue placeholder="Assign level" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+          <SelectContent className="bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-white/10 backdrop-blur-xl">
             {roles.map(role => (
-              <SelectItem key={role.id} value={role.id} className="focus:bg-white/10 rounded-lg p-2.5">
+              <SelectItem key={role.id} value={role.id} className="focus:bg-slate-100 dark:focus:bg-white/10 rounded-lg p-2.5">
                 <div className="flex items-center gap-3">
                   {getRoleIcon(role.level)}
                   <div>
-                    <p className="text-xs font-black text-white uppercase tracking-tight leading-none">{role.name}</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{role.name}</p>
                     <p className="text-[10px] font-medium text-slate-500 mt-1 italic">{role.description}</p>
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export function InviteUserForm({ teamId }: Props) {
         </Select>
       </div>
 
-      <div className="flex gap-4 pt-4 border-t border-white/5">
+      <div className="flex gap-4 pt-4 border-t border-slate-200 dark:border-white/5">
         <Button
           type="button"
           disabled={
@@ -310,7 +310,7 @@ export function InviteUserForm({ teamId }: Props) {
           type="button"
           variant="ghost"
           onClick={resetForm}
-          className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white"
+          className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-transparent"
         >
           Reset
         </Button>

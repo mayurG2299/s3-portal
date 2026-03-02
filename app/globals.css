@@ -71,35 +71,51 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-[#8c2bee]/30;
+    @apply bg-slate-50 text-slate-900 antialiased selection:bg-[#8c2bee]/30 dark:bg-background dark:text-foreground;
   }
 }
 
 @layer utilities {
   .glass-morphic {
-      @apply bg-slate-950/40 backdrop-blur-2xl border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
+    @apply bg-white/70 backdrop-blur-2xl border border-slate-200 shadow-xl dark:bg-slate-950/40 dark:border-white/5;
+    }
+    
+    .dark .glass-morphic {
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
     .glass-navbar {
-      @apply sticky top-0 z-50 bg-slate-950/60 backdrop-blur-xl border-b border-white/5;
+    @apply sticky top-0 z-50 bg-white/60 backdrop-blur-xl border-b border-slate-200 dark:bg-slate-950/60 dark:border-white/5;
   }
 
     .glow-accent {
-      @apply relative after:absolute after:inset-0 after:rounded-full after:bg-[#8c2bee]/10 after:blur-2xl after:opacity-0 hover:after:opacity-100 after:transition-opacity;
+    @apply relative after:absolute after:inset-0 after:rounded-full after:bg-[#8c2bee]/20 dark:after:bg-[#8c2bee]/10 after:blur-2xl after:opacity-0 hover:after:opacity-100 after:transition-opacity;
   }
 
     .btn-primary-gradient {
-      @apply bg-gradient-to-r from-[#8c2bee] to-[#6a1bbf] hover:shadow-[0_0_20px_#8c2bee66] shadow-lg border-none text-white transition-all duration-500 hover:brightness-110 active:scale-95;
+      @apply bg-gradient-to-r from-[#8c2bee] to-[#6a1bbf] shadow-lg border-none text-white transition-all duration-500 hover:brightness-110 active:scale-95;
+      }
+      
+      .btn-primary-gradient:hover {
+        box-shadow: 0 0 20px #8c2bee40;
+      }
+      
+      .dark .btn-primary-gradient:hover {
+        box-shadow: 0 0 20px #8c2bee66;
     }
-  
+    
     .glass-card {
-      @apply bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 transition-all duration-500 hover:border-white/20 hover:bg-white/[0.04] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)];
+      @apply bg-white/60 backdrop-blur-xl border border-slate-200 rounded-[2rem] p-8 transition-all duration-500 hover:border-slate-300 hover:bg-white ring-1 ring-inset ring-white/50 shadow-xl dark:bg-white/[0.02] dark:border-white/10 dark:hover:border-white/20 dark:hover:bg-white/[0.04] dark:ring-0;
+      }
+      
+      .dark .glass-card:hover {
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
     }
-  
+    
     .glass-panel {
-      @apply bg-slate-950/20 backdrop-blur-lg border border-white/5 rounded-3xl p-6;
+    @apply bg-white/40 backdrop-blur-lg border border-slate-200 rounded-3xl p-6 shadow-md dark:bg-slate-950/20 dark:border-white/5;
     }
-  
+    
     .gradient-text {
       @apply bg-gradient-to-r from-[#8c2bee] via-[#b673ff] to-[#8c2bee] bg-clip-text text-transparent font-black tracking-tight;
   }
