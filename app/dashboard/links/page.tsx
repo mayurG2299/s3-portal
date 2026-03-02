@@ -254,7 +254,7 @@ export default function LinksPage() {
                     {!isInactive && (
                       <button
                         onClick={() => handleCopyLink(link.hash)}
-                        className="text-[10px] font-black uppercase tracking-widest text-[#b673ff] hover:text-[#d8b4fe] transition-colors flex items-center gap-1.5"
+                        className="text-[10px] font-black uppercase tracking-widest text-[#8c2bee] hover:text-[#a65eee] dark:text-[#b673ff] dark:hover:text-[#d8b4fe] transition-colors flex items-center gap-1.5"
                       >
                         Copy Share URL
                         <ExternalLink size={10} />
