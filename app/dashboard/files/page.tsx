@@ -31,6 +31,7 @@ import { getPreviewType } from '@/lib/preview-utils'
 interface Bucket {
   id: string
   bucket: string
+  cloudfrontDomain?: string | null
 }
 
 interface Credential {
@@ -65,6 +66,15 @@ export default function FilesPage() {
   const [shareTargets, setShareTargets] = useState<StoredFile[]>([])
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const [isSharing, setIsSharing] = useState(false)
+
+  // CDN Configuration Modal State
+  const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
+  const [cdnConfig, setCdnConfig] = useState({
+    cloudfrontDomain: '',
+    cloudfrontKeyPairId: '',
+    cloudfrontPrivateKey: '',
+  })
+  const [isSavingCdn, setIsSavingCdn] = useState(false)
   const [tagFilter, setTagFilter] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'all' | 'favorites' | 'recents'>('all')
@@ -78,7 +88,8 @@ export default function FilesPage() {
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [shareSettings, setShareSettings] = useState({
-    expiryMode: 'preset' as 'preset' | 'custom',
+    linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
+    expiryMode: 'preset' as 'preset' | 'custom' | 'never',
     expiresIn: '86400',
     customExpiry: '',
     password: '',
@@ -449,6 +460,10 @@ export default function FilesPage() {
   }
 
   function resolveExpirySeconds() {
+    if (shareSettings.expiryMode === 'never') {
+      return undefined
+    }
+
     if (shareSettings.expiryMode === 'preset') {
       return Number(shareSettings.expiresIn)
     }
@@ -464,7 +479,7 @@ export default function FilesPage() {
 
     const expiresIn = resolveExpirySeconds()
 
-    if (!expiresIn) {
+    if (expiresIn === null && shareSettings.expiryMode !== 'never') {
       toast({
         variant: 'destructive',
         title: 'Invalid expiry',
@@ -477,7 +492,8 @@ export default function FilesPage() {
 
     const payloadBase = {
       type: 'PRESIGNED',
-      expiresIn,
+      expiresIn: expiresIn || undefined,
+      mode: shareSettings.linkMode,
       password: shareSettings.password || undefined,
       maxDownloads: shareSettings.maxDownloads
         ? Number(shareSettings.maxDownloads)
@@ -542,6 +558,46 @@ export default function FilesPage() {
       })
     } finally {
       setIsSharing(false)
+    }
+  }
+
+  async function handleSaveCdn(e: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!selectedBucket) return
+
+    setIsSavingCdn(true)
+    try {
+      const response = await fetch('/api/credentials/cdn', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bucketId: selectedBucket,
+          ...cdnConfig,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to save CDN configuration')
+      }
+
+      toast({
+        title: 'Success',
+        description: 'CDN successfully attached to bucket',
+      })
+
+      // Close modal, clear form, and refresh credentials to instantly unlock CDN URL
+      setIsCdnDialogOpen(false)
+      setCdnConfig({ cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' })
+      await fetchCredentials()
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      })
+    } finally {
+      setIsSavingCdn(false)
     }
   }
 
@@ -1100,6 +1156,53 @@ export default function FilesPage() {
             )}
 
             <div className="space-y-2">
+              <Label>Link Type</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Preview Page', value: 'preview' },
+                  { label: 'Auto Download', value: 'download' },
+                  { label: 'Direct S3/CDN', value: 'direct' },
+                  { label: 'Public S3/CDN URL', value: 'raw' },
+                ].map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
+                    onClick={() => {
+                      setShareSettings((prev) => ({
+                        ...prev,
+                        linkMode: option.value as 'preview' | 'download' | 'direct' | 'raw',
+                        // If selecting 'raw', default to 'never' expire
+                        ...(option.value === 'raw' && { expiryMode: 'never', expiresIn: '' }),
+                        // If deselecting 'raw', default back to preset
+                        ...(option.value !== 'raw' && prev.linkMode === 'raw' && { expiryMode: 'preset', expiresIn: '86400' })
+                      }))
+                    }}
+                    className="h-auto py-2 whitespace-normal text-xs"
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              {shareSettings.linkMode === 'direct' && (
+                <div className="p-3 mt-2 text-xs rounded border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                  <strong>Direct URL:</strong> Bypasses the portal. Password and download limits are unavailable.{' '}
+                  {credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain
+                    ? 'A fast CloudFront CDN URL will be generated.'
+                    : <span>No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100 cursor-pointer">Add CDN credentials</button> for better global performance.</span>}
+                </div>
+              )}
+              {shareSettings.linkMode === 'raw' && (
+                <div className="p-3 mt-2 text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200">
+                  <strong>Permanent Public URL:</strong> Generates the raw, unsigned AWS S3 or CloudFront URL. This URL never expires, but your bucket or CDN <strong>must be configured for public read access</strong> for this link to work. Passwords are not supported.
+                  {!(credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain) && (
+                    <span className="block mt-2">No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-indigo-900 dark:hover:text-indigo-100 cursor-pointer">Add CDN credentials</button> for a faster, proper web URL.</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {shareSettings.linkMode !== 'raw' && (
+            <div className="space-y-2">
               <Label>Expiration</Label>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -1152,61 +1255,66 @@ export default function FilesPage() {
                 />
               )}
             </div>
+            )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password (optional)</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={shareSettings.password}
-                  onChange={(e) =>
-                    setShareSettings((prev) => ({ ...prev, password: e.target.value }))
-                  }
-                  placeholder="Set a password to protect access"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-downloads">Max downloads (optional)</Label>
-                <Input
-                  id="max-downloads"
-                  type="number"
-                  min={1}
-                  value={shareSettings.maxDownloads}
-                  onChange={(e) =>
-                    setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))
-                  }
-                  placeholder="e.g. 5"
-                />
-              </div>
-            </div>
+            {shareSettings.linkMode !== 'direct' && shareSettings.linkMode !== 'raw' && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password (optional)</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={shareSettings.password}
+                      onChange={(e) =>
+                        setShareSettings((prev) => ({ ...prev, password: e.target.value }))
+                      }
+                      placeholder="Set a password to protect access"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-downloads">Max downloads (optional)</Label>
+                    <Input
+                      id="max-downloads"
+                      type="number"
+                      min={1}
+                      value={shareSettings.maxDownloads}
+                      onChange={(e) =>
+                        setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))
+                      }
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="preview-only"
-                  checked={shareSettings.previewOnly}
-                  onCheckedChange={(checked) =>
-                    setShareSettings((prev) => ({ ...prev, previewOnly: Boolean(checked) }))
-                  }
-                />
-                <Label htmlFor="preview-only" className="text-sm">
-                  Preview only (disable downloads)
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="allow-preview"
-                  checked={shareSettings.allowPreview}
-                  onCheckedChange={(checked) =>
-                    setShareSettings((prev) => ({ ...prev, allowPreview: Boolean(checked) }))
-                  }
-                />
-                <Label htmlFor="allow-preview" className="text-sm">
-                  Allow preview
-                </Label>
-              </div>
-            </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="preview-only"
+                      checked={shareSettings.previewOnly}
+                      onCheckedChange={(checked) =>
+                        setShareSettings((prev) => ({ ...prev, previewOnly: Boolean(checked) }))
+                      }
+                    />
+                    <Label htmlFor="preview-only" className="text-sm">
+                      Preview only (disable downloads)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="allow-preview"
+                      checked={shareSettings.allowPreview}
+                      onCheckedChange={(checked) =>
+                        setShareSettings((prev) => ({ ...prev, allowPreview: Boolean(checked) }))
+                      }
+                    />
+                    <Label htmlFor="allow-preview" className="text-sm">
+                      Allow preview
+                    </Label>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="flex justify-end gap-2">
               <Button
@@ -1220,7 +1328,11 @@ export default function FilesPage() {
                 Cancel
               </Button>
               <Button onClick={handleShare} disabled={isSharing || shareTargets.length === 0}>
-                {isSharing ? 'Generating…' : 'Generate link'}
+                {isSharing
+                  ? 'Generating…'
+                  : shareSettings.linkMode === 'raw'
+                    ? 'Copy link'
+                    : 'Generate link'}
               </Button>
             </div>
           </div>
@@ -1321,6 +1433,52 @@ export default function FilesPage() {
       </Dialog>
 
       <FilePreviewModal file={previewFile} open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} />
+
+      {/* Inline CDN Configuration Modal */}
+      <Dialog open={isCdnDialogOpen} onOpenChange={setIsCdnDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configure CDN</DialogTitle>
+            <DialogDescription>
+              Attach an AWS CloudFront distribution to this S3 bucket for faster global delivery and vanity URLs.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveCdn} className="space-y-4">
+            <div className="space-y-2">
+              <Label>CloudFront Domain (Optional)</Label>
+              <Input
+                placeholder="d1234abc.cloudfront.net"
+                value={cdnConfig.cloudfrontDomain}
+                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontDomain: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Key Pair ID (Optional)</Label>
+              <Input
+                placeholder="K1A2B3C4D5E6F7"
+                value={cdnConfig.cloudfrontKeyPairId}
+                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontKeyPairId: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Private Key (Optional)</Label>
+              <textarea
+                className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300 font-mono"
+                placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
+                value={cdnConfig.cloudfrontPrivateKey}
+                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontPrivateKey: e.target.value })}
+              />
+              <p className="text-[10px] text-gray-500">Your private key is securely encrypted before being stored, using the same AES-256 process as AWS Secret Keys.</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsCdnDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isSavingCdn || !cdnConfig.cloudfrontDomain}>
+                {isSavingCdn ? 'Saving...' : 'Save Configuration'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

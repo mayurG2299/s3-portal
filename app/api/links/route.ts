@@ -21,6 +21,7 @@ const createLinkSchema = z.object({
   allowDownload: z.boolean().default(true),
   allowPreview: z.boolean().default(true),
   useCdn: z.boolean().default(true), // Auto-use CDN if available
+  mode: z.enum(['preview', 'download', 'direct', 'raw']).default('preview'),
 })
 
 export async function POST(request: NextRequest) {
@@ -108,6 +109,64 @@ export async function POST(request: NextRequest) {
       ? new Date(Date.now() + validated.expiresIn * 1000)
       : null
 
+    // If mode is raw, skip creating a database link and just return the unsigned native URL
+    if (validated.mode === 'raw') {
+      const nativeUrl = config.cloudfrontDomain
+        ? `https://${config.cloudfrontDomain}/${file.key}`
+        : `https://${config.bucket}.s3.${config.region}.amazonaws.com/${file.key}`
+
+      await logUserAction({
+        request,
+        action: 'LINK_CREATE',
+        success: true,
+        userId: session.user.id,
+        teamId: file.teamId,
+        resourceType: 'file',
+        resourceId: file.id,
+        metadata: {
+          fileId: file.id,
+          linkType: 'RAW_PUBLIC',
+          expiresAt: null,
+        },
+      })
+
+      return NextResponse.json({
+        id: 'raw',
+        url: nativeUrl,
+        hash: 'raw',
+        expiresAt: null,
+      })
+    }
+
+    // If mode is direct, skip creating a database link and return the signed native URL
+    if (validated.mode === 'direct') {
+      const nativeUrl = linkType === 'CLOUDFRONT'
+        ? generateCloudfrontSignedUrl(config, file.key, validated.expiresIn || 3600)
+        : await generatePresignedDownloadUrl(config, file.key, validated.expiresIn || 3600, file.name)
+
+      await logUserAction({
+        request,
+        action: 'LINK_CREATE',
+        success: true,
+        userId: session.user.id,
+        teamId: file.teamId,
+        resourceType: 'file',
+        resourceId: file.id,
+        metadata: {
+          fileId: file.id,
+          linkType: 'DIRECT',
+          expiresAt: expiresAt?.toISOString() ?? null,
+        },
+      })
+
+      return NextResponse.json({
+        id: 'direct',
+        url: nativeUrl,
+        hash: 'direct',
+        expiresAt,
+      })
+    }
+
     // Create link
     const link = await prisma.link.create({
       data: {
@@ -123,7 +182,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const publicUrl = `${process.env.NEXT_PUBLIC_APP_URL}/share/${hash}`
+    const publicUrl = validated.mode === 'download'
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/share/${hash}?download=true`
+      : `${process.env.NEXT_PUBLIC_APP_URL}/share/${hash}`
 
     await logUserAction({
       request,
@@ -136,6 +197,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         fileId: file.id,
         linkType,
+        mode: validated.mode,
         expiresAt: link.expiresAt?.toISOString() ?? null,
       },
     })
