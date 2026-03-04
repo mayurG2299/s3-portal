@@ -102,27 +102,30 @@ const toggleFavoriteSchema = z.object({
 async function getAccessibleBucket(
   bucketId: string,
   userId: string,
+  teamId: string | null | undefined, // NEW: take active team context
+  roleId: string | null | undefined, // NEW: take active role
   requireAdmin: boolean
 ) {
   return prisma.awsBucket.findFirst({
     where: {
       id: bucketId,
       credential: {
-        OR: [
-          { userId },
-          {
-            team: {
-              members: {
-                some: {
-                  userId,
-                  ...(requireAdmin
-                    ? { role: { name: { in: ['OWNER', 'ADMIN'] } } }
-                    : {}),
+        teamId: teamId || null, // STRICT isolation mapping
+        ...(teamId
+          ? {
+              team: {
+                members: {
+                  some: {
+                    userId,
+                    // If team is active and requires admin, verify role is high enough
+                    ...(requireAdmin && roleId !== 'role_owner' && roleId !== 'role_admin'
+                      ? { role: { name: { in: ['OWNER', 'ADMIN'] } } }
+                      : {}),
+                  },
                 },
               },
-            },
-          },
-        ],
+            }
+          : { userId }),
       },
     },
     include: { credential: true },
@@ -153,8 +156,10 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        true,
-      );
+        session.user.teamId,
+        session.user.roleId,
+        true
+      )
 
       if (!bucket) {
         await logUserAction({
@@ -305,6 +310,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         true
       )
 
@@ -391,6 +398,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         false
       )
 
@@ -563,6 +572,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         false
       )
 
@@ -788,6 +799,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         false
       )
 
@@ -854,6 +867,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         false
       )
 
@@ -1041,6 +1056,8 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
+        session.user.teamId,
+        session.user.roleId,
         true
       )
 

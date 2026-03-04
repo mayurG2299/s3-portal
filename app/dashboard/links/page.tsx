@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,9 +30,12 @@ export default function LinksPage() {
   const [links, setLinks] = useState<Link[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
+  const { data: session } = useSession()
+  const activeTeamId = session?.user?.teamId
+
   useEffect(() => {
     fetchLinks()
-  }, [])
+  }, [activeTeamId])
 
   async function fetchLinks() {
     try {

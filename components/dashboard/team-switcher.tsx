@@ -2,6 +2,7 @@
 
 import { useCallback, useOptimistic, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ interface TeamSwitcherProps {
 
 export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitcherProps) {
   const router = useRouter()
+  const { update } = useSession()
   const [isPending, startTransition] = useTransition()
   const [optimisticTeamId, setOptimisticTeamId] = useOptimistic(currentTeamId)
 
@@ -35,7 +37,10 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
       setOptimisticTeamId(teamId)
       startTransition(async () => {
         try {
-          await onTeamChange(teamId)
+          const res = await onTeamChange(teamId)
+          if (res?.success) {
+            await update({ teamId: res.teamId, roleId: res.roleId })
+          }
           router.refresh()
         } catch (error) {
           setOptimisticTeamId(currentTeamId)
@@ -43,7 +48,7 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
         }
       })
     },
-    [onTeamChange, currentTeamId, setOptimisticTeamId, router]
+    [onTeamChange, currentTeamId, setOptimisticTeamId, router, update]
   )
 
   return (

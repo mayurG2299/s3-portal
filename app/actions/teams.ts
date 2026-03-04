@@ -27,7 +27,7 @@ export async function switchTeam(teamId: string) {
     // Update session user's teamId
     // Note: Next-auth sessions are immutable, so we store the preference
     // The actual session update happens on next request via middleware or session callback
-    return { success: true, teamId }
+    return { success: true, teamId, roleId: membership.roleId }
   } catch (error) {
     console.error('Team switch error:', error)
     throw error

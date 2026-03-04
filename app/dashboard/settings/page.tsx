@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,13 +14,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle, Cloud, Server } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle, Cloud, Server, Users, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Credential = {
   id: string
   name: string
   region: string
+  team?: { name: string } | null
+  teamId?: string | null
   buckets: BucketInput[]
 }
 
@@ -41,9 +44,12 @@ export default function SettingsPage() {
   ])
   const [editBuckets, setEditBuckets] = useState<BucketInput[]>([])
 
+  const { data: session } = useSession()
+  const activeTeamId = session?.user?.teamId
+
   useEffect(() => {
     fetchCredentials()
-  }, [])
+  }, [activeTeamId])
 
   useEffect(() => {
     if (editingCredential) {
@@ -107,6 +113,7 @@ export default function SettingsPage() {
       accessKey: formData.get('accessKey'),
       secretKey: formData.get('secretKey'),
       region: formData.get('region'),
+      teamId: activeTeamId || undefined,
       buckets,
     }
 
@@ -458,6 +465,18 @@ export default function SettingsPage() {
                     <h4 className="font-bold text-slate-900 dark:text-white tracking-tight mb-1 truncate text-lg group-hover:text-[#8c2bee] dark:group-hover:text-[#d8b4fe] transition-colors">
                       {credential.name}
                     </h4>
+
+                    {credential.team ? (
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users size={11} className="text-[#8c2bee]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#8c2bee]">Team: {credential.team.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mb-1">
+                        <User size={11} className="text-slate-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Personal Workspace</span>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-2 mb-6">
                       <Globe size={11} className="text-slate-600" />

@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 import { FileUpload } from '@/components/file-upload'
 import {
   Dialog,
@@ -31,7 +30,6 @@ import { getPreviewType } from '@/lib/preview-utils'
 interface Bucket {
   id: string
   bucket: string
-  cloudfrontDomain?: string | null
 }
 
 interface Credential {
@@ -66,15 +64,6 @@ export default function FilesPage() {
   const [shareTargets, setShareTargets] = useState<StoredFile[]>([])
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const [isSharing, setIsSharing] = useState(false)
-
-  // CDN Configuration Modal State
-  const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
-  const [cdnConfig, setCdnConfig] = useState({
-    cloudfrontDomain: '',
-    cloudfrontKeyPairId: '',
-    cloudfrontPrivateKey: '',
-  })
-  const [isSavingCdn, setIsSavingCdn] = useState(false)
   const [tagFilter, setTagFilter] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'all' | 'favorites' | 'recents'>('all')
@@ -88,8 +77,7 @@ export default function FilesPage() {
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [shareSettings, setShareSettings] = useState({
-    linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
-    expiryMode: 'preset' as 'preset' | 'custom' | 'never',
+    expiryMode: 'preset' as 'preset' | 'custom',
     expiresIn: '86400',
     customExpiry: '',
     password: '',
@@ -460,10 +448,6 @@ export default function FilesPage() {
   }
 
   function resolveExpirySeconds() {
-    if (shareSettings.expiryMode === 'never') {
-      return undefined
-    }
-
     if (shareSettings.expiryMode === 'preset') {
       return Number(shareSettings.expiresIn)
     }
@@ -479,7 +463,7 @@ export default function FilesPage() {
 
     const expiresIn = resolveExpirySeconds()
 
-    if (expiresIn === null && shareSettings.expiryMode !== 'never') {
+    if (!expiresIn) {
       toast({
         variant: 'destructive',
         title: 'Invalid expiry',
@@ -492,8 +476,7 @@ export default function FilesPage() {
 
     const payloadBase = {
       type: 'PRESIGNED',
-      expiresIn: expiresIn || undefined,
-      mode: shareSettings.linkMode,
+      expiresIn,
       password: shareSettings.password || undefined,
       maxDownloads: shareSettings.maxDownloads
         ? Number(shareSettings.maxDownloads)
@@ -558,46 +541,6 @@ export default function FilesPage() {
       })
     } finally {
       setIsSharing(false)
-    }
-  }
-
-  async function handleSaveCdn(e: React.FormEvent) {
-    if (e) e.preventDefault()
-    if (!selectedBucket) return
-
-    setIsSavingCdn(true)
-    try {
-      const response = await fetch('/api/credentials/cdn', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bucketId: selectedBucket,
-          ...cdnConfig,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to save CDN configuration')
-      }
-
-      toast({
-        title: 'Success',
-        description: 'CDN successfully attached to bucket',
-      })
-
-      // Close modal, clear form, and refresh credentials to instantly unlock CDN URL
-      setIsCdnDialogOpen(false)
-      setCdnConfig({ cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' })
-      await fetchCredentials()
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message,
-      })
-    } finally {
-      setIsSavingCdn(false)
     }
   }
 
@@ -756,271 +699,233 @@ export default function FilesPage() {
   const availableBuckets = activeCredential?.buckets || []
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {/* Header & Controls */}
-      <div className="mb-10 animate-fade-in">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
-          <div className="hidden md:block">
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
-              File <span className="gradient-text">Explorer</span>
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 font-medium">
-              Manage and collaborate on your S3 objects with ease.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex bg-white dark:bg-slate-900/40 p-1 rounded-xl border border-slate-200 dark:border-white/5 backdrop-blur-sm shadow-sm dark:shadow-none">
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Files</h1>
+            <div className="flex items-center gap-4">
               <Select value={selectedCredential} onValueChange={setSelectedCredential}>
-                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 shadow-none">
-                  <SelectValue placeholder="Source" />
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select credential" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                <SelectContent>
                   {credentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id} className="text-xs font-bold uppercase tracking-tight hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer text-slate-900 dark:text-white">
+                    <SelectItem key={cred.id} value={cred.id}>
                       {cred.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <div className="w-px h-6 bg-slate-200 dark:bg-white/10 self-center mx-1" />
               <Select
                 value={selectedBucket}
                 onValueChange={setSelectedBucket}
                 disabled={!selectedCredential || availableBuckets.length === 0}
               >
-                <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 shadow-none">
-                  <SelectValue placeholder="Bucket" />
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Select bucket" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                <SelectContent>
                   {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id} className="text-xs font-bold uppercase tracking-tight hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer text-slate-900 dark:text-white">
+                    <SelectItem key={bucket.id} value={bucket.id}>
                       {bucket.bucket}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucket}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload
+              </Button>
+              <Button
+                onClick={() => {
+                  const targets = files.filter(
+                    (file) => selectedFileIds.includes(file.id) && !isFolder(file)
+                  )
+                  if (targets.length === 0) return
+                  setShareTargets(targets)
+                  setIsShareOpen(true)
+                }}
+                disabled={!selectedBucket || selectedFileIds.length === 0}
+                variant="secondary"
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Selected
+              </Button>
+              <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucket} variant="outline">
+                <Folder className="mr-2 h-4 w-4" />
+                New Folder
+              </Button>
+              <Button
+                onClick={handleRefresh}
+                disabled={!selectedBucket || isRefreshing}
+                variant="outline"
+              >
+                <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
+                {isRefreshing ? 'Refreshing' : 'Refresh'}
+              </Button>
             </div>
-
-            <Button
-              onClick={() => handleRefresh()}
-              disabled={!selectedBucket || isRefreshing}
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 rounded-xl bg-slate-100 border-slate-200 hover:bg-slate-200 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition-all border-none"
-            >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            </Button>
           </div>
+
+          {/* Breadcrumb navigation */}
+          {selectedBucket && (
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              {getBreadcrumbs().map((crumb, index) => (
+                <div key={crumb.path} className="flex items-center gap-2">
+                  {index > 0 && <span className="text-gray-400">/</span>}
+                  <button
+                    onClick={() => setCurrentPath(crumb.path)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {crumb.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      </header>
 
-        <div className="glass-card !p-4 flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
-              onClick={() => setIsUploadOpen(true)}
-              disabled={!selectedBucket}
-              className="btn-primary-gradient h-10 px-5 rounded-xl font-bold text-xs uppercase tracking-widest gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant={viewMode === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('all')}
             >
-              <Upload size={14} strokeWidth={2.5} />
-              Upload
+              All
             </Button>
             <Button
-              onClick={() => setIsFolderDialogOpen(true)}
-              disabled={!selectedBucket}
-              variant="outline"
-              className="h-10 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest gap-2 text-slate-700 dark:text-slate-300 border-none disabled:opacity-50 disabled:cursor-not-allowed"
+              variant={viewMode === 'favorites' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('favorites')}
             >
-              <Folder size={14} strokeWidth={2.5} />
-              New Folder
+              Favorites
             </Button>
-            <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-2" />
             <Button
-              onClick={() => {
-                const targets = files.filter(
-                  (file) => selectedFileIds.includes(file.id) && !isFolder(file)
-                )
-                if (targets.length === 0) return
-                setShareTargets(targets)
-                setIsShareOpen(true)
-              }}
-              disabled={!selectedBucket || selectedFileIds.length === 0}
-              variant="secondary"
-              className="h-10 px-5 rounded-xl bg-[#8c2bee]/10 hover:bg-[#8c2bee]/20 text-[#b673ff] transition-all font-bold text-xs uppercase tracking-widest gap-2 border-none disabled:opacity-50 disabled:cursor-not-allowed"
+              variant={viewMode === 'recents' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('recents')}
             >
-              <Share2 size={14} strokeWidth={2.5} />
-              Share ({selectedFileIds.length})
+              Recents
             </Button>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
-            <div className="relative group w-full sm:w-auto">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-[#b673ff] transition-colors" />
-              <Input
-                placeholder="TAG FILTER"
-                value={tagFilter}
-                onChange={(event) => setTagFilter(event.target.value)}
-                className="h-10 w-full sm:w-40 bg-slate-100 border-slate-200 focus:bg-slate-200 dark:bg-white/5 dark:border-white/5 dark:focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-500 border-none shadow-sm dark:shadow-none"
-              />
-            </div>
-            <div className="relative group w-full sm:w-auto">
-              <RefreshCw className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
-              <Input
-                placeholder="SEARCH OBJECTS"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-10 w-full sm:w-52 bg-slate-100 border-slate-200 focus:bg-slate-200 dark:bg-white/5 dark:border-white/5 dark:focus:bg-white/10 transition-all rounded-xl pl-9 text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-500 border-none shadow-sm dark:shadow-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Breadcrumb navigation */}
-        {selectedBucket && (
-          <div className="mt-6 flex flex-wrap items-center gap-2 p-3 px-4 rounded-xl bg-slate-50 border border-slate-200 dark:bg-white/5 dark:border-white/5 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            {getBreadcrumbs().map((crumb, index) => (
-              <div key={crumb.path} className="flex items-center gap-2">
-                {index > 0 && <span className="text-slate-700 font-bold">/</span>}
-                <button
-                  onClick={() => setCurrentPath(crumb.path)}
-                  className={cn(
-                    "text-[10px] font-black uppercase tracking-widest transition-colors hover:text-[#b673ff]",
-                    crumb.path === currentPath ? "text-[#b673ff]" : "text-slate-500"
-                  )}
-                >
-                  {crumb.name}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: '150ms' }}>
-          {[
-            { id: 'all', label: 'All Objects' },
-            { id: 'favorites', label: 'Starred' },
-            { id: 'recents', label: 'Recent' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setViewMode(tab.id as any)}
-              className={cn(
-                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                viewMode === tab.id
-                  ? "bg-slate-200 text-slate-900 shadow-md dark:shadow-black/20 dark:bg-white/10 dark:text-white"
-                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-white/5"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <Input
+            placeholder="Filter by tag"
+            value={tagFilter}
+            onChange={(event) => setTagFilter(event.target.value)}
+            className="max-w-xs"
+          />
+          <Input
+            placeholder="Search files"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="max-w-xs"
+          />
+          {tagFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setTagFilter('')}>
+              Clear
+            </Button>
+          )}
+          {searchQuery && (
+            <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
+              Clear Search
+            </Button>
+          )}
         </div>
         {!selectedBucket ? (
-          <div className="glass-card p-20 text-center animate-fade-in">
-            <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[#8c2bee]/10 mb-6 transition-transform hover:scale-110">
-              <Database className="h-10 w-10 text-[#b673ff]" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">System Offline</h3>
-            <p className="text-slate-500 max-w-xs mx-auto font-medium">
-              Please select a credential and bucket from the toolbar above to start browsing.
+          <Card className="p-12 text-center">
+            <p className="text-gray-500">
+              Please select a credential and bucket to browse files
             </p>
-          </div>
+          </Card>
         ) : files.length === 0 ? (
-            <div className="glass-card p-20 text-center animate-fade-in">
-              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-100 dark:bg-slate-800/50 mb-6">
-                <Folder className="h-10 w-10 text-slate-400 dark:text-slate-600" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">No Objects Found</h3>
-              <p className="text-slate-500 max-w-xs mx-auto font-medium mb-8">
-                This bucket is currently empty. Start by uploading your first file.
-              </p>
-              <Button
-                onClick={() => setIsUploadOpen(true)}
-                className="btn-primary-gradient h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs"
-              >
-                <Upload className="mr-3 h-4 w-4" />
-                Upload Now
+            <Card className="p-12 text-center">
+              <Folder className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-gray-500 mb-4">No files yet</p>
+              <Button onClick={() => setIsUploadOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Files
             </Button>
-            </div>
+            </Card>
         ) : (
-              <div className="space-y-3">
-                {files.map((file, idx) => (
-                  <div
-                    key={file.id}
-                    className="glass-card !p-4 group/item hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all animate-slide-up"
-                    style={{ animationDelay: `${200 + idx * 50}ms` }}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="flex items-center justify-center h-5 w-5">
-                          <Checkbox
-                            aria-label={`Select ${file.name}`}
-                            checked={selectedFileIds.includes(file.id)}
-                            disabled={isFolder(file)}
-                            onCheckedChange={(checked) => {
-                              if (isFolder(file)) return
-                              setSelectedFileIds((prev) => {
-                                if (checked === true) return [...prev, file.id]
-                                return prev.filter((id) => id !== file.id)
-                              })
-                            }}
-                            className="rounded-md border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900/50 data-[state=checked]:bg-[#8c2bee] data-[state=checked]:border-[#8c2bee]"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className={cn(
-                            "h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover/item:scale-105",
-                            isFolder(file) ? "bg-[#8c2bee]/10 text-[#b673ff]" : "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400"
-                          )}>
-                            {isFolder(file) ? (
-                              <Folder size={20} strokeWidth={2} />
-                            ) : (
-                              <Upload size={20} strokeWidth={2} className="opacity-60" />
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isFolder(file)) {
-                                    navigateToFolder(`${currentPath}${file.name}/`)
-                                  }
-                                }}
-                                className={cn(
-                                  "font-bold text-sm tracking-tight transition-colors truncate",
-                                  isFolder(file) ? "text-[#b673ff] font-black" : "text-slate-900 group-hover/item:text-[#8c2bee] dark:text-white dark:group-hover/item:text-[#d8b4fe]"
-                                )}
-                              >
-                                {file.name}
-                              </button>
-                              {file.isFavorite && <Star className="h-3 w-3 text-amber-400 fill-amber-400" />}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
-                                {isFolder(file) ? 'DIRECTORY' : formatFileSize(Number(file.size))}
-                              </span>
-                              <span className="text-slate-800">•</span>
-                              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
-                                {formatRelativeTime(new Date(file.createdAt))}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+              <div className="space-y-2">
+                {files.map((file) => (
+                  <Card key={file.id} className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <Checkbox
+                          aria-label={`Select ${file.name}`}
+                          checked={selectedFileIds.includes(file.id)}
+                          disabled={isFolder(file)}
+                          onCheckedChange={(checked) => {
+                            if (isFolder(file)) return
+                            setSelectedFileIds((prev) => {
+                              if (checked === true) return [...prev, file.id]
+                              return prev.filter((id) => id !== file.id)
+                            })
+                          }}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isFolder(file)) {
+                              navigateToFolder(`${currentPath}${file.name}/`)
+                            }
+                          }}
+                          className={
+                            isFolder(file)
+                              ? 'font-medium text-blue-700 hover:underline'
+                              : 'font-medium'
+                          }
+                        >
+                          {file.name}
+                        </button>
                       </div>
-
-                      <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all transform translate-x-2 group-hover/item:translate-x-0">
+                      <p className="text-sm text-gray-500">
+                        {isFolder(file)
+                          ? 'Folder'
+                          : `${formatFileSize(Number(file.size))} • ${formatRelativeTime(
+                            new Date(file.createdAt)
+                          )}`}
+                      </p>
+                      {file.description && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          {file.description}
+                        </p>
+                      )}
+                      {!!file.tags?.length && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {file.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-amber-400 dark:hover:text-amber-400 transition-colors"
+                        size="sm"
                         onClick={() => handleToggleFavorite(file)}
                       >
-                            <Star className={cn("h-4 w-4", file.isFavorite && "fill-current")} />
+                        <Star
+                          className={
+                            file.isFavorite
+                              ? 'h-4 w-4 text-yellow-500'
+                              : 'h-4 w-4 text-gray-400'
+                          }
+                        />
                       </Button>
                     )}
                     {!isFolder(file) && (() => {
@@ -1029,8 +934,7 @@ export default function FilesPage() {
                         return (
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-emerald-400 dark:hover:text-emerald-400 transition-colors"
+                            size="sm"
                             onClick={() => {
                               setPreviewFile(file)
                               setIsPreviewOpen(true)
@@ -1044,8 +948,7 @@ export default function FilesPage() {
                     })()}
                     <Button
                       variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-[#b673ff] dark:hover:text-[#b673ff] transition-colors"
+                      size="sm"
                       onClick={() => setEditingTagsFile(file)}
                     >
                       <Tag className="h-4 w-4" />
@@ -1053,11 +956,10 @@ export default function FilesPage() {
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-violet-400 dark:hover:text-violet-400 transition-colors"
-                            onClick={() => {
-                              setShareTargets([file])
-                              setIsShareOpen(true)
+                        size="sm"
+                        onClick={() => {
+                          setShareTargets([file])
+                          setIsShareOpen(true)
                         }}
                       >
                         <Share2 className="h-4 w-4" />
@@ -1065,39 +967,18 @@ export default function FilesPage() {
                     )}
                     <Button
                       variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-xl hover:bg-slate-200 text-slate-500 dark:hover:bg-white/5 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-500 transition-colors"
+                      size="sm"
                       onClick={() => handleDelete(file)}
                     >
-                          <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
-
-                    {/* Secondary Info Area */}
-                    {(file.description || (file.tags && file.tags.length > 0)) && (
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.03] flex flex-wrap items-center gap-4">
-                        {file.description && (
-                          <p className="text-[11px] text-slate-500 italic max-w-lg truncate">
-                            &quot;{file.description}&quot;
-                          </p>
-                        )}
-                        {file.tags && file.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {file.tags.map(tag => (
-                              <span key={tag} className="text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md bg-[#8c2bee]/10 text-[#b673ff] border border-[#8c2bee]/10">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+              </Card>
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
         <DialogContent className="max-w-2xl">
@@ -1156,53 +1037,6 @@ export default function FilesPage() {
             )}
 
             <div className="space-y-2">
-              <Label>Link Type</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Preview Page', value: 'preview' },
-                  { label: 'Auto Download', value: 'download' },
-                  { label: 'Direct S3/CDN', value: 'direct' },
-                  { label: 'Public S3/CDN URL', value: 'raw' },
-                ].map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
-                    onClick={() => {
-                      setShareSettings((prev) => ({
-                        ...prev,
-                        linkMode: option.value as 'preview' | 'download' | 'direct' | 'raw',
-                        // If selecting 'raw', default to 'never' expire
-                        ...(option.value === 'raw' && { expiryMode: 'never', expiresIn: '' }),
-                        // If deselecting 'raw', default back to preset
-                        ...(option.value !== 'raw' && prev.linkMode === 'raw' && { expiryMode: 'preset', expiresIn: '86400' })
-                      }))
-                    }}
-                    className="h-auto py-2 whitespace-normal text-xs"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-              {shareSettings.linkMode === 'direct' && (
-                <div className="p-3 mt-2 text-xs rounded border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                  <strong>Direct URL:</strong> Bypasses the portal. Password and download limits are unavailable.{' '}
-                  {credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain
-                    ? 'A fast CloudFront CDN URL will be generated.'
-                    : <span>No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100 cursor-pointer">Add CDN credentials</button> for better global performance.</span>}
-                </div>
-              )}
-              {shareSettings.linkMode === 'raw' && (
-                <div className="p-3 mt-2 text-xs rounded border border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/50 dark:text-indigo-200">
-                  <strong>Permanent Public URL:</strong> Generates the raw, unsigned AWS S3 or CloudFront URL. This URL never expires, but your bucket or CDN <strong>must be configured for public read access</strong> for this link to work. Passwords are not supported.
-                  {!(credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain) && (
-                    <span className="block mt-2">No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-indigo-900 dark:hover:text-indigo-100 cursor-pointer">Add CDN credentials</button> for a faster, proper web URL.</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {shareSettings.linkMode !== 'raw' && (
-            <div className="space-y-2">
               <Label>Expiration</Label>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -1255,66 +1089,61 @@ export default function FilesPage() {
                 />
               )}
             </div>
-            )}
 
-            {shareSettings.linkMode !== 'direct' && shareSettings.linkMode !== 'raw' && (
-              <>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password (optional)</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={shareSettings.password}
-                      onChange={(e) =>
-                        setShareSettings((prev) => ({ ...prev, password: e.target.value }))
-                      }
-                      placeholder="Set a password to protect access"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-downloads">Max downloads (optional)</Label>
-                    <Input
-                      id="max-downloads"
-                      type="number"
-                      min={1}
-                      value={shareSettings.maxDownloads}
-                      onChange={(e) =>
-                        setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))
-                      }
-                      placeholder="e.g. 5"
-                    />
-                  </div>
-                </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="password">Password (optional)</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={shareSettings.password}
+                  onChange={(e) =>
+                    setShareSettings((prev) => ({ ...prev, password: e.target.value }))
+                  }
+                  placeholder="Set a password to protect access"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="max-downloads">Max downloads (optional)</Label>
+                <Input
+                  id="max-downloads"
+                  type="number"
+                  min={1}
+                  value={shareSettings.maxDownloads}
+                  onChange={(e) =>
+                    setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))
+                  }
+                  placeholder="e.g. 5"
+                />
+              </div>
+            </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="preview-only"
-                      checked={shareSettings.previewOnly}
-                      onCheckedChange={(checked) =>
-                        setShareSettings((prev) => ({ ...prev, previewOnly: Boolean(checked) }))
-                      }
-                    />
-                    <Label htmlFor="preview-only" className="text-sm">
-                      Preview only (disable downloads)
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="allow-preview"
-                      checked={shareSettings.allowPreview}
-                      onCheckedChange={(checked) =>
-                        setShareSettings((prev) => ({ ...prev, allowPreview: Boolean(checked) }))
-                      }
-                    />
-                    <Label htmlFor="allow-preview" className="text-sm">
-                      Allow preview
-                    </Label>
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="preview-only"
+                  checked={shareSettings.previewOnly}
+                  onCheckedChange={(checked) =>
+                    setShareSettings((prev) => ({ ...prev, previewOnly: Boolean(checked) }))
+                  }
+                />
+                <Label htmlFor="preview-only" className="text-sm">
+                  Preview only (disable downloads)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="allow-preview"
+                  checked={shareSettings.allowPreview}
+                  onCheckedChange={(checked) =>
+                    setShareSettings((prev) => ({ ...prev, allowPreview: Boolean(checked) }))
+                  }
+                />
+                <Label htmlFor="allow-preview" className="text-sm">
+                  Allow preview
+                </Label>
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2">
               <Button
@@ -1328,11 +1157,7 @@ export default function FilesPage() {
                 Cancel
               </Button>
               <Button onClick={handleShare} disabled={isSharing || shareTargets.length === 0}>
-                {isSharing
-                  ? 'Generating…'
-                  : shareSettings.linkMode === 'raw'
-                    ? 'Copy link'
-                    : 'Generate link'}
+                {isSharing ? 'Generating…' : 'Generate link'}
               </Button>
             </div>
           </div>
@@ -1433,52 +1258,6 @@ export default function FilesPage() {
       </Dialog>
 
       <FilePreviewModal file={previewFile} open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} />
-
-      {/* Inline CDN Configuration Modal */}
-      <Dialog open={isCdnDialogOpen} onOpenChange={setIsCdnDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Configure CDN</DialogTitle>
-            <DialogDescription>
-              Attach an AWS CloudFront distribution to this S3 bucket for faster global delivery and vanity URLs.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSaveCdn} className="space-y-4">
-            <div className="space-y-2">
-              <Label>CloudFront Domain (Optional)</Label>
-              <Input
-                placeholder="d1234abc.cloudfront.net"
-                value={cdnConfig.cloudfrontDomain}
-                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontDomain: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Key Pair ID (Optional)</Label>
-              <Input
-                placeholder="K1A2B3C4D5E6F7"
-                value={cdnConfig.cloudfrontKeyPairId}
-                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontKeyPairId: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Private Key (Optional)</Label>
-              <textarea
-                className="flex min-h-[100px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:placeholder:text-slate-400 dark:focus-visible:ring-slate-300 font-mono"
-                placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
-                value={cdnConfig.cloudfrontPrivateKey}
-                onChange={(e) => setCdnConfig({ ...cdnConfig, cloudfrontPrivateKey: e.target.value })}
-              />
-              <p className="text-[10px] text-gray-500">Your private key is securely encrypted before being stored, using the same AES-256 process as AWS Secret Keys.</p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsCdnDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSavingCdn || !cdnConfig.cloudfrontDomain}>
-                {isSavingCdn ? 'Saving...' : 'Save Configuration'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

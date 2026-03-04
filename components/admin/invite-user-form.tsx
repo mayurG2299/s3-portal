@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Shield, Crown, Eye, Mail, User, UserPlus } from 'lucide-react'
+import { Shield, Crown, Eye, Mail, User, Send, CheckCircle, AlertCircle } from 'lucide-react'
 
 type Props = {
   teamId: string
@@ -83,61 +83,25 @@ export function InviteUserForm({ teamId }: Props) {
     }
   }
 
-  const handleAddExisting = async () => {
-    if (!foundUser) return
-    setLoading(true)
-
-    try {
-      const teamResponse = await fetch('/api/team/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamId, userId: foundUser.id, roleId }),
-      })
-
-      if (!teamResponse.ok) {
-        const error = await teamResponse.json()
-        throw new Error(error.error || 'Failed to add user to team')
-      }
-
-      const selectedRole = roles.find(r => r.id === roleId)
-      toast({
-        title: 'User added',
-        description: `${foundUser.email} added as ${selectedRole?.name || 'member'}`,
-      })
-
-      resetForm()
-      setTimeout(() => window.location.reload(), 800)
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add user',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Unified invite handler — works for both existing and new users
   const handleSendInvite = async () => {
-    if (!email) return
+    if (!email || !roleId) return
     setLoading(true)
 
     try {
-      const inviteResponse = await fetch('/api/team/invites', {
+      const res = await fetch('/api/team/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamId, email, roleId }),
       })
 
-      if (!inviteResponse.ok) {
-        const error = await inviteResponse.json()
-        throw new Error(error.error || 'Failed to send invite')
-      }
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to send invite')
 
       const selectedRole = roles.find(r => r.id === roleId)
       toast({
-        title: 'Invite sent',
-        description: `${email} invited as ${selectedRole?.name || 'member'}`,
+        title: '✉️ Invite sent!',
+        description: `${email} will see the invite in their dashboard and can accept or decline.`,
       })
 
       resetForm()
@@ -182,7 +146,7 @@ export function InviteUserForm({ teamId }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] items-end">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Identity Endpoint (Email)</Label>
+          <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Email Address</Label>
           <div className="relative group">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
               <Mail size={16} />
@@ -190,13 +154,14 @@ export function InviteUserForm({ teamId }: Props) {
             <Input
               id="email"
               type="email"
-              placeholder="operator@system.io"
+              placeholder="colleague@company.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
                 setLookupStatus('idle')
                 setFoundUser(null)
               }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleLookup() }}
               required
               className="h-12 pl-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all"
             />
@@ -210,60 +175,56 @@ export function InviteUserForm({ teamId }: Props) {
         >
           {lookupStatus === 'checking' ? (
             <div className="h-4 w-4 border-2 border-slate-500 border-t-slate-900 dark:border-t-white rounded-full animate-spin" />
-          ) : 'Check System'}
+          ) : 'Check'}
         </Button>
       </div>
 
+      {/* Status banners */}
       {lookupStatus === 'found' && foundUser && (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(16,185,129,0.05)]">
-          <div className="flex items-center gap-3 text-emerald-400">
-            <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <User size={16} />
-            </div>
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 animate-fade-in">
+          <div className="flex items-center gap-3 text-emerald-500">
+            <User size={18} />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Entity Recognized</p>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">User Found</p>
               <p className="text-sm font-bold">{foundUser.name || foundUser.email}</p>
+              <p className="text-[11px] text-emerald-600/70 mt-0.5">An invite will be sent — they must accept to join the workspace.</p>
             </div>
           </div>
         </div>
       )}
 
       {lookupStatus === 'member' && foundUser && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(245,158,11,0.05)]">
-          <div className="flex items-center gap-3 text-amber-400">
-            <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <Shield size={16} />
-            </div>
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 animate-fade-in">
+          <div className="flex items-center gap-3 text-amber-500">
+            <AlertCircle size={18} />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Redundant Operation</p>
-              <p className="text-sm font-bold">{foundUser.name || foundUser.email} is already synced.</p>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Already a Member</p>
+              <p className="text-sm font-bold">{foundUser.name || foundUser.email} is already in this workspace.</p>
             </div>
           </div>
         </div>
       )}
 
       {lookupStatus === 'not-found' && (
-        <div className="rounded-2xl border border-[#8c2bee]/20 bg-[#8c2bee]/5 p-4 animate-fade-in shadow-[0_0_20px_rgba(140,43,238,0.05)]">
+        <div className="rounded-2xl border border-[#8c2bee]/20 bg-[#8c2bee]/5 p-4 animate-fade-in">
           <div className="flex items-center gap-3 text-[#8c2bee]">
-            <div className="h-8 w-8 rounded-full bg-[#8c2bee]/10 flex items-center justify-center">
-              <Mail size={16} />
-            </div>
+            <Mail size={18} />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">External Identity</p>
-              <p className="text-sm font-bold">No records found. Protocol: System Invitation.</p>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">New User</p>
+              <p className="text-sm font-bold">No account found. An invite will be sent when they sign up.</p>
             </div>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Authority Archetype *</Label>
+        <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Role</Label>
         <Select value={roleId} onValueChange={(value) => setRoleId(value)}>
           <SelectTrigger className="h-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30">
-            <SelectValue placeholder="Assign level" />
+            <SelectValue placeholder="Assign role" />
           </SelectTrigger>
           <SelectContent className="bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-white/10 backdrop-blur-xl">
-            {roles.map(role => (
+            {roles.filter(r => r.level < 100).map(role => (
               <SelectItem key={role.id} value={role.id} className="focus:bg-slate-100 dark:focus:bg-white/10 rounded-lg p-2.5">
                 <div className="flex items-center gap-3">
                   {getRoleIcon(role.level)}
@@ -284,25 +245,20 @@ export function InviteUserForm({ teamId }: Props) {
           disabled={
             loading ||
             !roleId ||
+            !email ||
             lookupStatus === 'checking' ||
             lookupStatus === 'idle' ||
             lookupStatus === 'member'
           }
-          onClick={() => {
-            if (lookupStatus === 'found') {
-              handleAddExisting()
-            } else if (lookupStatus === 'not-found') {
-              handleSendInvite()
-            }
-          }}
+          onClick={handleSendInvite}
           className="flex-1 btn-primary-gradient h-12 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2"
         >
           {loading ? (
             <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <>
-              {lookupStatus === 'found' ? <UserPlus size={16} strokeWidth={3} /> : <Mail size={16} strokeWidth={3} />}
-              {lookupStatus === 'not-found' ? 'Transmit Invite' : 'Authorize Entrance'}
+                <Send size={15} strokeWidth={2.5} />
+                Send Invite
             </>
           )}
         </Button>

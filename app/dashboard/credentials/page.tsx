@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +22,9 @@ export default function CredentialsPage() {
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const { data: session } = useSession()
+  const activeTeamId = session?.user?.teamId
 
   useEffect(() => {
     let isActive = true
@@ -64,7 +68,7 @@ export default function CredentialsPage() {
       isActive = false
       controller.abort()
     }
-  }, [router, refreshKey])
+  }, [router, refreshKey, activeTeamId])
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this credential?')) return

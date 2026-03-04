@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Mail,
 } from 'lucide-react'
 import { switchTeam } from '@/app/actions/teams'
 import { ProfileActions } from './profile-actions'
@@ -38,6 +39,7 @@ interface SidebarProps {
   isMobile: boolean
   onToggle: () => void
   onClose: () => void
+  pendingInviteCount?: number
 }
 
 function formatBytes(bytes: number, decimals = 1) {
@@ -56,11 +58,12 @@ export function Sidebar({
   teams,
   currentTeamId,
   storageUsedBytes = 0,
-  storageLimitBytes = 1099511627776, // default 1TB
+  storageLimitBytes = 1099511627776,
   isOpen,
   isMobile,
   onToggle,
   onClose,
+  pendingInviteCount = 0,
 }: SidebarProps) {
   const pathname = usePathname()
 
@@ -70,6 +73,7 @@ export function Sidebar({
       { href: '/dashboard/files', label: 'Files', icon: FolderOpen },
       { href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon },
       { href: '/dashboard/teams', label: 'Teams', icon: Users },
+      { href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount },
       { href: '/dashboard/settings', label: 'Settings', icon: Settings },
       ...(isAdmin
         ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
@@ -78,7 +82,7 @@ export function Sidebar({
         ? [{ href: '/dashboard/admin/audit', label: 'Audit Logs', icon: ClipboardList }]
         : []),
     ],
-    [isAdmin, isOwner]
+    [isAdmin, isOwner, pendingInviteCount]
   )
 
   const handleNavClick = useCallback(() => {
@@ -150,7 +154,7 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-2 py-4" aria-label="Main navigation">
-          {navItems.map(({ href, label, icon: Icon }) => {
+          {navItems.map(({ href, label, icon: Icon, badge }: any) => {
             const isActive = pathname === href
 
             return (
@@ -171,14 +175,30 @@ export function Sidebar({
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8c2bee] rounded-full shadow-[0_0_15px_rgba(140,43,238,1)]" />
                 )}
 
-                <Icon
-                  className={cn(
-                    'h-5 w-5 flex-shrink-0 transition-all duration-500',
-                    isActive ? 'text-[#8c2bee] scale-110' : 'text-slate-600 group-hover:text-slate-400'
+                <div className="relative flex-shrink-0">
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 transition-all duration-500',
+                      isActive ? 'text-[#8c2bee] scale-110' : 'text-slate-600 group-hover:text-slate-400'
+                    )}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                  {badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-lg shadow-rose-500/30 border border-white dark:border-slate-950">
+                      {badge > 9 ? '9+' : badge}
+                    </span>
                   )}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
-                {sidebarExpanded && <span className="text-xs font-black uppercase tracking-widest">{label}</span>}
+                </div>
+                {sidebarExpanded && (
+                  <div className="flex items-center justify-between flex-1 min-w-0">
+                    <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+                    {badge > 0 && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-500 text-[9px] font-black border border-rose-500/20">
+                        {badge}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             )
           })}

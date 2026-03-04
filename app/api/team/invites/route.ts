@@ -6,6 +6,40 @@ import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
 import { logUserAction } from '@/lib/audit'
 
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true },
+    })
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+    const invites = await prisma.teamInvite.findMany({
+      where: {
+        email: user.email,
+        status: 'PENDING',
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        team: { select: { id: true, name: true, slug: true } },
+        role: { select: { id: true, name: true, description: true } },
+        invitedBy: { select: { name: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json(invites)
+  } catch (error) {
+    console.error('Fetch invites error:', error)
+    return NextResponse.json({ error: 'Failed to fetch invites' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -39,16 +73,19 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = String(email).toLowerCase()
 
+    // Check if user is already a member of the team
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       select: { id: true },
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'User already exists. Add them directly to the team.' },
-        { status: 400 }
-      )
+      const alreadyMember = await prisma.teamMember.findFirst({
+        where: { userId: existingUser.id, teamId },
+      })
+      if (alreadyMember) {
+        return NextResponse.json({ error: 'User is already a member of this team.' }, { status: 400 })
+      }
     }
 
     const pendingInvite = await prisma.teamInvite.findFirst({
@@ -62,7 +99,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (pendingInvite) {
-      return NextResponse.json({ error: 'Invite already sent' }, { status: 400 })
+      return NextResponse.json({ error: 'Invite already sent to this email.' }, { status: 400 })
     }
 
     const expiresAt = new Date()

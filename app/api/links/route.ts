@@ -249,7 +249,9 @@ export async function GET(request: NextRequest) {
     const fileId = searchParams.get('fileId')
 
     const where: any = {
-      userId: session.user.id,
+      file: {
+        teamId: session.user.teamId || null,
+      },
     }
 
     if (fileId) {

@@ -16,15 +16,15 @@ export default async function DashboardPage() {
       prisma.awsBucket.count({
         where: { 
           credential: {
-            userId: session.user.id 
+            teamId: session.user.teamId || null,
           }
         },
       }),
       prisma.file.count({
-        where: { userId: session.user.id },
+        where: { teamId: session.user.teamId || null },
       }),
       prisma.link.count({
-        where: { userId: session.user.id },
+        where: { file: { teamId: session.user.teamId || null } },
       }),
       prisma.teamMember.count({
         where: { userId: session.user.id },
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   const currentTeamId = session.user.teamId // If we want team-scoped chart. Currently files are userId scoped in the stats above, let's keep consistency with userId for personal dashboard.
 
   const allFiles = await prisma.file.findMany({
-    where: { userId: session.user.id },
+    where: { teamId: session.user.teamId || null },
     select: { size: true, createdAt: true }
   })
 
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   const minBarHeight = 10
 
   const recentFiles = await prisma.file.findMany({
-    where: { userId: session.user.id },
+    where: { teamId: session.user.teamId || null },
     take: 5,
     orderBy: { createdAt: 'desc' },
     include: {

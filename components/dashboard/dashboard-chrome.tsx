@@ -24,9 +24,10 @@ interface DashboardChromeProps {
   teams: Team[]
   currentTeamId?: string
   children: React.ReactNode
+  pendingInviteCount?: number
 }
 
-export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, isAdmin, isOwner, teams, currentTeamId, children }: DashboardChromeProps) {
+export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, isAdmin, isOwner, teams, currentTeamId, children, pendingInviteCount = 0 }: DashboardChromeProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
@@ -72,6 +73,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         isMobile={isMobile}
         onToggle={handleToggle}
         onClose={handleClose}
+        pendingInviteCount={pendingInviteCount}
       />
 
       <div

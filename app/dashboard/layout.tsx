@@ -58,8 +58,17 @@ export default async function DashboardLayout({
       where: { teamId: currentTeamId },
       _sum: { size: true }
     })
-    storageUsedBytes = Number(usageResult._sum.size || 0)
+    const storageUsedBytes = Number(usageResult._sum.size || 0)
   }
+
+  // Fetch pending invite count for the badge
+  const pendingInviteCount = await prisma.teamInvite.count({
+    where: {
+      email: session.user.email || '',
+      status: 'PENDING',
+      expiresAt: { gt: new Date() },
+    },
+  })
 
   return (
     <DashboardChrome 
@@ -72,6 +81,7 @@ export default async function DashboardLayout({
       isOwner={isOwner}
       teams={teams}
       currentTeamId={currentTeamId}
+      pendingInviteCount={pendingInviteCount}
     >
       {children}
     </DashboardChrome>

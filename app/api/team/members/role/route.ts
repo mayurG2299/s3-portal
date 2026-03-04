@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
-import { canManageTeam } from '@/lib/permissions'
+import { canManageTeam, getUserRoleInTeam } from '@/lib/permissions'
 
 // Update user role in team
 export async function PATCH(request: NextRequest) {
@@ -69,7 +69,24 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Verify the role exists
+    // Ensure the Team Workspace Owner cannot be modified
+    const team = await prisma.team.findUnique({ where: { id: teamId } })
+    if (team?.ownerId === userId) {
+      await logUserAction({
+        request,
+        action: 'TEAM_MEMBER_ROLE_UPDATE',
+        success: false,
+        userId: session.user.id,
+        teamId,
+        errorMessage: 'The workspace owner\'s role cannot be modified',
+      })
+      return NextResponse.json(
+        { error: 'The workspace owner\'s role cannot be modified' },
+        { status: 403 }
+      )
+    }
+
+    // Verify the new role exists
     const role = await prisma.role.findUnique({
       where: { id: roleId },
     })
@@ -86,6 +103,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid role' },
         { status: 400 }
+      )
+    }
+
+    // Role Hierarchy Validation:
+    // Fetch Caller & Target Role
+    const callerRole = await getUserRoleInTeam(session.user.id, teamId)
+    const targetRole = await getUserRoleInTeam(userId, teamId)
+
+    if (!callerRole || !targetRole) {
+      return NextResponse.json({ error: 'Roles could not be verified' }, { status: 400 })
+    }
+
+    // Admins (Level 50) cannot modify anyone with Level >= 50
+    if (callerRole.level < 100 && targetRole.level >= callerRole.level) {
+      return NextResponse.json(
+        { error: 'Cannot modify a member with equal or higher authority' },
+        { status: 403 }
+      )
+    }
+
+    // Admins cannot grant a role >= 50
+    if (callerRole.level < 100 && role.level >= callerRole.level) {
+       return NextResponse.json(
+        { error: 'Cannot grant authority equal to or higher than your own' },
+        { status: 403 }
       )
     }
 

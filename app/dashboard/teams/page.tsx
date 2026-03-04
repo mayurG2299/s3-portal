@@ -70,11 +70,12 @@ export default async function TeamsPage() {
                 </div>
               </div>
             </div>
-            <div className="p-6">
+            <div key={`members-${team.id}`} className="p-6">
               <UserRoleManagement
                 teamMembers={team.members}
                 currentUserId={session.user.id}
                 teamId={team.id}
+                ownerId={team.ownerId}
               />
             </div>
           </div>
@@ -102,7 +103,7 @@ export default async function TeamsPage() {
                 </Link>
               </Button>
             </div>
-            <div className="p-6">
+            <div key={`invite-${team.id}`} className="p-6">
               <InviteUserForm teamId={team.id} />
             </div>
           </div>

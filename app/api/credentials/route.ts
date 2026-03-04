@@ -48,21 +48,21 @@ export async function GET(request: NextRequest) {
       return error
     }
 
-    // Get credentials for user (personal) or their teams
+    // Get credentials exclusively filtered by active workspace
     const credentials = await prisma.aWSCredential.findMany({
       where: {
-        OR: [
-          { userId: auth!.userId },
-          {
-            team: {
-              members: {
-                some: {
-                  userId: auth!.userId,
+        teamId: auth!.teamId || null,
+        ...(auth!.teamId
+          ? {
+              team: {
+                members: {
+                  some: {
+                    userId: auth!.userId,
+                  },
                 },
               },
-            },
-          },
-        ],
+            }
+          : { userId: auth!.userId }),
       },
       select: {
         id: true,

@@ -93,20 +93,27 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
         token.email = user.email
         token.roleId = (user as any).roleId
         token.teamId = (user as any).teamId
       }
+
+      // Handle active session updates (e.g., from team switcher)
+      if (trigger === 'update' && session) {
+        if (session.teamId) token.teamId = session.teamId
+        if (session.roleId) token.roleId = session.roleId
+      }
+
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id
-        session.user.roleId = token.roleId
-        session.user.teamId = token.teamId
+        session.user.id = token.id as string
+        session.user.roleId = token.roleId as string
+        session.user.teamId = token.teamId as string
       }
       return session
     },
