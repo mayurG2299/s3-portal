@@ -49,13 +49,13 @@ const getRoleIcon = (roleName: string, level: number) => {
     )
   } else if (level >= 50 || roleName === 'ADMIN') {
     return (
-      <div className="h-8 w-8 rounded-xl bg-[#8c2bee]/10 border border-[#8c2bee]/20 flex items-center justify-center text-[#8c2bee] shadow-[0_0_15px_rgba(140,43,238,0.1)]">
+      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(140,43,238,0.1)]">
         <Shield size={14} strokeWidth={3} />
       </div>
     )
   } else {
     return (
-      <div className="h-8 w-8 rounded-xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400">
+      <div className="h-8 w-8 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground">
         <Eye size={14} strokeWidth={3} />
       </div>
     )
@@ -135,17 +135,17 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
     <>
       {/* Access Denied Beautiful Dialog */}
       <Dialog open={!!accessDenied} onOpenChange={() => setAccessDenied(null)}>
-        <DialogContent className="sm:max-w-md glass-card !bg-white dark:!bg-slate-900 border-rose-500/20">
+        <DialogContent className="sm:max-w-md glass-card !bg-background border-destructive/20">
           <DialogHeader>
             <div className="flex justify-center mb-4">
-              <div className="h-20 w-20 rounded-3xl bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]">
+              <div className="h-20 w-20 rounded-3xl bg-destructive/10 flex items-center justify-center text-destructive border border-destructive/20 shadow-[0_0_40px_rgba(239,68,68,0.15)]">
                 <ShieldAlert size={40} strokeWidth={1.5} />
               </div>
             </div>
-            <DialogTitle className="text-center text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            <DialogTitle className="text-center text-xl font-black text-foreground tracking-tight">
               Access Restricted
             </DialogTitle>
-            <DialogDescription className="text-center text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+            <DialogDescription className="text-center text-sm text-muted-foreground font-medium mt-1">
               {accessDenied}
             </DialogDescription>
           </DialogHeader>
@@ -172,7 +172,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
               key={member.id}
               className={`group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all duration-300 animate-fade-in ${isOwner
                 ? 'bg-amber-500/5 border-amber-500/20 dark:border-amber-500/10'
-                : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 hover:border-[#8c2bee]/30 dark:hover:border-[#8c2bee]/30 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
+                : 'bg-muted/30 border-border hover:border-primary/50 hover:bg-muted/50'
                 }`}
               style={{ animationDelay: `${idx * 20}ms` }}
             >
@@ -180,11 +180,11 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                 {getRoleIcon(member.role.name, member.role.level)}
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                    <span className="text-sm font-black text-foreground tracking-tight">
                       {member.user.email}
                     </span>
                     {isCurrentUser && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-[#8c2bee]/20 border border-[#8c2bee]/30 text-[9px] font-black uppercase tracking-widest text-[#b673ff]">
+                      <span className="px-1.5 py-0.5 rounded-md bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
                         You
                       </span>
                     )}
@@ -195,7 +195,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                     )}
                   </div>
                   {member.user.name && (
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                       {member.user.name}
                     </p>
                   )}
@@ -204,7 +204,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8">
                 <div className="hidden lg:block text-right max-w-[240px]">
-                  <p className="text-[10px] italic font-medium text-slate-500 leading-relaxed">
+                  <p className="text-[10px] italic font-medium text-muted-foreground/80 leading-relaxed">
                     {member.role.description || "No security constraints defined."}
                   </p>
                 </div>
@@ -222,10 +222,10 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                         onValueChange={(value) => updateUserRole(member.userId, member.id, value)}
                         disabled={isLocked || updating === member.id || loadingRoles}
                       >
-                        <SelectTrigger className="w-full sm:w-44 h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30 disabled:opacity-50">
+                        <SelectTrigger className="w-full sm:w-44 h-10 bg-background border-border rounded-xl text-xs font-bold text-foreground focus:border-primary/50 disabled:opacity-50">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 backdrop-blur-xl">
+                        <SelectContent className="bg-card border-border backdrop-blur-xl">
                           {availableRoles
                             .filter(r => r.level < 100) // Never show OWNER in dropdown
                             .sort((a, b) => b.level - a.level)
@@ -237,11 +237,11 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                                   key={role.id}
                                   value={role.id}
                                   disabled={cantGrant}
-                                  className="text-xs font-bold text-slate-700 dark:text-slate-300 focus:bg-slate-100 dark:focus:bg-white/10 focus:text-slate-900 dark:focus:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                                  className="text-xs font-bold text-foreground/80 focus:bg-accent focus:text-accent-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                   <div className="flex items-center gap-2.5">
                                     {role.name}
-                                    {cantGrant && <span className="text-[9px] text-slate-400 font-normal">(requires higher access)</span>}
+                                    {cantGrant && <span className="text-[9px] text-muted-foreground font-normal">(requires higher access)</span>}
                                   </div>
                                 </SelectItem>
                               )
@@ -252,7 +252,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                   )}
                   {updating === member.id && (
                     <div className="absolute -right-6 top-1/2 -translate-y-1/2">
-                      <div className="h-4 w-4 border-2 border-[#8c2bee]/30 border-t-[#8c2bee] rounded-full animate-spin" />
+                      <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                     </div>
                   )}
                 </div>
@@ -262,8 +262,8 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
         })}
 
         {teamMembers.length === 0 && (
-          <div className="text-center py-20 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-slate-200 dark:border-white/10">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-600">
+          <div className="text-center py-20 bg-muted/30 rounded-3xl border border-dashed border-border">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
               Collective database empty.
             </p>
           </div>

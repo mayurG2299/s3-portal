@@ -131,12 +131,12 @@ export function InviteUserForm({ teamId }: Props) {
       </div>
     )
     if (level >= 50) return (
-      <div className="h-6 w-6 rounded-lg bg-[#8c2bee]/10 border border-[#8c2bee]/20 flex items-center justify-center text-[#8c2bee]">
+      <div className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
         <Shield size={10} strokeWidth={3} />
       </div>
     )
     return (
-      <div className="h-6 w-6 rounded-lg bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400">
+      <div className="h-6 w-6 rounded-lg bg-muted border border-border flex items-center justify-center text-muted-foreground">
         <Eye size={10} strokeWidth={3} />
       </div>
     )
@@ -146,9 +146,9 @@ export function InviteUserForm({ teamId }: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] items-end">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Email Address</Label>
+          <Label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1">Email Address</Label>
           <div className="relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
               <Mail size={16} />
             </div>
             <Input
@@ -163,7 +163,7 @@ export function InviteUserForm({ teamId }: Props) {
               }}
               onKeyDown={(e) => { if (e.key === 'Enter') handleLookup() }}
               required
-              className="h-12 pl-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30 placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-all"
+              className="h-12 pl-12 bg-muted border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50 placeholder:text-muted-foreground transition-all"
             />
           </div>
         </div>
@@ -171,10 +171,10 @@ export function InviteUserForm({ teamId }: Props) {
           type="button"
           onClick={handleLookup}
           disabled={!email || loading}
-          className="h-12 px-8 rounded-xl bg-slate-100 border-slate-200 dark:bg-white/5 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white transition-all disabled:opacity-50"
+          className="h-12 px-8 rounded-xl bg-muted border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all disabled:opacity-50"
         >
           {lookupStatus === 'checking' ? (
-            <div className="h-4 w-4 border-2 border-slate-500 border-t-slate-900 dark:border-t-white rounded-full animate-spin" />
+            <div className="h-4 w-4 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
           ) : 'Check'}
         </Button>
       </div>
@@ -206,8 +206,8 @@ export function InviteUserForm({ teamId }: Props) {
       )}
 
       {lookupStatus === 'not-found' && (
-        <div className="rounded-2xl border border-[#8c2bee]/20 bg-[#8c2bee]/5 p-4 animate-fade-in">
-          <div className="flex items-center gap-3 text-[#8c2bee]">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 animate-fade-in">
+          <div className="flex items-center gap-3 text-primary">
             <Mail size={18} />
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest opacity-60">New User</p>
@@ -218,19 +218,19 @@ export function InviteUserForm({ teamId }: Props) {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Role</Label>
+        <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1">Role</Label>
         <Select value={roleId} onValueChange={(value) => setRoleId(value)}>
-          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30">
+          <SelectTrigger className="h-12 bg-muted border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50">
             <SelectValue placeholder="Assign role" />
           </SelectTrigger>
-          <SelectContent className="bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-white/10 backdrop-blur-xl">
+          <SelectContent className="bg-card border-border backdrop-blur-xl">
             {roles.filter(r => r.level < 100).map(role => (
-              <SelectItem key={role.id} value={role.id} className="focus:bg-slate-100 dark:focus:bg-white/10 rounded-lg p-2.5">
+              <SelectItem key={role.id} value={role.id} className="focus:bg-accent focus:text-accent-foreground rounded-lg p-2.5">
                 <div className="flex items-center gap-3">
                   {getRoleIcon(role.level)}
                   <div>
-                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">{role.name}</p>
-                    <p className="text-[10px] font-medium text-slate-500 mt-1 italic">{role.description}</p>
+                    <p className="text-xs font-black text-foreground uppercase tracking-tight leading-none">{role.name}</p>
+                    <p className="text-[10px] font-medium text-muted-foreground mt-1 italic">{role.description}</p>
                   </div>
                 </div>
               </SelectItem>
@@ -239,7 +239,7 @@ export function InviteUserForm({ teamId }: Props) {
         </Select>
       </div>
 
-      <div className="flex gap-4 pt-4 border-t border-slate-200 dark:border-white/5">
+      <div className="flex gap-4 pt-4 border-t border-border">
         <Button
           type="button"
           disabled={
@@ -266,7 +266,7 @@ export function InviteUserForm({ teamId }: Props) {
           type="button"
           variant="ghost"
           onClick={resetForm}
-          className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-transparent"
+          className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-accent"
         >
           Reset
         </Button>

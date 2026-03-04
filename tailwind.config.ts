@@ -58,10 +58,6 @@ const config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      boxShadow: {
-        'glass-morphic': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-        'glass-card': '0 20px 40px -15px rgba(0, 0, 0, 0.5)',
-      },
       keyframes: {
         'accordion-down': {
           from: { height: '0' },

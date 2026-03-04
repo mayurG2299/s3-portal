@@ -185,26 +185,26 @@ export function FileUpload({
           'relative group border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-500 overflow-hidden',
           isUploading && 'opacity-50 cursor-not-allowed',
           isDragActive
-            ? 'border-[#8c2bee] bg-[#8c2bee]/5 shadow-[0_0_30px_rgba(99,102,241,0.1)]'
-            : 'border-white/10 bg-white/[0.02] hover:border-[#8c2bee]/30 hover:bg-white/[0.04]'
+            ? 'border-primary bg-primary/5 shadow-[0_0_30px_rgba(var(--primary),0.1)]'
+            : 'border-border bg-muted/30 hover:border-primary/30 hover:bg-muted/50'
         )}
       >
         <input {...getInputProps()} />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#8c2bee]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <div className="relative z-10">
-          <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6 text-slate-400 group-hover:text-[#b673ff] group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] transition-all duration-500">
+          <div className="h-16 w-16 rounded-2xl bg-muted border border-border flex items-center justify-center mx-auto mb-6 text-muted-foreground group-hover:text-primary group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(var(--primary),0.2)] transition-all duration-500">
             <Upload size={28} strokeWidth={2.5} />
           </div>
 
           {isDragActive ? (
-            <p className="text-lg font-black text-[#b673ff] uppercase tracking-widest animate-pulse">Release to Ingest</p>
+            <p className="text-lg font-black text-primary uppercase tracking-widest animate-pulse">Release to Ingest</p>
           ) : (
             <>
-                <p className="text-lg font-black text-white uppercase tracking-tight mb-2">
-                  Drop Resources <span className="text-slate-500">or</span> <span className="gradient-text">Browse Files</span>
+                <p className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
+                  Drop Resources <span className="text-muted-foreground">or</span> <span className="gradient-text">Browse Files</span>
                 </p>
-              <div className="flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <div className="flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                 <span>Max {maxFiles} Entities</span>
                 <div className="h-1 w-1 rounded-full bg-slate-700" />
                 <span>Limit {formatFileSize(maxSize)}</span>
@@ -216,10 +216,10 @@ export function FileUpload({
 
       {files.length > 0 && (
         <div className="space-y-4 animate-slide-up">
-          <div className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center justify-between bg-muted border border-border rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                 Transmission Queue / {files.length} Item{files.length !== 1 ? 's' : ''}
               </h3>
             </div>
@@ -229,7 +229,7 @@ export function FileUpload({
                 size="sm"
                 onClick={clearCompleted}
                 disabled={isUploading}
-                className="h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5"
+                className="h-8 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-accent/50"
               >
                 Flush Queue
               </Button>
@@ -240,35 +240,35 @@ export function FileUpload({
             {files.map((uploadFile, index) => (
               <div
                 key={index}
-                className="group relative flex items-center gap-4 p-4 glass-card border-white/5 hover:border-white/10 transition-all duration-300 overflow-hidden"
+                className="group relative flex items-center gap-4 p-4 glass-card border border-border hover:border-primary/30 transition-all duration-300 overflow-hidden"
               >
                 {uploadFile.status === 'success' && (
                   <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
                 )}
 
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 group-hover:text-white transition-colors">
+                <div className="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
                   <File size={18} strokeWidth={2.5} />
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">
+                    <p className="text-sm font-bold text-foreground truncate max-w-[200px] sm:max-w-md">
                       {uploadFile.file.name}
                     </p>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                       {formatFileSize(uploadFile.file.size)}
                     </p>
                   </div>
 
                   {uploadFile.status === 'uploading' && (
                     <div className="space-y-1.5 animate-fade-in">
-                      <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-1 w-full bg-muted rounded-full overflow-hidden border border-border/50">
                         <div
-                          className="h-full bg-gradient-to-r from-[#8c2bee] via-violet-500 to-[#6a1bbf] transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                          className="h-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-300 shadow-[0_0_10px_rgba(var(--primary),0.5)]"
                           style={{ width: `${uploadFile.progress}%` }}
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-[#b673ff]">
+                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-primary">
                         <span>Uploading Payload</span>
                         <span>{Math.round(uploadFile.progress)}%</span>
                       </div>
@@ -276,7 +276,7 @@ export function FileUpload({
                   )}
 
                   {uploadFile.status === 'error' && uploadFile.error && (
-                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-tight italic">
+                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-tight italic break-all">
                       Error: {uploadFile.error}
                     </p>
                   )}
@@ -295,18 +295,18 @@ export function FileUpload({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRetry(index)}
-                        className="h-8 w-8 rounded-xl text-[#b673ff] hover:text-white hover:bg-white/5 border border-white/0 hover:border-white/5 transition-all"
+                        className="h-10 w-10 rounded-xl text-primary hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all"
                         title="Retry upload"
                       >
-                        <RotateCcw size={14} strokeWidth={2.5} />
+                        <RotateCcw size={18} strokeWidth={2.5} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFile(index)}
-                        className="h-8 w-8 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-white/0 hover:border-rose-500/10 transition-all"
+                        className="h-10 w-10 rounded-xl text-destructive hover:text-destructive/80 hover:bg-destructive/10 border border-transparent hover:border-destructive/10 transition-all"
                       >
-                        <X size={14} strokeWidth={2.5} />
+                        <X size={18} strokeWidth={2.5} />
                       </Button>
                     </div>
                   )}
@@ -316,10 +316,10 @@ export function FileUpload({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleAbort(index)}
-                      className="h-8 w-8 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                      className="h-10 w-10 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                       title="Abort"
                     >
-                      <X size={14} strokeWidth={2.5} />
+                      <X size={18} strokeWidth={2.5} />
                     </Button>
                   )}
 
@@ -328,9 +328,9 @@ export function FileUpload({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeFile(index)}
-                      className="h-8 w-8 rounded-xl text-slate-500 hover:text-white transition-all"
+                      className="h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
                     >
-                      <X size={14} strokeWidth={2.5} />
+                      <X size={18} strokeWidth={2.5} />
                     </Button>
                   )}
                 </div>

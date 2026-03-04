@@ -396,9 +396,8 @@ export default function FilesPage() {
             error.message.includes('NetworkError') ||
             error.message.includes('CORS')) {
           throw new Error(
-            `${file.name}: CORS configuration missing on S3 bucket. ` +
-            `Please configure CORS on your S3 bucket to allow uploads from this domain. ` +
-            `See docs/S3-CORS-SETUP.md for instructions.`
+            `${file.name}: CORS configuration is missing or incorrect on the S3 bucket. ` +
+            `Please ensure your bucket settings allow uploads from this domain.`
           )
         }
         
@@ -699,12 +698,28 @@ export default function FilesPage() {
   const availableBuckets = activeCredential?.buckets || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Files</h1>
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen">
+      <header className="mb-8">
+        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Files</h1>
+            {selectedBucket && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                {getBreadcrumbs().map((crumb, index) => (
+                  <div key={crumb.path} className="flex items-center gap-2">
+                    {index > 0 && <span>/</span>}
+                    <button
+                      onClick={() => setCurrentPath(crumb.path)}
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
+                      {crumb.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
               <Select value={selectedCredential} onValueChange={setSelectedCredential}>
                 <SelectTrigger className="w-64">
                   <SelectValue placeholder="Select credential" />
@@ -765,48 +780,33 @@ export default function FilesPage() {
                 {isRefreshing ? 'Refreshing' : 'Refresh'}
               </Button>
             </div>
-          </div>
-
-          {/* Breadcrumb navigation */}
-          {selectedBucket && (
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              {getBreadcrumbs().map((crumb, index) => (
-                <div key={crumb.path} className="flex items-center gap-2">
-                  {index > 0 && <span className="text-gray-400">/</span>}
-                  <button
-                    onClick={() => setCurrentPath(crumb.path)}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {crumb.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
+      <main>
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border">
             <Button
-              variant={viewMode === 'all' ? 'default' : 'outline'}
+              variant={viewMode === 'all' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('all')}
+              className={viewMode === 'all' ? 'shadow-sm' : ''}
             >
               All
             </Button>
             <Button
-              variant={viewMode === 'favorites' ? 'default' : 'outline'}
+              variant={viewMode === 'favorites' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('favorites')}
+              className={viewMode === 'favorites' ? 'shadow-sm' : ''}
             >
               Favorites
             </Button>
             <Button
-              variant={viewMode === 'recents' ? 'default' : 'outline'}
+              variant={viewMode === 'recents' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('recents')}
+              className={viewMode === 'recents' ? 'shadow-sm' : ''}
             >
               Recents
             </Button>
@@ -835,15 +835,15 @@ export default function FilesPage() {
           )}
         </div>
         {!selectedBucket ? (
-          <Card className="p-12 text-center">
-            <p className="text-gray-500">
+          <Card className="p-12 text-center bg-muted/30 border-border">
+            <p className="text-muted-foreground">
               Please select a credential and bucket to browse files
             </p>
           </Card>
         ) : files.length === 0 ? (
-            <Card className="p-12 text-center">
-              <Folder className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-4">No files yet</p>
+            <Card className="p-12 text-center bg-muted/30 border-border">
+              <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground mb-4">No files yet</p>
               <Button onClick={() => setIsUploadOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Files
@@ -886,7 +886,7 @@ export default function FilesPage() {
                               {file.name}
                             </button>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {isFolder(file)
                               ? 'Folder'
                               : `${formatFileSize(Number(file.size))} • ${formatRelativeTime(
@@ -903,11 +903,11 @@ export default function FilesPage() {
                               {file.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+                                  className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs text-primary font-medium dark:text-primary-foreground/90 backdrop-blur-sm"
                                 >
                                   {tag}
                                 </span>
-                          ))}
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1030,7 +1030,7 @@ export default function FilesPage() {
           </DialogHeader>
           <div className="space-y-6">
             {shareTargets.length > 1 && (
-              <Card className="p-3 text-sm text-gray-600">
+              <Card className="p-3 text-sm text-muted-foreground bg-muted/50 border-border">
                 {shareTargets.slice(0, 3).map((file) => file.name).join(', ')}
                 {shareTargets.length > 3 && ` +${shareTargets.length - 3} more`}
               </Card>
@@ -1075,7 +1075,7 @@ export default function FilesPage() {
                   }
                   id="custom-expiry-toggle"
                 />
-                <Label htmlFor="custom-expiry-toggle" className="text-sm text-gray-600">
+                <Label htmlFor="custom-expiry-toggle" className="text-sm text-muted-foreground">
                   Use custom expiration date/time
                 </Label>
               </div>

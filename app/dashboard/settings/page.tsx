@@ -250,10 +250,10 @@ export default function SettingsPage() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
+        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
           Platform <span className="gradient-text">Configuration</span>
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-muted-foreground font-medium">
           Connect and manage your cloud infrastructure integrations.
         </p>
       </div>
@@ -262,41 +262,41 @@ export default function SettingsPage() {
         <div className="lg:col-span-5 space-y-8">
           <div className="glass-card animate-slide-up" style={{ animationDelay: '100ms' }}>
             <div className="flex items-center gap-4 mb-8">
-              <div className="h-12 w-12 rounded-2xl bg-[#8c2bee]/10 flex items-center justify-center text-[#b673ff] border border-[#8c2bee]/20">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
                 <ShieldCheck size={24} strokeWidth={2} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Credentials</h3>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Link a new AWS environment</p>
+                <h3 className="text-xl font-bold text-foreground tracking-tight">New Credentials</h3>
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Link a new AWS environment</p>
               </div>
             </div>
 
             <form onSubmit={handleCredentialSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Environment Name</Label>
-                <Input name="name" placeholder="e.g., Production Assets" required className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600" />
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Environment Name</Label>
+                <Input name="name" placeholder="e.g., Production Assets" required className="bg-muted border-border rounded-xl h-12 focus:border-primary/50 transition-all font-medium text-foreground placeholder:text-muted-foreground/50" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Access Key</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Access Key</Label>
                   <Input
                     name="accessKey"
                     placeholder="AKIA..."
                     required
                     disabled={isSavingCredential}
                     autoComplete="off"
-                    className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700"
+                    className="bg-muted border-border rounded-xl h-12 focus:border-primary/50 transition-all font-bold text-xs uppercase tracking-widest text-foreground placeholder:text-muted-foreground/50"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Region</Label>
-                  <Input name="region" placeholder="ap-south-1" required className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all font-bold text-xs uppercase tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Region</Label>
+                  <Input name="region" placeholder="ap-south-1" required className="bg-muted border-border rounded-xl h-12 focus:border-primary/50 transition-all font-bold text-xs uppercase tracking-widest text-foreground placeholder:text-muted-foreground/50" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 ml-1">Secret Access Key</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Secret Access Key</Label>
                 <Input
                   name="secretKey"
                   type="password"
@@ -304,15 +304,15 @@ export default function SettingsPage() {
                   required
                   disabled={isSavingCredential}
                   autoComplete="new-password"
-                  className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-12 focus:border-[#8c2bee]/50 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700 font-mono tracking-widest"
+                  className="bg-muted border-border rounded-xl h-12 focus:border-primary/50 transition-all text-foreground placeholder:text-muted-foreground/50 font-mono tracking-widest"
                 />
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-white/5">
+              <div className="space-y-4 pt-4 border-t border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">Bucket Mapping</Label>
-                    <p className="text-[10px] text-slate-500 font-medium">Configure target S3 buckets</p>
+                    <Label className="text-xs font-bold text-foreground tracking-tight">Bucket Mapping</Label>
+                    <p className="text-[10px] text-muted-foreground font-medium">Configure target S3 buckets</p>
                   </div>
                   <Button
                     type="button"
@@ -324,7 +324,7 @@ export default function SettingsPage() {
                         { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
                       ])
                     }
-                    className="h-8 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-[#8c2bee] dark:text-[#b673ff] hover:bg-slate-200 dark:hover:bg-white/10"
+                    className="h-8 rounded-lg bg-muted border border-border text-[10px] font-black uppercase tracking-widest text-primary hover:bg-muted/80"
                   >
                     <Plus size={14} className="mr-1.5" />
                     Expand
@@ -333,7 +333,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                   {newBuckets.map((bucket, index) => (
-                    <div key={`new-bucket-${index}`} className="rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 p-4 space-y-4 animate-fade-in relative group/bucket">
+                    <div key={`new-bucket-${index}`} className="rounded-xl bg-muted/50 border border-border p-4 space-y-4 animate-fade-in relative group/bucket">
                       {newBuckets.length > 1 && (
                         <button
                           type="button"
@@ -345,7 +345,7 @@ export default function SettingsPage() {
                       )}
 
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Target Bucket</Label>
+                        <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Target Bucket</Label>
                         <Input
                           name={`targetBucket_${index}`}
                           placeholder="primary-assets-sync"
@@ -358,13 +358,13 @@ export default function SettingsPage() {
                             )
                           }
                           required={index === 0}
-                          className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
+                          className="h-9 bg-background border border-border rounded-lg text-xs font-bold text-foreground focus:border-primary/50"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">CDN Endpoint</Label>
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">CDN Endpoint</Label>
                           <Input
                             placeholder="dxxxx.cloudfront.net"
                             value={bucket.cloudfrontDomain}
@@ -377,11 +377,11 @@ export default function SettingsPage() {
                                 )
                               )
                             }
-                            className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-[10px] font-medium text-slate-900 dark:text-slate-300 focus:border-[#8c2bee]/30"
+                            className="h-9 bg-background border border-border rounded-lg text-[10px] font-medium text-foreground/80 focus:border-primary/50"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Key Pair ID</Label>
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Key Pair ID</Label>
                           <Input
                             placeholder="KXXXXXXXXX"
                             value={bucket.cloudfrontKeyPairId}
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                                 )
                               )
                             }
-                            className="h-9 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-lg text-[10px] font-medium text-slate-900 dark:text-slate-300 focus:border-[#8c2bee]/30 font-mono tracking-tighter"
+                            className="h-9 bg-background border border-border rounded-lg text-[10px] font-medium text-foreground/80 focus:border-primary/50 font-mono tracking-tighter"
                           />
                         </div>
                       </div>
@@ -417,32 +417,32 @@ export default function SettingsPage() {
         <div className="lg:col-span-7 space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Saved Connections</h3>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Active infrastructure endpoints</p>
+              <h3 className="text-xl font-bold text-foreground tracking-tight">Saved Connections</h3>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Active infrastructure endpoints</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {credentials.length === 0 ? (
               <div className="col-span-full glass-card p-12 text-center">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 mb-4 opacity-50">
-                  <Key className="h-8 w-8 text-slate-500" />
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4 opacity-50">
+                  <Key className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No active integrations found.</p>
+                <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No active integrations found.</p>
               </div>
             ) : (
               credentials.map((credential) => (
-                <div key={credential.id} className="glass-card !p-0 overflow-hidden flex flex-col group hover:border-[#8c2bee]/30 transition-all">
+                <div key={credential.id} className="glass-card !p-0 overflow-hidden flex flex-col group hover:border-primary/50 transition-all">
                   <div className="p-6 flex-1">
                     <div className="flex items-start justify-between mb-6">
-                      <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 border border-white/5 group-hover:text-[#b673ff] group-hover:bg-[#8c2bee]/10 group-hover:border-[#8c2bee]/20 transition-all">
+                      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border border-border group-hover:text-primary group-hover:bg-primary/10 group-hover:border-primary/20 transition-all">
                         <Key size={20} />
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                          className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
                           onClick={() => setEditingCredential(credential)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -450,7 +450,7 @@ export default function SettingsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-rose-500"
+                          className="h-8 w-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-rose-500"
                           onClick={() => handleDeleteCredential(credential.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -459,58 +459,58 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="flex items-center gap-3 mb-1">
-                      <Cloud className="text-[#8c2bee] h-5 w-5" />
+                      <Cloud className="text-primary h-5 w-5" />
                     </div>
 
-                    <h4 className="font-bold text-slate-900 dark:text-white tracking-tight mb-1 truncate text-lg group-hover:text-[#8c2bee] dark:group-hover:text-[#d8b4fe] transition-colors">
+                    <h4 className="font-bold text-foreground tracking-tight mb-1 truncate text-lg group-hover:text-primary transition-colors">
                       {credential.name}
                     </h4>
 
                     {credential.team ? (
                       <div className="flex items-center gap-2 mb-1">
-                        <Users size={11} className="text-[#8c2bee]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#8c2bee]">Team: {credential.team.name}</span>
+                        <Users size={11} className="text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Team: {credential.team.name}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 mb-1">
-                        <User size={11} className="text-slate-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Personal Workspace</span>
+                          <User size={11} className="text-muted-foreground" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personal Workspace</span>
                       </div>
                     )}
 
                     <div className="flex items-center gap-2 mb-6">
-                      <Globe size={11} className="text-slate-600" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{credential.region}</span>
+                      <Globe size={11} className="text-muted-foreground" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{credential.region}</span>
                     </div>
 
-                    <div className="space-y-2 pt-4 border-t border-white/5">
+                    <div className="space-y-2 pt-4 border-t border-border">
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
                         <div className="flex items-center gap-2">
-                          <Server size={11} className="text-[#8c2bee]" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-[#a65eee] dark:text-[#b673ff]">Infrastructure</span>
+                          <Server size={11} className="text-primary" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-primary">Infrastructure</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                          <span className="text-slate-900 dark:text-white">AWS S3</span>
+                          <span className="text-foreground">AWS S3</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                        <span className="text-slate-600">Resources</span>
-                        <span className="text-[#b673ff]">{credential.buckets.length} Buckets</span>
+                        <span className="text-muted-foreground">Resources</span>
+                        <span className="text-primary">{credential.buckets.length} Buckets</span>
                       </div>
                     </div>
                   </div>
 
                   {credential.buckets.length > 0 && (
-                    <div className="px-6 py-4 bg-black/20 border-t border-white/5">
+                    <div className="px-6 py-4 bg-muted/30 border-t border-border">
                       <div className="flex flex-wrap gap-2">
                         {credential.buckets.slice(0, 2).map((b, bi) => (
-                          <span key={bi} className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                          <span key={bi} className="px-2 py-0.5 rounded bg-background border border-border text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">
                             {b.bucket}
                           </span>
                         ))}
                         {credential.buckets.length > 2 && (
-                          <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-[#b673ff] uppercase tracking-tighter">
+                          <span className="px-2 py-0.5 rounded bg-background border border-border text-[9px] font-bold text-primary uppercase tracking-tighter">
                             +{credential.buckets.length - 2}
                           </span>
                         )}
@@ -545,10 +545,10 @@ export default function SettingsPage() {
           }
         }}
       >
-        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white rounded-3xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent className="max-w-2xl bg-card border-border text-foreground rounded-3xl p-0 overflow-hidden shadow-2xl">
           <DialogHeader className="p-8 pb-4">
             <DialogTitle className="text-2xl font-black tracking-tight">Edit <span className="gradient-text">Connection</span></DialogTitle>
-            <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium">
+            <DialogDescription className="text-muted-foreground font-medium">
               Update endpoints and configuration for this integration.
             </DialogDescription>
           </DialogHeader>
@@ -558,41 +558,41 @@ export default function SettingsPage() {
               <form onSubmit={handleUpdateCredential} className="space-y-6" autoComplete="off">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Integration Name</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Integration Name</Label>
                     <Input
                       id="editName"
                       name="editName"
                       defaultValue={editingCredential.name}
                       required
-                      className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold tracking-tight"
+                      className="bg-muted border-border rounded-xl h-11 text-foreground focus:border-primary/50 transition-all font-bold tracking-tight"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">AWS Region</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AWS Region</Label>
                     <Input
                       id="editRegion"
                       name="editRegion"
                       defaultValue={editingCredential.region}
                       required
-                      className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs"
+                      className="bg-muted border-border rounded-xl h-11 text-foreground focus:border-primary/50 transition-all font-bold uppercase tracking-widest text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-border">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Access Key (Optional)</Label>
-                    <Input id="editAccessKey" name="editAccessKey" placeholder="Leave empty to keep current" autoComplete="off" className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all font-bold uppercase tracking-widest text-xs placeholder:text-slate-400 dark:placeholder:text-slate-600" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">New Access Key (Optional)</Label>
+                    <Input id="editAccessKey" name="editAccessKey" placeholder="Leave empty to keep current" autoComplete="off" className="bg-muted border-border rounded-xl h-11 text-foreground focus:border-primary/50 transition-all font-bold uppercase tracking-widest text-xs placeholder:text-muted-foreground" />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">New Secret Key (Optional)</Label>
-                    <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" className="bg-slate-50 border-slate-200 dark:bg-white/5 dark:border-white/10 rounded-xl h-11 text-slate-900 dark:text-white focus:border-[#8c2bee]/30 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" />
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">New Secret Key (Optional)</Label>
+                    <Input id="editSecretKey" name="editSecretKey" type="password" placeholder="••••••••" autoComplete="new-password" className="bg-muted border-border rounded-xl h-11 text-foreground focus:border-primary/50 transition-all placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="space-y-4 pt-4 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mapped Buckets</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mapped Buckets</Label>
                     <Button
                       type="button"
                       variant="outline"
@@ -603,7 +603,7 @@ export default function SettingsPage() {
                           { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
                         ])
                       }
-                      className="h-7 px-3 rounded-lg bg-[#8c2bee]/10 border-[#8c2bee]/20 text-[9px] font-black uppercase tracking-widest text-[#b673ff] hover:bg-[#8c2bee]/20"
+                      className="h-7 px-3 rounded-lg bg-primary/10 border-primary/20 text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/20"
                     >
                       Add Resource
                     </Button>
@@ -611,7 +611,7 @@ export default function SettingsPage() {
 
                   <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                     {editBuckets.map((bucket, index) => (
-                      <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-slate-50 border-slate-200 dark:bg-black/40 dark:border-white/5 border p-4 space-y-4 relative group/edit-bucket">
+                      <div key={`edit-bucket-${bucket.id || index}`} className="rounded-2xl bg-muted/30 border-border border p-4 space-y-4 relative group/edit-bucket">
                         {!bucket.id && editBuckets.length > 1 && (
                           <button
                             type="button"
@@ -623,7 +623,7 @@ export default function SettingsPage() {
                         )}
 
                         <div className="space-y-1.5">
-                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">S3 Destination Name</Label>
+                          <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">S3 Destination Name</Label>
                           <Input
                             name={`editTargetBucket_${index}`}
                             value={bucket.bucket}
@@ -635,13 +635,13 @@ export default function SettingsPage() {
                               )
                             }
                             required={index === 0}
-                            className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
+                            className="h-10 bg-background border-border rounded-xl text-xs font-bold text-foreground focus:border-primary/50"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-1.5">
-                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">CDN Link (optional)</Label>
+                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">CDN Link (optional)</Label>
                             <Input
                               placeholder="dxxxx.cloudfront.net"
                               value={bucket.cloudfrontDomain}
@@ -654,11 +654,11 @@ export default function SettingsPage() {
                                   )
                                 )
                               }
-                              className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-[10px] font-medium text-slate-700 dark:text-slate-300 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                              className="h-10 bg-background border-border rounded-xl text-[10px] font-medium text-foreground/80 placeholder:text-muted-foreground/60"
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-600">Key Pair ID</Label>
+                            <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Key Pair ID</Label>
                             <Input
                               placeholder="KXXXXXXXXX"
                               value={bucket.cloudfrontKeyPairId}
@@ -671,7 +671,7 @@ export default function SettingsPage() {
                                   )
                                 )
                               }
-                              className="h-10 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-[10px] font-medium text-slate-700 dark:text-slate-300 font-mono placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                              className="h-10 bg-background border-border rounded-xl text-[10px] font-medium text-foreground/80 font-mono placeholder:text-muted-foreground/60"
                             />
                           </div>
                         </div>
@@ -680,12 +680,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="flex justify-end gap-3 pt-4 border-t border-border">
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => setEditingCredential(null)}
-                    className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+                    className="h-11 px-6 rounded-xl text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted"
                   >
                     Cancel
                   </Button>

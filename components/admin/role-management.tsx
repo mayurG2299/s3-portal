@@ -174,12 +174,12 @@ export function RoleManagement({ teamId }: Props) {
       </div>
     )
     if (level >= 50) return (
-      <div className="h-8 w-8 rounded-xl bg-[#8c2bee]/10 border border-[#8c2bee]/20 flex items-center justify-center text-[#8c2bee] shadow-[0_0_15px_rgba(140,43,238,0.1)]">
+      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(140,43,238,0.1)]">
         <Shield size={14} strokeWidth={3} />
       </div>
     )
     return (
-      <div className="h-8 w-8 rounded-xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400">
+      <div className="h-8 w-8 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground">
         <Eye size={14} strokeWidth={3} />
       </div>
     )
@@ -187,10 +187,10 @@ export function RoleManagement({ teamId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl p-4">
+      <div className="flex justify-between items-center bg-muted/30 border border-border rounded-2xl p-4">
         <div className="flex items-center gap-3">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] shadow-[0_0_8px_rgba(140,43,238,0.5)]" />
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Authority Definitions</h3>
+          <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(140,43,238,0.5)]" />
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Authority Definitions</h3>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -199,10 +199,10 @@ export function RoleManagement({ teamId }: Props) {
               Engineer Role
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden glass-card !bg-white dark:!bg-slate-950 border-slate-200 dark:border-white/10 shadow-2xl p-0 flex flex-col">
-            <div className="p-6 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.03]">
-              <DialogTitle className="text-xl font-black text-slate-900 dark:text-white">Authority Archetype Creation</DialogTitle>
-              <DialogDescription className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-1">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden glass-card !bg-background border-border shadow-2xl p-0 flex flex-col">
+            <div className="p-6 border-b border-border bg-muted/50">
+              <DialogTitle className="text-xl font-black text-foreground">Authority Archetype Creation</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-xs font-medium mt-1">
                 Configure permission parameters for specialized system roles.
               </DialogDescription>
             </div>
@@ -210,42 +210,42 @@ export function RoleManagement({ teamId }: Props) {
             <form onSubmit={handleCreateRole} className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Designation</Label>
+                  <Label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Designation</Label>
                   <Input
                     id="name"
                     name="name"
                     placeholder="e.g., ARCHITECT, AUDITOR"
                     required
-                    className="h-12 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
+                    className="h-12 bg-background border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50"
                     disabled={creating}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Operational Scope</Label>
+                  <Label htmlFor="description" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Operational Scope</Label>
                   <Input
                     id="description"
                     name="description"
                     placeholder="Brief definition of role purpose"
                     required
-                    className="h-12 bg-white border-slate-300 dark:bg-white/5 dark:border-white/10 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:border-[#8c2bee]/30"
+                    className="h-12 bg-background border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50"
                     disabled={creating}
                   />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-500">Permission Schematics</Label>
-                <div className="space-y-3 p-4 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl overflow-y-auto max-h-[40vh] custom-scrollbar">
+                <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Permission Schematics</Label>
+                <div className="space-y-3 p-4 bg-muted/50 border border-border rounded-2xl overflow-y-auto max-h-[40vh] custom-scrollbar">
                   {Object.entries(SCREEN_OPTIONS).map(([category, screens]) => (
-                    <div key={category} className="space-y-3 bg-white dark:bg-white/[0.02] p-4 rounded-xl border border-slate-200 dark:border-white/5">
-                      <h4 className="text-[9px] font-black tracking-[0.2em] text-[#8c2bee] uppercase">{category} MODULES</h4>
+                    <div key={category} className="space-y-3 bg-background p-4 rounded-xl border border-border">
+                      <h4 className="text-[9px] font-black tracking-[0.2em] text-primary uppercase">{category} MODULES</h4>
                       <div className="space-y-3">
                         {screens.map(screen => {
                           const permission = screenPermissions.find(sp => sp.screen === screen)
                           return (
                             <div key={screen} className="flex items-center justify-between group/row">
-                              <label className="text-[11px] font-bold text-slate-400 group-hover/row:text-slate-300 transition-colors uppercase tracking-tight">
+                              <label className="text-[11px] font-bold text-muted-foreground group-hover/row:text-foreground transition-colors uppercase tracking-tight">
                                 {screen.replace(/_/g, ' ')}
                               </label>
                               <div className="flex gap-6">
@@ -254,18 +254,18 @@ export function RoleManagement({ teamId }: Props) {
                                     checked={permission?.level === 'VIEW'}
                                     onCheckedChange={() => toggleScreenPermission(screen, 'VIEW')}
                                     disabled={creating}
-                                    className="border-slate-300 bg-white dark:border-white/20 dark:bg-white/5 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#8c2bee] data-[state=checked]:to-[#6a1bbf] data-[state=checked]:border-[#8c2bee]"
+                                    className="border-border bg-background data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <span className="text-[10px] font-black text-slate-500 group-hover/label:text-slate-300 uppercase tracking-widest">READ</span>
+                                  <span className="text-[10px] font-black text-muted-foreground group-hover/label:text-foreground uppercase tracking-widest">READ</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer group/label">
                                   <Checkbox
                                     checked={permission?.level === 'EDIT'}
                                     onCheckedChange={() => toggleScreenPermission(screen, 'EDIT')}
                                     disabled={creating}
-                                    className="border-slate-300 bg-white dark:border-white/20 dark:bg-white/5 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-[#8c2bee] data-[state=checked]:to-[#6a1bbf] data-[state=checked]:border-[#8c2bee]"
+                                    className="border-border bg-background data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
-                                  <span className="text-[10px] font-black text-slate-500 group-hover/label:text-slate-300 uppercase tracking-widest">WRITE</span>
+                                  <span className="text-[10px] font-black text-muted-foreground group-hover/label:text-foreground uppercase tracking-widest">WRITE</span>
                                 </label>
                               </div>
                             </div>
@@ -277,13 +277,13 @@ export function RoleManagement({ teamId }: Props) {
                 </div>
               </div>
 
-              <div className="flex gap-3 justify-end pt-4 border-t border-slate-100 dark:border-white/5">
+              <div className="flex gap-3 justify-end pt-4 border-t border-border">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setOpen(false)}
                   disabled={creating}
-                  className="h-11 px-6 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-white dark:hover:bg-white/5"
+                  className="h-11 px-6 rounded-xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   Cancel
                 </Button>
@@ -304,24 +304,24 @@ export function RoleManagement({ teamId }: Props) {
         {roles.map((role, idx) => (
           <div
             key={role.id}
-            className="group flex items-center justify-between p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:border-[#8c2bee]/30 dark:hover:border-[#8c2bee]/30 hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all duration-300 animate-fade-in"
+            className="group flex items-center justify-between p-5 rounded-2xl bg-muted/30 border border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 animate-fade-in"
             style={{ animationDelay: `${idx * 20}ms` }}
           >
             <div className="flex items-center gap-4">
               {getRoleIcon(role.level)}
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">{role.name}</p>
+                  <p className="text-sm font-black text-foreground tracking-tight leading-none uppercase">{role.name}</p>
                   {role.isSystem && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-white border-slate-200 dark:bg-white/5 dark:border-white/10 border text-[8px] font-black uppercase tracking-[0.15em] text-slate-500">
+                    <span className="px-1.5 py-0.5 rounded-md bg-background border-border border text-[8px] font-black uppercase tracking-[0.15em] text-muted-foreground">
                       System
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-medium text-slate-500 italic leading-relaxed">{role.description}</p>
+                <p className="text-xs font-medium text-muted-foreground/80 italic leading-relaxed">{role.description}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="h-1 w-1 rounded-full bg-slate-700" />
-                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Authority Tier {role.level}</p>
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Authority Tier {role.level}</p>
                 </div>
               </div>
             </div>
@@ -340,8 +340,8 @@ export function RoleManagement({ teamId }: Props) {
         ))}
 
         {roles.length === 0 && !loading && (
-          <div className="text-center py-20 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-slate-200 dark:border-white/10">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-600">
+          <div className="text-center py-20 bg-muted/30 rounded-3xl border border-dashed border-border">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
               Zero authority archetypes detected.
             </p>
           </div>

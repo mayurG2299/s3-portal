@@ -115,7 +115,7 @@ export function ScreenPermissionMatrix({ teamMembers, teamId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 text-sm text-gray-600">
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <X className="h-4 w-4" />
           <span>No Access</span>
@@ -137,12 +137,12 @@ export function ScreenPermissionMatrix({ teamMembers, teamId }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-3 border font-medium">Screen</th>
+                <tr className="bg-muted">
+                  <th className="text-left p-3 border border-border font-medium">Screen</th>
                   {teamMembers.map((member) => (
-                    <th key={member.id} className="p-3 border font-medium text-center min-w-[120px]">
+                    <th key={member.id} className="p-3 border border-border font-medium text-center min-w-[120px]">
                       <div className="text-sm">{member.user.email.split('@')[0]}</div>
-                      <div className="text-xs text-gray-500 font-normal">{member.role.name}</div>
+                      <div className="text-xs text-muted-foreground font-normal">{member.role.name}</div>
                     </th>
                   ))}
                 </tr>
@@ -153,8 +153,8 @@ export function ScreenPermissionMatrix({ teamMembers, teamId }: Props) {
                   if (!screenName) return null
 
                   return (
-                    <tr key={screenName} className="hover:bg-gray-50">
-                      <td className="p-3 border font-medium text-sm">
+                    <tr key={screenName} className="hover:bg-muted/50">
+                      <td className="p-3 border border-border font-medium text-sm">
                         {screenKey.replace(/_/g, ' ')}
                       </td>
                       {teamMembers.map((member) => {
@@ -162,7 +162,7 @@ export function ScreenPermissionMatrix({ teamMembers, teamId }: Props) {
                         const isUpdating = updating === `${member.userId}-${screenName}`
 
                         return (
-                          <td key={member.id} className="p-3 border text-center">
+                          <td key={member.id} className="p-3 border border-border text-center">
                             <Button
                               size="sm"
                               variant={level === 'EDIT' ? 'default' : level === 'VIEW' ? 'secondary' : 'ghost'}

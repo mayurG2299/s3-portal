@@ -76,7 +76,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto py-6 animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
+        <h1 className="text-2xl font-bold text-foreground">Profile</h1>
       </div>
 
       <div>

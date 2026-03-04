@@ -83,16 +83,16 @@ export default async function DashboardPage() {
       <div className="mb-10 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="hidden md:block">
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white leading-tight tracking-tight mb-2">
+            <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
               Welcome back, <span className="gradient-text">{session.user.name || 'Admin'}</span>
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 font-medium">
+            <p className="text-muted-foreground font-medium">
               Manage your global S3 infrastructure with ease.
             </p>
           </div>
           <div className="flex gap-3">
             <Link href="/dashboard/settings">
-              <Button className="rounded-xl h-12 bg-slate-100 text-slate-900 border-slate-200 hover:bg-slate-200 dark:bg-white/5 dark:text-white dark:border-white/10 dark:hover:bg-white/10 transition-all font-bold text-sm px-6">
+              <Button className="rounded-xl h-12 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all font-bold text-sm px-6">
                 Configure AWS
               </Button>
             </Link>
@@ -129,12 +129,12 @@ export default async function DashboardPage() {
               )}>
                 <stat.icon size={22} strokeWidth={2.5} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white transition-colors">{stat.desc}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground group-hover:text-foreground transition-colors">{stat.desc}</span>
             </div>
 
             <div className="relative z-10">
-              <h3 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter mb-1 leading-none drop-shadow-sm">{stat.val}</h3>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700 dark:group-hover:text-slate-300">{stat.label}</p>
+              <h3 className="text-5xl font-black text-foreground tracking-tighter mb-1 leading-none drop-shadow-sm">{stat.val}</h3>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest group-hover:text-foreground/80">{stat.label}</p>
             </div>
           </div>
         ))}
@@ -145,13 +145,13 @@ export default async function DashboardPage() {
           {/* Storage Overview Chart Mock */}
           <div className="glass-card">
             <div className="flex items-center justify-between mb-10">
-              <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-[#8c2bee] shadow-[0_0_10px_rgba(140,43,238,0.8)]" />
                 Storage Overview
               </h4>
               <div className="flex gap-2">
-                <div className="px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-500 dark:bg-white/5 dark:border-white/10 text-[8px] font-black dark:text-slate-400 uppercase tracking-widest">Monthly</div>
-                <div className="px-3 py-1 rounded-full bg-[#8c2bee]/10 border border-[#8c2bee]/20 text-[8px] font-black text-[#8c2bee] uppercase tracking-widest">Yearly</div>
+                <div className="px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground text-[8px] font-black uppercase tracking-widest">Monthly</div>
+                <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[8px] font-black text-primary uppercase tracking-widest">Yearly</div>
               </div>
             </div>
 
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
                       className="w-full rounded-t-xl bg-gradient-to-t from-[#8c2bee]/20 to-[#8c2bee] group-hover:from-[#8c2bee]/40 group-hover:to-[#b673ff] transition-all duration-500 relative"
                       style={{ height: `${getDynamicHeight(gb)}px` }}
                     >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 dark:bg-white/10 backdrop-blur-md border border-slate-700 dark:border-white/20 rounded-lg px-2 py-1 text-[8px] font-bold text-white whitespace-nowrap">
+                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground backdrop-blur-md border border-border rounded-lg px-2 py-1 text-[8px] font-bold whitespace-nowrap">
                         {gb > 0 ? gb.toFixed(2) : 0}GB
                       </div>
                     </div>
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
 
           <div className="glass-card">
             <div className="flex items-center justify-between mb-8">
-              <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                 Quick Operations
               </h4>
@@ -192,7 +192,7 @@ export default async function DashboardPage() {
                 { href: '/dashboard/links', label: 'Public Endpoints', icon: LinkIcon, color: 'violet' }
               ].map((item, i) => (
                 <Link key={i} href={item.href}>
-                  <div className="group flex items-center gap-4 p-5 rounded-3xl bg-slate-50 border border-slate-200 hover:border-[#8c2bee]/30 hover:bg-slate-100 dark:bg-white/[0.02] dark:border-white/5 dark:hover:border-[#8c2bee]/30 dark:hover:bg-white/[0.05] transition-all duration-500">
+                  <div className="group flex items-center gap-4 p-5 rounded-3xl bg-card border border-border hover:border-primary/30 hover:bg-accent/5 transition-all duration-500">
                     <div className={cn(
                       "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
                       item.color === 'indigo' && "bg-[#8c2bee]/10 text-[#8c2bee]",
@@ -213,7 +213,7 @@ export default async function DashboardPage() {
         <div className="animate-slide-up" style={{ animationDelay: '500ms' }}>
           <div className="glass-card h-full">
             <div className="flex items-center justify-between mb-10">
-              <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+              <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                 Transmission Feed
               </h4>
@@ -221,11 +221,11 @@ export default async function DashboardPage() {
             </div>
 
             {recentFiles.length === 0 ? (
-              <div className="text-center py-16 px-4 bg-slate-50 dark:bg-white/[0.01] border-2 border-dashed border-slate-200 dark:border-white/5 rounded-[2rem]">
-                <div className="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <FolderOpen className="h-10 w-10 text-slate-400 dark:text-slate-800" />
+              <div className="text-center py-16 px-4 bg-card/50 border-2 border-dashed border-border rounded-[2rem]">
+                <div className="w-20 h-20 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <FolderOpen className="h-10 w-10 text-muted-foreground" />
                 </div>
-                <p className="text-[10px] font-black text-slate-500 dark:text-slate-600 uppercase tracking-widest">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                   Queue Empty
                 </p>
               </div>
@@ -234,20 +234,20 @@ export default async function DashboardPage() {
                   {recentFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="group flex flex-col p-5 rounded-3xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-slate-100 dark:bg-white/[0.02] dark:border-white/5 dark:hover:border-white/10 dark:hover:bg-white/[0.04] transition-all duration-500 overflow-hidden relative"
+                      className="group flex flex-col p-5 rounded-3xl bg-card border border-border hover:border-accent hover:bg-accent/5 transition-all duration-500 overflow-hidden relative"
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] animate-ping" />
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
                       </div>
 
                       <div className="flex items-start justify-between mb-2">
-                        <p className="text-sm font-black text-slate-900 dark:text-white truncate max-w-[140px] tracking-tight">
+                        <p className="text-sm font-black text-foreground truncate max-w-[140px] tracking-tight">
                           {file.name}
                         </p>
                         <span className="text-[8px] font-black p-1 px-2 rounded-lg bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/10">Synchronized</span>
                       </div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight truncate">
-                        {file.bucket.bucket} <span className="mx-2 text-slate-700">|</span> <span className="text-slate-600">{file.bucket.credential.name}</span>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight truncate">
+                        {file.bucket.bucket} <span className="mx-2 opacity-50">|</span> <span>{file.bucket.credential.name}</span>
                       </p>
                     </div>
                   ))}
