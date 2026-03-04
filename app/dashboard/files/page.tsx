@@ -866,66 +866,66 @@ export default function FilesPage() {
                               return prev.filter((id) => id !== file.id)
                             })
                           }}
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isFolder(file)) {
-                              navigateToFolder(`${currentPath}${file.name}/`)
-                            }
-                          }}
-                          className={
-                            isFolder(file)
-                              ? 'font-medium text-blue-700 hover:underline'
-                              : 'font-medium'
-                          }
-                        >
-                          {file.name}
-                        </button>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {isFolder(file)
-                          ? 'Folder'
-                          : `${formatFileSize(Number(file.size))} • ${formatRelativeTime(
-                            new Date(file.createdAt)
-                          )}`}
-                      </p>
-                      {file.description && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {file.description}
-                        </p>
-                      )}
-                      {!!file.tags?.length && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {file.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isFolder(file)) {
+                                  navigateToFolder(`${currentPath}${file.name}/`)
+                                }
+                              }}
+                              className={
+                                isFolder(file)
+                                  ? 'font-medium text-blue-700 hover:underline'
+                                  : 'font-medium'
+                              }
                             >
-                              {tag}
-                            </span>
+                              {file.name}
+                            </button>
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {isFolder(file)
+                              ? 'Folder'
+                              : `${formatFileSize(Number(file.size))} • ${formatRelativeTime(
+                                new Date(file.createdAt)
+                              )}`}
+                          </p>
+                          {file.description && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              {file.description}
+                            </p>
+                          )}
+                          {!!file.tags?.length && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {file.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700"
+                                >
+                                  {tag}
+                                </span>
                           ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
+                      </div>
+                      <div className="flex gap-2">
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                        size="sm"
+                            size="sm"
                         onClick={() => handleToggleFavorite(file)}
                       >
-                        <Star
-                          className={
-                            file.isFavorite
-                              ? 'h-4 w-4 text-yellow-500'
-                              : 'h-4 w-4 text-gray-400'
-                          }
-                        />
+                            <Star
+                              className={
+                                file.isFavorite
+                                  ? 'h-4 w-4 text-yellow-500'
+                                  : 'h-4 w-4 text-gray-400'
+                              }
+                            />
                       </Button>
                     )}
                     {!isFolder(file) && (() => {
@@ -948,7 +948,7 @@ export default function FilesPage() {
                     })()}
                     <Button
                       variant="ghost"
-                      size="sm"
+                          size="sm"
                       onClick={() => setEditingTagsFile(file)}
                     >
                       <Tag className="h-4 w-4" />
@@ -956,10 +956,10 @@ export default function FilesPage() {
                     {!isFolder(file) && (
                       <Button
                         variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setShareTargets([file])
-                          setIsShareOpen(true)
+                            size="sm"
+                            onClick={() => {
+                              setShareTargets([file])
+                              setIsShareOpen(true)
                         }}
                       >
                         <Share2 className="h-4 w-4" />
@@ -967,14 +967,14 @@ export default function FilesPage() {
                     )}
                     <Button
                       variant="ghost"
-                      size="sm"
+                          size="sm"
                       onClick={() => handleDelete(file)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
-              </Card>
+                  </Card>
             ))}
           </div>
         )}

@@ -6,27 +6,50 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
-import { Cloud, Shield, Zap } from 'lucide-react'
+import { Cloud, Shield, Zap, Check, X, ArrowRight, EyeOff, Eye } from 'lucide-react'
+
+// Same validation rules as profile/change-password page
+function getPasswordRequirements(password: string) {
+  return [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'One number', met: /[0-9]/.test(password) },
+    { label: 'One special character', met: /[^A-Za-z0-9]/.test(password) },
+  ]
+}
+
+function isStrongPassword(password: string) {
+  return getPasswordRequirements(password).every((r) => r.met)
+}
 
 export default function RegisterPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [password, setPassword] = useState('')
+  const [passwordTouched, setPasswordTouched] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  const requirements = getPasswordRequirements(password)
+  const allMet = requirements.every((r) => r.met)
+  const strength = requirements.filter((r) => r.met).length
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
+    const pw = String(formData.get('password') || '')
+
+    if (!isStrongPassword(pw)) {
+      setErrorMsg(
+        'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.'
+      )
+      setIsLoading(false)
+      return
+    }
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -35,7 +58,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           name: formData.get('name'),
           email: formData.get('email'),
-          password: formData.get('password'),
+          password: pw,
         }),
       })
 
@@ -44,7 +67,7 @@ export default function RegisterPage() {
         throw new Error(error.message || 'Registration failed')
       }
 
-      setErrorMsg(null) // clear any previous errors
+      setErrorMsg(null)
       toast({
         title: 'Success',
         description: 'Account created! Please sign in.',
@@ -62,140 +85,245 @@ export default function RegisterPage() {
     }
   }
 
+  const strengthColor =
+    strength <= 1
+      ? 'bg-red-500'
+      : strength <= 2
+        ? 'bg-orange-500'
+        : strength <= 3
+          ? 'bg-yellow-500'
+          : strength <= 4
+            ? 'bg-blue-500'
+            : 'bg-emerald-500'
+
+  const strengthLabel =
+    strength <= 1
+      ? 'Very weak'
+      : strength <= 2
+        ? 'Weak'
+        : strength <= 3
+          ? 'Fair'
+          : strength <= 4
+            ? 'Good'
+            : 'Strong'
+
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#030712] text-slate-200 selection:bg-[#8c2bee]/30">
       {/* Branded panel - hidden on mobile */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-violet-600 via-indigo-700 to-indigo-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE4YzMuMzE0IDAgNi0yLjY4NiA2LTZzLTIuNjg2LTYtNi02LTYgMi42ODYtNiA2IDIuNjg2IDYgNiA2em0wIDJjLTQuNDE4IDAtOC0zLjU4Mi04LThzMy41ODItOCA4LTggOCAzLjU4MiA4IDgtMy41ODIgOC04IDh6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 animate-fade-in">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S3</span>
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0a0514] via-slate-950 to-[#0a0514] relative overflow-hidden border-r border-white/5">
+        {/* Animated Background Elements */}
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-[#8c2bee]/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-violet-600/20 rounded-full blur-[120px] animate-pulse delay-700" />
+
+        <div className="relative z-10 flex flex-col justify-center px-16 xl:px-24">
+          <div className="flex items-center gap-4 mb-12 animate-fade-in">
+            <div className="w-14 h-14 bg-gradient-to-br from-[#8c2bee] to-violet-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-[#8c2bee]/40 transform hover:scale-105 transition-transform duration-300">
+              <span className="text-white font-black text-2xl tracking-tighter">S3</span>
             </div>
-            <h1 className="text-3xl font-bold text-white">S3 Portal</h1>
+            <div>
+              <h1 className="text-4xl font-black text-white tracking-tight">S3 Portal</h1>
+              <p className="text-[#b673ff] font-medium tracking-widest text-xs uppercase">v2.0</p>
+            </div>
           </div>
-          <p className="text-xl text-indigo-100 mb-12 leading-relaxed">
-            Get started in minutes.
-            <br />
-            Your team&apos;s file portal awaits.
-          </p>
-          <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Cloud className="h-5 w-5 text-[#e9d5ff]" />
+
+          <div className="space-y-2 mb-16 animate-slide-up">
+            <h2 className="text-5xl font-bold text-white leading-[1.1] tracking-tight">
+              High-performance <span className="gradient-text">cloud storage</span> for modern teams.
+            </h2>
+            <p className="text-xl text-slate-400 max-w-lg leading-relaxed pt-4">
+              Manage your global data infrastructure with enterprise-grade security and blazing-fast access.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            {[
+              { icon: Cloud, title: "Direct S3 Integration", desc: "Connect any S3-compatible provider" },
+              { icon: Shield, title: "Zero-Trust Security", desc: "Role-based access with audit logs" },
+              { icon: Zap, title: "Parallel Uploads", desc: "Blazing fast multipart transfers" }
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-6 group">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-[#8c2bee]/10 group-hover:border-[#8c2bee]/30 transition-all duration-300">
+                  <item.icon className="h-6 w-6 text-[#b673ff] group-hover:text-[#d8b4fe]" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg text-white group-hover:text-[#b673ff] transition-colors uppercase tracking-tight text-sm">{item.title}</p>
+                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-white">Bring Your Own Bucket</p>
-                <p className="text-sm text-[#e9d5ff]">AWS S3 and compatible storage</p>
-              </div>
+            ))}
+          </div>
+
+          <div className="mt-20 pt-10 border-t border-white/5 flex items-center gap-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-9 h-9 rounded-full border-2 border-slate-900 bg-slate-800" />
+              ))}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-[#e9d5ff]" />
-              </div>
-              <div>
-                <p className="font-medium text-white">Team Management</p>
-                <p className="text-sm text-[#e9d5ff]">Roles, permissions, and audit trails</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-[#e9d5ff]" />
-              </div>
-              <div>
-                <p className="font-medium text-white">Secure Sharing</p>
-                <p className="text-sm text-[#e9d5ff]">Password-protected, expiring links</p>
-              </div>
-            </div>
+            <p className="text-sm text-slate-500 font-medium italic">Trusted by world class engineering teams.</p>
           </div>
         </div>
       </div>
 
       {/* Form panel */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-white p-6">
-        <div className="w-full max-w-md animate-slide-up">
+      <div className="flex-1 flex items-center justify-center p-8 relative overflow-y-auto">
+        <div className="w-full max-w-md animate-slide-up my-auto">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
             <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/25">
-              <span className="text-white font-bold text-sm">S3</span>
+              <span className="text-white font-bold text-sm tracking-tighter">S3</span>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">S3 Portal</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">S3 Portal</h1>
           </div>
 
-          <Card className="border-0 shadow-xl shadow-slate-200/50">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-              <CardDescription>
-                Sign up to start managing your files
-              </CardDescription>
+          <div className="glass-morphic p-8 sm:p-10 rounded-3xl border border-white/10 relative z-10 shadow-3xl">
+            <div className="mb-10 text-center sm:text-left">
+              <h3 className="text-3xl font-bold text-white tracking-tight mb-2">Create an account</h3>
+              <p className="text-slate-400">Sign up to start managing your files</p>
               {errorMsg && (
-                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500 font-medium">
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500 font-medium animate-fade-in">
                   {errorMsg}
                 </div>
               )}
-            </CardHeader>
-            <form onSubmit={onSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="John Doe"
-                    required
-                    disabled={isLoading}
-                    autoComplete="name"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="john@example.com"
-                    required
-                    disabled={isLoading}
-                    autoComplete="email"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+            </div>
+
+            <form onSubmit={onSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="John Doe"
+                  required
+                  disabled={isLoading}
+                  autoComplete="name"
+                  className="h-12 bg-white/5 border-white/10 focus:border-[#8c2bee]/50 focus:ring-[#8c2bee]/20 transition-all duration-300 text-white placeholder:text-slate-600 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Email Address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  required
+                  disabled={isLoading}
+                  autoComplete="email"
+                  className="h-12 bg-white/5 border-white/10 focus:border-[#8c2bee]/50 focus:ring-[#8c2bee]/20 transition-all duration-300 text-white placeholder:text-slate-600 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Password</Label>
+                <div className="relative">
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     required
-                    minLength={8}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setPasswordTouched(true)
+                    }}
                     disabled={isLoading}
                     autoComplete="new-password"
-                    className="h-11"
+                    className="h-12 bg-white/5 border-white/10 focus:border-[#8c2bee]/50 focus:ring-[#8c2bee]/20 transition-all duration-300 text-white placeholder:text-slate-600 pr-12 rounded-xl"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Must be at least 8 characters
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#b673ff] p-1 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-[#8c2bee] to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-[#8c2bee]/25 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Creating account...' : 'Create account'}
-                </Button>
-                <p className="text-sm text-center text-muted-foreground">
-                  Already have an account?{' '}
-                  <Link href="/login" className="font-medium text-[#8c2bee] hover:text-indigo-700 transition-colors">
-                    Sign in
-                  </Link>
-                </p>
-              </CardFooter>
+
+                {/* Strength bar */}
+                {passwordTouched && password.length > 0 && (
+                  <div className="space-y-3 mt-4 animate-fade-in bg-white/5 p-4 rounded-xl border border-white/10">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex gap-1 flex-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength ? strengthColor : 'bg-slate-700/50'
+                              }`}
+                          />
+                        ))}
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-widest ml-3 ${strength <= 2
+                          ? 'text-red-500'
+                          : strength <= 3
+                            ? 'text-yellow-500'
+                            : strength <= 4
+                              ? 'text-blue-500'
+                              : 'text-emerald-500'
+                          }`}
+                      >
+                        {strengthLabel}
+                      </span>
+                    </div>
+
+                    {/* Requirements checklist */}
+                    <ul className="space-y-2 pt-2 border-t border-white/5">
+                      {requirements.map((req) => (
+                        <li key={req.label} className="flex items-center gap-2">
+                          {req.met ? (
+                            <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                          ) : (
+                            <X className="h-4 w-4 text-slate-600 flex-shrink-0" />
+                          )}
+                          <span
+                            className={`text-xs transition-colors ${req.met
+                              ? 'text-emerald-500'
+                              : 'text-slate-500'
+                              }`}
+                          >
+                            {req.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Static hint when untouched */}
+                {!passwordTouched && (
+                  <p className="text-xs text-slate-500 ml-1 mt-2">
+                    Must be 8+ chars with uppercase, lowercase, number &amp; special character.
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 btn-primary-gradient rounded-xl font-bold text-base gap-2 group mt-8"
+                disabled={isLoading || (passwordTouched && !allMet)}
+              >
+                {isLoading ? 'Creating account...' : 'Create account'}
+                {!isLoading && (passwordTouched && !allMet ? null : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />)}
+              </Button>
             </form>
-          </Card>
+
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
+              <p className="text-sm text-slate-500">
+                Already have an account?{' '}
+                <Link href="/login" className="font-bold text-white hover:text-[#b673ff] underline underline-offset-4 decoration-[#8c2bee]/30 hover:decoration-[#b673ff] transition-all duration-300">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
+            <Link href="#" className="hover:text-slate-400 transition-colors">Help Center</Link>
+          </div>
         </div>
       </div>
     </div>
