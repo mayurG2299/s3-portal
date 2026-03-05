@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { FileUpload } from '@/components/file-upload'
@@ -30,6 +30,7 @@ import { getPreviewType } from '@/lib/preview-utils'
 interface Bucket {
   id: string
   bucket: string
+  cloudfrontDomain?: string | null
 }
 
 interface Credential {
@@ -76,8 +77,18 @@ export default function FilesPage() {
   const [uploadDescription, setUploadDescription] = useState('')
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  // CDN Configuration Modal State
+  const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
+  const [cdnConfig, setCdnConfig] = useState({
+    cloudfrontDomain: '',
+    cloudfrontKeyPairId: '',
+    cloudfrontPrivateKey: '',
+  })
+  const [isSavingCdn, setIsSavingCdn] = useState(false)
+
   const [shareSettings, setShareSettings] = useState({
-    expiryMode: 'preset' as 'preset' | 'custom',
+    linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
+    expiryMode: 'preset' as 'preset' | 'custom' | 'never',
     expiresIn: '86400',
     customExpiry: '',
     password: '',
@@ -475,7 +486,8 @@ export default function FilesPage() {
 
     const payloadBase = {
       type: 'PRESIGNED',
-      expiresIn,
+      expiresIn: expiresIn || undefined,
+      mode: shareSettings.linkMode,
       password: shareSettings.password || undefined,
       maxDownloads: shareSettings.maxDownloads
         ? Number(shareSettings.maxDownloads)
@@ -540,6 +552,46 @@ export default function FilesPage() {
       })
     } finally {
       setIsSharing(false)
+    }
+  }
+
+  async function handleSaveCdn(e: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!selectedBucket) return
+
+    setIsSavingCdn(true)
+    try {
+      const response = await fetch('/api/credentials/cdn', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bucketId: selectedBucket,
+          ...cdnConfig,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to save CDN configuration')
+      }
+
+      toast({
+        title: 'Success',
+        description: 'CDN successfully attached to bucket',
+      })
+
+      // Close modal, clear form, and refresh credentials to instantly unlock CDN URL
+      setIsCdnDialogOpen(false)
+      setCdnConfig({ cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' })
+      await fetchCredentials()
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      })
+    } finally {
+      setIsSavingCdn(false)
     }
   }
 
@@ -1037,6 +1089,42 @@ export default function FilesPage() {
             )}
 
             <div className="space-y-2">
+              <Label>Link Type</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Preview Page', value: 'preview' },
+                  { label: 'Auto Download', value: 'download' },
+                  { label: 'Direct S3/CDN', value: 'direct' },
+                ].map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
+                    onClick={() => {
+                      setShareSettings((prev) => ({
+                        ...prev,
+                        linkMode: option.value as 'preview' | 'download' | 'direct',
+                        // If deselecting a raw type, reset expiry mode if needed
+                        ...(prev.linkMode === 'raw' && { expiryMode: 'preset', expiresIn: '86400' })
+                      }))
+                    }}
+                    className="h-auto py-2 whitespace-normal text-xs"
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              {shareSettings.linkMode === 'direct' && (
+                <div className="p-3 mt-2 text-xs rounded border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+                  <strong>Direct URL:</strong> Bypasses the portal. Password and download limits are unavailable.{' '}
+                  {credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain
+                    ? 'A fast CloudFront CDN URL will be generated.'
+                    : <span>No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100 cursor-pointer">Add CDN credentials</button> for better global performance.</span>}
+                </div>
+              )}
+            </div>
+
+            {shareSettings.linkMode !== 'direct' && (
+            <div className="space-y-2">
               <Label>Expiration</Label>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -1089,6 +1177,7 @@ export default function FilesPage() {
                 />
               )}
             </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

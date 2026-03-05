@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { decryptAWSConfig, generatePresignedDownloadUrl, generateCloudfrontSignedUrl } from '@/lib/aws'
 import { verifyPassword } from '@/lib/crypto'
+import { getPreviewType } from '@/lib/preview-utils'
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 
 export async function GET(
   request: NextRequest,
@@ -144,6 +146,40 @@ export async function GET(
       },
     })
 
+    // Handle Text/CSV Content for Previews
+    const previewType = getPreviewType(link.file.contentType, link.file.name)
+    let textContent = undefined
+    let csvRows = undefined
+
+    if (link.allowPreview && (previewType === 'TEXT' || previewType === 'CSV')) {
+      // Don't auto-read files > 1MB to avoid memory explosion
+      if (Number(link.file.size) < 1024 * 1024) {
+        try {
+          const s3Client = new S3Client({
+            region: config.region,
+            credentials: {
+              accessKeyId: config.accessKeyId,
+              secretAccessKey: config.secretAccessKey,
+            },
+          })
+          const getCommand = new GetObjectCommand({
+            Bucket: config.bucket,
+            Key: link.file.key,
+          })
+          const s3Response = await s3Client.send(getCommand)
+          const rawText = await s3Response.Body?.transformToString() || ''
+          
+          if (previewType === 'TEXT') {
+            textContent = rawText
+          } else if (previewType === 'CSV') {
+            csvRows = rawText.split(/\r?\n/).filter(Boolean).map((line) => line.split(','))
+          }
+        } catch (e) {
+          console.error('Failed to fetch preview text content inline for share link', e)
+        }
+      }
+    }
+
     return NextResponse.json({
       file: {
         name: link.file.name,
@@ -153,6 +189,8 @@ export async function GET(
       downloadUrl,
       allowDownload: link.allowDownload,
       allowPreview: link.allowPreview,
+      textContent,
+      csvRows,
     })
   } catch (error) {
     console.error('Error accessing share:', error)

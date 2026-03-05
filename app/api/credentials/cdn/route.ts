@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!bucket) {
-      return ApiResponse.notFound('Bucket not found')
+      return ApiResponse.notFound()
     }
 
     // Auth check: Must be personal credential or user must be Team Admin/Owner

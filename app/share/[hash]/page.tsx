@@ -2,9 +2,29 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Download, Lock, FileText, Image, Film, FileIcon, Shield, Eye, EyeOff } from 'lucide-react'
+import { Download, Lock, FileText, Image, Film, FileIcon, Shield, Eye, EyeOff, FileJson, Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
-import { formatFileSize, isImageFile, isVideoFile, isPDFFile } from '@/lib/utils'
+import { formatFileSize, isImageFile, isVideoFile, isPDFFile, cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { getPreviewType } from '@/lib/preview-utils'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import ReactMarkdown from 'react-markdown'
+
+// Map extensions to Prism languages
+const getLanguageFromFilename = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const map: Record<string, string> = {
+    js: 'javascript', jsx: 'jsx', ts: 'typescript', tsx: 'tsx',
+    py: 'python', rb: 'ruby', go: 'go', rs: 'rust',
+    java: 'java', c: 'c', cpp: 'cpp', cs: 'csharp',
+    html: 'html', css: 'css', scss: 'scss', less: 'less',
+    json: 'json', xml: 'xml', yaml: 'yaml', yml: 'yaml',
+    sh: 'bash', bash: 'bash', zsh: 'bash',
+    sql: 'sql', md: 'markdown', mdx: 'markdown'
+  }
+  return ext && map[ext] ? map[ext] : 'text'
+}
 
 export default function SharePage({ params }: { params: { hash: string } }) {
   const searchParams = useSearchParams()
@@ -13,6 +33,17 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   const [file, setFile] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isCopied, setIsCopied] = useState(false)
+
+  const handleCopyCode = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Copy failed', description: 'Could not copy code to clipboard.' })
+    }
+  }
 
   const fetchShare = useCallback(async (pwd?: string) => {
     try {
@@ -213,7 +244,13 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   const showImagePreview = !isDownloadMode && isImageFile(file.file.contentType, file.file.name)
   const showVideoPreview = !isDownloadMode && isVideoFile(file.file.contentType, file.file.name)
   const showPDFPreview = !isDownloadMode && isPDFFile(file.file.contentType, file.file.name)
-  const hasPreview = showImagePreview || showVideoPreview || showPDFPreview
+
+  const previewType = getPreviewType(file.file.contentType, file.file.name)
+  const isTextPreview = !isDownloadMode && previewType === 'TEXT' && file.textContent
+  const isCsvPreview = !isDownloadMode && previewType === 'CSV' && file.csvRows
+
+  const hasPreview = showImagePreview || showVideoPreview || showPDFPreview || isTextPreview || isCsvPreview
+  const language = getLanguageFromFilename(file.file.name)
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors">
@@ -264,6 +301,60 @@ export default function SharePage({ params }: { params: { hash: string } }) {
                 className="w-full h-full border-0"
                 title={file.file.name}
               />
+            </div>
+          )}
+
+          {isTextPreview && language === 'markdown' && (
+            <div className="h-[60vh] overflow-y-auto p-8 bg-white dark:bg-[#0d1117] text-slate-800 dark:text-slate-300 prose prose-slate dark:prose-invert max-w-none border-b border-slate-100 dark:border-white/5">
+              <ReactMarkdown>{file.textContent}</ReactMarkdown>
+            </div>
+          )}
+
+          {isTextPreview && language !== 'markdown' && (
+            <div className="h-[60vh] relative group border-b border-slate-100 dark:border-white/5 bg-[#1e1e1e]">
+              <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  onClick={() => handleCopyCode(file.textContent)}
+                  variant="secondary"
+                  size="sm"
+                  className={cn(
+                    "flex items-center gap-2 h-8 text-xs font-mono shadow-lg transition-all border",
+                    isCopied
+                      ? "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600"
+                      : "bg-black/50 text-slate-300 hover:bg-black/80 hover:text-white border-white/10 backdrop-blur-md"
+                  )}
+                >
+                  {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {isCopied ? 'Copied!' : 'Copy Code'}
+                </Button>
+              </div>
+              <SyntaxHighlighter
+                language={language}
+                style={vscDarkPlus}
+                customStyle={{ margin: 0, padding: '1.5rem', height: '100%', background: 'transparent', fontSize: '0.875rem' }}
+                showLineNumbers
+                wrapLines
+              >
+                {file.textContent}
+              </SyntaxHighlighter>
+            </div>
+          )}
+
+          {isCsvPreview && (
+            <div className="h-[60vh] overflow-auto bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-white/5 p-4">
+              <table className="w-full border-collapse text-sm">
+                <tbody>
+                  {file.csvRows.map((row: string[], i: number) => (
+                    <tr key={i} className="border-b border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      {row.map((cell: string, j: number) => (
+                        <td key={j} className="p-3 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 

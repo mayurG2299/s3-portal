@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff } from 'lucide-react'
+import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff, Ban, Eye, HardDriveDownload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
@@ -73,8 +73,9 @@ export default function LinksPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this link?')) return
+  async function handleDelete(id: string, isPermanent: boolean = false) {
+    const actionLabel = isPermanent ? 'delete this permanent link' : 'revoke this share link'
+    if (!confirm(`Are you sure you want to ${actionLabel}?`)) return
 
     try {
       const response = await fetch(`/api/links?id=${id}`, {
@@ -87,7 +88,7 @@ export default function LinksPage() {
 
       toast({
         title: 'Success',
-        description: 'Link deleted',
+        description: isPermanent ? 'Permanent link deleted' : 'Share link revoked',
       })
 
       fetchLinks()
@@ -182,19 +183,41 @@ export default function LinksPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-lg hover:bg-accent text-muted-foreground hover:text-rose-500 dark:hover:text-rose-500"
-                          onClick={() => handleDelete(link.id)}
+                          className={cn(
+                            "h-9 w-9 rounded-lg hover:bg-accent transition-all duration-200",
+                            !link.expiresAt
+                              ? "text-muted-foreground hover:text-rose-500"
+                              : "text-muted-foreground hover:text-amber-500"
+                          )}
+                          onClick={() => handleDelete(link.id, !link.expiresAt)}
+                          title={!link.expiresAt ? "Delete Link" : "Revoke Link"}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          {!link.expiresAt ? (
+                            <Trash2 className="h-4 w-4" />
+                          ) : (
+                            <Ban className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </div>
 
-                    <h3 className="font-bold text-foreground tracking-tight text-lg mb-2 truncate group-hover:text-primary transition-colors">
-                      {link.file.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-foreground tracking-tight text-lg truncate group-hover:text-primary transition-colors">
+                        {link.file.name}
+                      </h3>
+                    </div>
 
                     <div className="flex flex-wrap gap-3 mb-6">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted border border-border">
+                        {link.allowPreview && !link.allowDownload ? (
+                          <Eye className="h-3 w-3 text-muted-foreground" />
+                        ) : (
+                          <HardDriveDownload className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          {link.allowPreview && !link.allowDownload ? 'Preview Page' : 'Auto Download'}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted border border-border">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                           {formatFileSize(Number(link.file.size))}
