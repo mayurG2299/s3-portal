@@ -9,7 +9,11 @@ export function getPreviewType(contentType?: string | null, fileName?: string | 
   if (ct.startsWith('video/') || /\.(mp4|mov|webm|mkv|avi)$/.test(name)) return 'VIDEO'
   if (ct.startsWith('audio/') || /\.(mp3|wav|ogg|m4a)$/.test(name)) return 'AUDIO'
   if (ct === 'text/csv' || name.endsWith('.csv')) return 'CSV'
-  if (ct.startsWith('text/') || /\.(txt|md|json|log|xml|yaml|yml|csv|js|jsx|ts|tsx|py|rb|go|rs|java|c|cpp|cs|html|css|scss|less|sh|bash|zsh|sql|php|swift|kt)$/i.test(name)) return 'TEXT'
+  if (
+    ct.startsWith("text/") ||
+    /\.(txt|md|json|log|xml|yaml|yml|csv)$/.test(name)
+  )
+    return "TEXT";
 
   return 'UNSUPPORTED'
 }

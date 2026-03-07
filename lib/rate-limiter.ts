@@ -10,9 +10,7 @@ let redisClient: any | null = null
 let useRedis = false
 try {
   if (process.env.REDIS_URL) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
     const IORedis = require('ioredis')
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     redisClient = new IORedis(process.env.REDIS_URL)
     useRedis = true
   }
@@ -54,4 +52,5 @@ export async function allowRequest(key: string, limit = 60, windowSeconds = 60):
   return rec.count <= limit
 }
 
-export default { allowRequest }
+const rateLimiter = { allowRequest }
+export default rateLimiter

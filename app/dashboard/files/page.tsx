@@ -25,6 +25,7 @@ import {
 import { toast } from '@/hooks/use-toast'
 import { formatFileSize, formatRelativeTime } from '@/lib/utils'
 import FilePreviewModal from '@/components/file-preview-modal'
+import DirectLinkModal from '@/components/DirectLinkModal'
 import { getPreviewType } from '@/lib/preview-utils'
 
 interface Bucket {
@@ -77,6 +78,8 @@ export default function FilesPage() {
   const [uploadDescription, setUploadDescription] = useState('')
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
+  const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
   // CDN Configuration Modal State
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
   const [cdnConfig, setCdnConfig] = useState({
@@ -492,8 +495,8 @@ export default function FilesPage() {
       maxDownloads: shareSettings.maxDownloads
         ? Number(shareSettings.maxDownloads)
         : undefined,
-      allowDownload: !shareSettings.previewOnly,
-      allowPreview: shareSettings.allowPreview,
+      allowDownload: shareSettings.linkMode !== 'preview',
+      allowPreview: shareSettings.allowPreview ?? true,
     }
 
     try {
@@ -868,12 +871,14 @@ export default function FilesPage() {
             value={tagFilter}
             onChange={(event) => setTagFilter(event.target.value)}
             className="max-w-xs"
+            autoComplete="new-password"
           />
           <Input
             placeholder="Search files"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             className="max-w-xs"
+            autoComplete="new-password"
           />
           {tagFilter && (
             <Button variant="ghost" size="sm" onClick={() => setTagFilter('')}>
@@ -910,9 +915,7 @@ export default function FilesPage() {
                         <Checkbox
                           aria-label={`Select ${file.name}`}
                           checked={selectedFileIds.includes(file.id)}
-                          disabled={isFolder(file)}
                           onCheckedChange={(checked) => {
-                            if (isFolder(file)) return
                             setSelectedFileIds((prev) => {
                               if (checked === true) return [...prev, file.id]
                               return prev.filter((id) => id !== file.id)
@@ -980,6 +983,7 @@ export default function FilesPage() {
                             />
                       </Button>
                     )}
+                        {/* Preview button remains for non-direct mode */}
                     {!isFolder(file) && (() => {
                       const t = getPreviewType(file.contentType, file.name)
                       if (t !== 'UNSUPPORTED') {
@@ -998,6 +1002,21 @@ export default function FilesPage() {
                       }
                       return null
                     })()}
+                        {/* Direct S3/CDN link button */}
+                        {!isFolder(file) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setIsShareOpen(false)
+                              setShareTargets([])
+                              setDirectLinkFile(file)
+                              setIsDirectLinkOpen(true)
+                            }}
+                          >
+                            <Database className="h-4 w-4" />
+                          </Button>
+                        )}
                     <Button
                       variant="ghost"
                           size="sm"
@@ -1010,6 +1029,8 @@ export default function FilesPage() {
                         variant="ghost"
                             size="sm"
                             onClick={() => {
+                              setDirectLinkFile(null)
+                              setIsDirectLinkOpen(false)
                               setShareTargets([file])
                               setIsShareOpen(true)
                         }}
@@ -1046,8 +1067,8 @@ export default function FilesPage() {
               <Input
                 id="upload-tags"
                 value={uploadTags}
-                onChange={(event) => setUploadTags(event.target.value)}
-                placeholder="invoice, january, finance"
+                onChange={(e) => setUploadTags(e.target.value)}
+                placeholder="marketing, assets"
               />
             </div>
             <div className="space-y-2">
@@ -1055,12 +1076,29 @@ export default function FilesPage() {
               <Input
                 id="upload-description"
                 value={uploadDescription}
-                onChange={(event) => setUploadDescription(event.target.value)}
+                onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="Short note about these files"
               />
             </div>
+            <FileUpload
+              onUpload={async (files, onProgress) => {
+                try {
+                  await handleUpload(files, onProgress)
+                  setIsUploadOpen(false)
+                  setUploadTags('')
+                  setUploadDescription('')
+                  fetchFiles()
+                } catch (error: any) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Upload failed',
+                    description: error.message || 'Failed to upload files',
+                  })
+                  throw error
+                }
+              }}
+            />
           </div>
-          <FileUpload onUpload={handleUpload} onAbort={handleAbort} />
         </DialogContent>
       </Dialog>
 
@@ -1103,8 +1141,6 @@ export default function FilesPage() {
                       setShareSettings((prev) => ({
                         ...prev,
                         linkMode: option.value as 'preview' | 'download' | 'direct',
-                        // If deselecting a raw type, reset expiry mode if needed
-                        ...(prev.linkMode === 'raw' && { expiryMode: 'preset', expiresIn: '86400' })
                       }))
                     }}
                     className="h-auto py-2 whitespace-normal text-xs"
@@ -1113,17 +1149,8 @@ export default function FilesPage() {
                   </Button>
                 ))}
               </div>
-              {shareSettings.linkMode === 'direct' && (
-                <div className="p-3 mt-2 text-xs rounded border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
-                  <strong>Direct URL:</strong> Bypasses the portal. Password and download limits are unavailable.{' '}
-                  {credentials.flatMap(c => c.buckets || []).find(b => b.id === selectedBucket)?.cloudfrontDomain
-                    ? 'A fast CloudFront CDN URL will be generated.'
-                    : <span>No CDN attached. <button type="button" onClick={() => setIsCdnDialogOpen(true)} className="underline font-medium hover:text-amber-900 dark:hover:text-amber-100 cursor-pointer">Add CDN credentials</button> for better global performance.</span>}
-                </div>
-              )}
             </div>
 
-            {shareSettings.linkMode !== 'direct' && (
             <div className="space-y-2">
               <Label>Expiration</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -1140,113 +1167,54 @@ export default function FilesPage() {
                         ? 'default'
                         : 'outline'
                     }
-                    onClick={() =>
-                      setShareSettings((prev) => ({
-                        ...prev,
-                        expiryMode: 'preset',
-                        expiresIn: option.value,
-                      }))
-                    }
+                    onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'preset', expiresIn: option.value }))}
+                    className="h-auto py-2 whitespace-normal text-xs"
                   >
                     {option.label}
                   </Button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={shareSettings.expiryMode === 'custom'}
-                  onCheckedChange={(checked) =>
-                    setShareSettings((prev) => ({
-                      ...prev,
-                      expiryMode: checked === true ? 'custom' : 'preset',
-                    }))
-                  }
-                  id="custom-expiry-toggle"
-                />
-                <Label htmlFor="custom-expiry-toggle" className="text-sm text-muted-foreground">
-                  Use custom expiration date/time
-                </Label>
-              </div>
-              {shareSettings.expiryMode === 'custom' && (
-                <Input
-                  type="datetime-local"
-                  value={shareSettings.customExpiry}
-                  onChange={(e) =>
-                    setShareSettings((prev) => ({ ...prev, customExpiry: e.target.value }))
-                  }
-                />
-              )}
             </div>
+
+            {shareSettings.linkMode !== 'direct' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Password (optional)</Label>
+                  <Input
+                    type="password"
+                    value={shareSettings.password}
+                    onChange={(e) => setShareSettings((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="Set a password for this link"
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Download Limit (optional)</Label>
+                  <Input
+                    type="number"
+                    value={shareSettings.maxDownloads}
+                    onChange={(e) => setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))}
+                    placeholder="Max downloads allowed"
+                    autoComplete="off"
+                  />
+                </div>
+              </>
             )}
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password (optional)</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={shareSettings.password}
-                  onChange={(e) =>
-                    setShareSettings((prev) => ({ ...prev, password: e.target.value }))
-                  }
-                  placeholder="Set a password to protect access"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-downloads">Max downloads (optional)</Label>
-                <Input
-                  id="max-downloads"
-                  type="number"
-                  min={1}
-                  value={shareSettings.maxDownloads}
-                  onChange={(e) =>
-                    setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))
-                  }
-                  placeholder="e.g. 5"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="preview-only"
-                  checked={shareSettings.previewOnly}
-                  onCheckedChange={(checked) =>
-                    setShareSettings((prev) => ({ ...prev, previewOnly: Boolean(checked) }))
-                  }
-                />
-                <Label htmlFor="preview-only" className="text-sm">
-                  Preview only (disable downloads)
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="allow-preview"
-                  checked={shareSettings.allowPreview}
-                  onCheckedChange={(checked) =>
-                    setShareSettings((prev) => ({ ...prev, allowPreview: Boolean(checked) }))
-                  }
-                />
-                <Label htmlFor="allow-preview" className="text-sm">
-                  Allow preview
-                </Label>
-              </div>
-            </div>
 
             <div className="flex justify-end gap-2">
               <Button
-                variant="outline"
-                onClick={() => {
-                  setIsShareOpen(false)
-                  setShareTargets([])
-                }}
-                disabled={isSharing}
+                variant="ghost"
+                onClick={() => setIsShareOpen(false)}
               >
                 Cancel
               </Button>
-              <Button onClick={handleShare} disabled={isSharing || shareTargets.length === 0}>
-                {isSharing ? 'Generating…' : 'Generate link'}
+              <Button
+                onClick={handleShare}
+                disabled={isSharing || shareTargets.length === 0}
+                className="btn-primary-gradient"
+              >
+                {isSharing ? 'Generating...' : 'Generate Link'}
               </Button>
             </div>
           </div>
@@ -1347,6 +1315,13 @@ export default function FilesPage() {
       </Dialog>
 
       <FilePreviewModal file={previewFile} open={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} />
+      {/* DirectLinkModal for permanent S3/CDN link */}
+      {directLinkFile && isDirectLinkOpen && (
+        <DirectLinkModal file={directLinkFile} open={isDirectLinkOpen} onClose={() => {
+          setIsDirectLinkOpen(false)
+          setDirectLinkFile(null)
+        }} />
+      )}
     </div>
   )
 }

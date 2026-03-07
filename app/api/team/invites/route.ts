@@ -53,9 +53,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { teamId, email, roleId } = await request.json()
-    if (!teamId || !email || !roleId) {
-      return NextResponse.json({ error: 'Team, email, and role are required' }, { status: 400 })
+
+    const { teamId, email, roleId: inputRoleId } = await request.json();
+    if (!teamId || !email) {
+      return NextResponse.json(
+        { error: "Team and email are required" },
+        { status: 400 },
+      );
+    }
+    let roleId = inputRoleId;
+    if (!roleId) {
+      // Find ADMIN role
+      const adminRole = await prisma.role.findUnique({
+        where: { name: "ADMIN" },
+      });
+      if (!adminRole) {
+        return NextResponse.json(
+          { error: "ADMIN role not found" },
+          { status: 500 },
+        );
+      }
+      roleId = adminRole.id;
     }
 
     const hasAccess = await canManageTeam(session.user.id, teamId)

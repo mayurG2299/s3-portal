@@ -58,7 +58,7 @@ export default async function DashboardLayout({
       where: { teamId: currentTeamId },
       _sum: { size: true }
     })
-    const storageUsedBytes = Number(usageResult._sum.size || 0)
+    storageUsedBytes = Number(usageResult._sum.size || 0)
   }
 
   // Fetch pending invite count for the badge

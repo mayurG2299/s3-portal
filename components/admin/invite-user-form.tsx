@@ -35,8 +35,8 @@ export function InviteUserForm({ teamId }: Props) {
         if (res.ok) {
           const data = await res.json()
           setRoles(data)
-          const viewer = data.find((r: Role) => r.name === 'VIEWER')
-          if (viewer) setRoleId(viewer.id)
+          const admin = data.find((r: Role) => r.name === 'ADMIN')
+          if (admin) setRoleId(admin.id)
         }
       } catch (err) {
         console.error('Failed to fetch roles:', err)

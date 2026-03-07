@@ -5,6 +5,7 @@ import { FolderOpen, HardDrive, Users, Link as LinkIcon, ArrowRight } from 'luci
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SignOutButton } from '@/components/dashboard/sign-out-button'
+import { StorageOverviewChart } from '@/components/dashboard/storage-overview-chart'
 import { cn } from '@/lib/utils'
 
 export default async function DashboardPage() {
@@ -52,17 +53,20 @@ export default async function DashboardPage() {
 
   // Convert bytes to GB for the UI, compute a local max for CSS height scaling
   const monthlyDataGB = monthlyDataBytes.map(bytes => bytes / (1024 * 1024 * 1024))
-  const maxGB = Math.max(...monthlyDataGB, 1) // prevent divide by zero
-  const getDynamicHeight = (gb: number) => {
-    // scale max chart height to ~160px
-    const percentage = gb / maxGB
-    return Math.max(minBarHeight, Math.floor(percentage * 160))
-  }
-  const minBarHeight = 10
+
+  // Aggregate File Sizes by Year for the last 5 years
+  const yearlyDataGB = Array(5).fill(0).map((_, i) => ({ year: currentYear - 4 + i, gb: 0 }))
+  allFiles.forEach(file => {
+    const d = new Date(file.createdAt)
+    const yearDiff = currentYear - d.getFullYear()
+    if (yearDiff >= 0 && yearDiff < 5) {
+      yearlyDataGB[4 - yearDiff].gb += Number(file.size) / (1024 * 1024 * 1024)
+    }
+  })
 
   const recentFiles = await prisma.file.findMany({
     where: { teamId: session.user.teamId || null },
-    take: 5,
+    take: 2,
     orderBy: { createdAt: 'desc' },
     include: {
       bucket: {
@@ -90,7 +94,21 @@ export default async function DashboardPage() {
               Manage your global S3 infrastructure with ease.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {[
+              { href: '/dashboard/teams', label: 'Team Access', icon: Users, color: 'amber' },
+              { href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon, color: 'violet' }
+            ].map((item, i) => (
+              <Link key={i} href={item.href}>
+                <Button variant="outline" className="rounded-xl h-12 bg-card text-foreground border-border hover:border-primary/30 hover:bg-accent/5 transition-all font-bold text-sm px-4 gap-2">
+                  <item.icon size={16} className={cn(
+                    item.color === 'amber' && "text-amber-500",
+                    item.color === 'violet' && "text-violet-500",
+                  )} />
+                  <span className="hidden lg:inline">{item.label}</span>
+                </Button>
+              </Link>
+            ))}
             <Link href="/dashboard/settings">
               <Button className="rounded-xl h-12 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all font-bold text-sm px-6">
                 Configure AWS
@@ -111,7 +129,7 @@ export default async function DashboardPage() {
         {[
           { label: 'Cloud Infrastructure', val: bucketsCount, icon: HardDrive, color: 'indigo', desc: 'Active Buckets' },
           { label: 'Data Ingress', val: filesCount, icon: FolderOpen, color: 'emerald', desc: 'Stored Objects' },
-          { label: 'Public Endpoints', val: linksCount, icon: LinkIcon, color: 'violet', desc: 'Secure Links' },
+          { label: 'Shared Links', val: linksCount, icon: LinkIcon, color: 'violet', desc: 'Secure Links' },
           { label: 'Personnel Access', val: teamsCount, icon: Users, color: 'amber', desc: 'Active Roles' }
         ].map((stat, i) => (
           <div key={i} className="glass-card group animate-slide-up relative overflow-hidden" style={{ animationDelay: `${i * 100}ms` }}>
@@ -141,73 +159,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8 animate-slide-up" style={{ animationDelay: '400ms' }}>
-          {/* Storage Overview Chart Mock */}
-          <div className="glass-card">
-            <div className="flex items-center justify-between mb-10">
-              <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#8c2bee] shadow-[0_0_10px_rgba(140,43,238,0.8)]" />
-                Storage Overview
-              </h4>
-              <div className="flex gap-2">
-                <div className="px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground text-[8px] font-black uppercase tracking-widest">Monthly</div>
-                <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[8px] font-black text-primary uppercase tracking-widest">Yearly</div>
-              </div>
-            </div>
-
-            <div className="h-64 w-full flex items-end justify-between gap-2 sm:gap-4 px-2 overflow-x-auto no-scrollbar pb-1">
-              {monthlyDataGB.map((gb, i) => (
-                <div key={i} className="flex-1 min-w-[28px] sm:min-w-0 flex flex-col items-center gap-3 group">
-                  <div className="w-full relative">
-                    <div
-                      className="w-full rounded-t-xl bg-gradient-to-t from-[#8c2bee]/20 to-[#8c2bee] group-hover:from-[#8c2bee]/40 group-hover:to-[#b673ff] transition-all duration-500 relative"
-                      style={{ height: `${getDynamicHeight(gb)}px` }}
-                    >
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground backdrop-blur-md border border-border rounded-lg px-2 py-1 text-[8px] font-bold whitespace-nowrap">
-                        {gb > 0 ? gb.toFixed(2) : 0}GB
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">
-                    {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][i]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-card">
-            <div className="flex items-center justify-between mb-8">
-              <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                Quick Operations
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { href: '/dashboard/settings', label: 'AWS Node Configuration', icon: HardDrive, color: 'indigo' },
-                { href: '/dashboard/files', label: 'Resource Explorer', icon: FolderOpen, color: 'emerald' },
-                { href: '/dashboard/teams', label: 'Personnel Access', icon: Users, color: 'amber' },
-                { href: '/dashboard/links', label: 'Public Endpoints', icon: LinkIcon, color: 'violet' }
-              ].map((item, i) => (
-                <Link key={i} href={item.href}>
-                  <div className="group flex items-center gap-4 p-5 rounded-3xl bg-card border border-border hover:border-primary/30 hover:bg-accent/5 transition-all duration-500">
-                    <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6",
-                      item.color === 'indigo' && "bg-[#8c2bee]/10 text-[#8c2bee]",
-                      item.color === 'emerald' && "bg-emerald-500/10 text-emerald-400",
-                      item.color === 'amber' && "bg-amber-500/10 text-amber-400",
-                      item.color === 'violet' && "bg-violet-500/10 text-violet-400",
-                    )}>
-                      <item.icon size={20} strokeWidth={2.5} />
-                    </div>
-                    <span className="text-xs font-black text-slate-400 group-hover:text-white transition-colors uppercase tracking-widest">{item.label}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+        <div className="lg:col-span-2 h-full flex flex-col animate-slide-up" style={{ animationDelay: '400ms' }}>
+          <StorageOverviewChart monthlyDataGB={monthlyDataGB} yearlyDataGB={yearlyDataGB} />
         </div>
 
         <div className="animate-slide-up" style={{ animationDelay: '500ms' }}>

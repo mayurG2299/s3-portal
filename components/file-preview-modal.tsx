@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { getPreviewType, PreviewType } from '@/lib/preview-utils'
-import { RefreshCw, Maximize, Minimize, FileJson, Loader2, Copy, Check } from 'lucide-react'
+import { RefreshCw, Maximize, Minimize, FileJson, Loader2 } from 'lucide-react'
 import { cn, formatFileSize } from '@/lib/utils'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -41,18 +41,6 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fileSizeStr, setFileSizeStr] = useState<string | null>(null)
   const [isTooLarge, setIsTooLarge] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
-
-  const handleCopyCode = async () => {
-    if (!textContent) return
-    try {
-      await navigator.clipboard.writeText(textContent)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Copy failed', description: 'Could not copy code to clipboard.' })
-    }
-  }
 
   const fetchPreview = React.useCallback(async () => {
     if (!file) return
@@ -262,26 +250,7 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
                     <ReactMarkdown>{textContent}</ReactMarkdown>
                   </div>
                 ) : (
-                    <div className="h-full bg-slate-950/40 relative group">
-                      <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleCopyCode}
-                          className={cn(
-                            "h-8 px-3 rounded-lg text-xs font-semibold shadow-lg backdrop-blur-md transition-all",
-                            isCopied
-                              ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 hover:text-emerald-300 border border-emerald-500/30"
-                              : "bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-white/10"
-                          )}
-                        >
-                          {isCopied ? (
-                            <><Check className="h-3.5 w-3.5 mr-1.5" /> Copied</>
-                          ) : (
-                            <><Copy className="h-3.5 w-3.5 mr-1.5" /> Copy Code</>
-                          )}
-                        </Button>
-                      </div>
+                    <div className="h-full bg-slate-950/40">
                       <SyntaxHighlighter
                         language={getLanguageFromFilename(file.name)}
                         style={vscDarkPlus}
@@ -348,7 +317,15 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
           </div>
         </div>
 
-
+        <div className="p-4 border-t border-white/5 bg-white/[0.02] flex justify-end">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="h-10 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+          >
+            Terminal View
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

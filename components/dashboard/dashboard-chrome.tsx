@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { GlobalSearch } from '@/components/dashboard/global-search'
 import { cn } from '@/lib/utils'
 
 interface Team {
@@ -119,27 +120,12 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               </p>
             </div>
 
-            <div className="max-w-md w-full relative group hidden md:block">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search buckets, files, metadata..."
-                className="block w-full pl-10 pr-3 py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm dark:shadow-none"
-              />
-            </div>
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <button className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 transition-all h-9 w-9 flex items-center justify-center">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
+
             <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">

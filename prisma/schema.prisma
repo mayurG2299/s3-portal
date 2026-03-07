@@ -185,19 +185,19 @@ model ScreenPermission {
 }
 
 model Team {
-  id          String          @id @default(cuid())
-  name        String
-  slug        String          @unique
-  ownerId     String
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  credentials AWSCredential[]
-  accessLogs  AccessLog[]
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  ownerId      String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  credentials  AWSCredential[]
+  accessLogs   AccessLog[]
   files        File[]
+  storageQuota StorageQuota?
   owner        User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   invites      TeamInvite[]
   members      TeamMember[]
-  storageQuota StorageQuota?
 
   @@index([ownerId])
   @@index([slug])
@@ -206,11 +206,11 @@ model Team {
 model StorageQuota {
   id         String   @id @default(cuid())
   teamId     String   @unique
-  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  limitBytes BigInt?
   usedBytes  BigInt   @default(0)
+  limitBytes BigInt?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
 model TeamMember {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Download, Lock, FileText, Image, Film, FileIcon, Shield, Eye, EyeOff, FileJson, Copy, Check } from 'lucide-react'
+import { Download, Lock, FileText, Image as ImageIcon, Film, FileIcon, Shield, Eye, EyeOff, FileJson, Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { formatFileSize, isImageFile, isVideoFile, isPDFFile, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -122,7 +122,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
     if (!file) return <FileIcon className="h-8 w-8" />
     const ct = file.file.contentType || ''
     const name = file.file.name || ''
-    if (isImageFile(ct, name)) return <Image className="h-8 w-8" />
+    if (isImageFile(ct, name)) return <ImageIcon className="h-8 w-8" />
     if (isVideoFile(ct, name)) return <Film className="h-8 w-8" />
     if (isPDFFile(ct, name)) return <FileText className="h-8 w-8" />
     return <FileIcon className="h-8 w-8" />
@@ -276,6 +276,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
           {/* Preview Area */}
           {showImagePreview && (
             <div className="aspect-video bg-slate-50 dark:bg-black/30 flex items-center justify-center border-b border-slate-100 dark:border-white/5 overflow-hidden group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={file.downloadUrl}
                 alt={file.file.name}

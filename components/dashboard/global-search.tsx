@@ -1,0 +1,160 @@
+'use client'
+
+import React, { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { Search, HardDrive, File, FolderOpen, Users, User, Link as LinkIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface SearchResult {
+  type: 'file' | 'bucket' | 'team' | 'member'
+  id: string
+  title: string
+  subtitle: string
+  tags?: string[]
+  description?: string | null
+  url: string
+}
+
+export function GlobalSearch() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!query.trim()) {
+        setResults([])
+        return
+      }
+
+      setIsLoading(true)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setResults(data.results || [])
+          setIsOpen(true)
+        }
+      } catch (error) {
+        console.error('Search error:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const handleSelect = (url: string) => {
+    setIsOpen(false)
+    setQuery('')
+    router.push(url)
+  }
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'file': return <File size={14} className="text-emerald-500" />
+      case 'bucket': return <HardDrive size={14} className="text-indigo-500" />
+      case 'team': return <Users size={14} className="text-amber-500" />
+      case 'member': return <User size={14} className="text-violet-500" />
+      default: return <Search size={14} className="text-muted-foreground" />
+    }
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'file': return 'File or Folder'
+      case 'bucket': return 'Bucket'
+      case 'team': return 'Team'
+      case 'member': return 'Team Member'
+      default: return 'Result'
+    }
+  }
+
+  return (
+    <div ref={wrapperRef} className="max-w-md w-full relative group hidden md:block z-50">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <input
+        type="text"
+        placeholder="Search buckets, files, metadata..."
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          if (!isOpen && e.target.value.trim() !== '') setIsOpen(true)
+        }}
+        onFocus={() => {
+          if (query.trim() !== '') setIsOpen(true)
+        }}
+        autoComplete="off"
+        className="block w-full pl-10 pr-3 py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm dark:shadow-none"
+      />
+
+      {/* Dropdown Results */}
+      {isOpen && (query.trim() !== '') && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 z-50 max-h-[400px] overflow-y-auto no-scrollbar">
+          {isLoading ? (
+            <div className="p-4 text-center text-xs text-muted-foreground animate-pulse">
+              Searching globally...
+            </div>
+          ) : results.length === 0 ? (
+            <div className="p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">No results found for "{query}"</p>
+              <p className="text-[10px] text-muted-foreground/70">Check for typos or try a different term.</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              <div className="px-3 pb-2 pt-1">
+                <p className="text-[10px] font-black tracking-widest text-[#8c2bee] uppercase">Results</p>
+              </div>
+              {results.map((res, i) => (
+                <button
+                  key={`${res.type}-${res.id}-${i}`}
+                  onClick={() => handleSelect(res.url)}
+                  className="w-full flex w-full text-left items-start gap-3 px-3 py-2 hover:bg-accent/50 transition-colors group cursor-pointer"
+                >
+                  <div className="mt-0.5 p-1.5 rounded-md bg-background border border-border shadow-sm group-hover:bg-accent group-hover:border-accent-foreground/10 transition-colors">
+                    {getIcon(res.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">{res.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{res.subtitle}</p>
+                    
+                    {res.tags && res.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {res.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-[8px] font-black bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest mt-1">
+                    {getTypeLabel(res.type)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

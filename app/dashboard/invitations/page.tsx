@@ -116,7 +116,7 @@ export default function InvitationsPage() {
           </div>
           <h2 className="text-lg font-black text-foreground tracking-tight mb-1">No Pending Invitations</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            You're all caught up! When someone invites you to their workspace, it will appear here.
+            You&apos;re all caught up! When someone invites you to their workspace, it will appear here.
           </p>
         </div>
       ) : (
