@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -27,6 +28,7 @@ import { formatFileSize, formatRelativeTime } from '@/lib/utils'
 import FilePreviewModal from '@/components/file-preview-modal'
 import DirectLinkModal from '@/components/DirectLinkModal'
 import { getPreviewType } from '@/lib/preview-utils'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface Bucket {
   id: string
@@ -51,11 +53,8 @@ interface StoredFile {
   isFavorite?: boolean
   description?: string | null
 }
-
 export default function FilesPage() {
-  const [credentials, setCredentials] = useState<Credential[]>([])
-  const [selectedCredential, setSelectedCredential] = useState<string>('')
-  const [selectedBucket, setSelectedBucket] = useState<string>('')
+  const { selectedIdentityId, selectedBucketId } = useDashboard()
   const [files, setFiles] = useState<StoredFile[]>([])
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -67,7 +66,8 @@ export default function FilesPage() {
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([])
   const [isSharing, setIsSharing] = useState(false)
   const [tagFilter, setTagFilter] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
   const [viewMode, setViewMode] = useState<'all' | 'favorites' | 'recents'>('all')
   const [editingTagsFile, setEditingTagsFile] = useState<StoredFile | null>(null)
   const [tagInput, setTagInput] = useState('')
@@ -80,6 +80,7 @@ export default function FilesPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
+
   // CDN Configuration Modal State
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
   const [cdnConfig, setCdnConfig] = useState({
@@ -101,39 +102,20 @@ export default function FilesPage() {
   })
   const [currentPath, setCurrentPath] = useState('/')
 
-  const fetchCredentials = useCallback(async () => {
-    try {
-      const response = await fetch('/api/credentials')
-      if (response.ok) {
-        const data = await response.json()
-        setCredentials(data)
-        if (data.length > 0 && !selectedCredential) {
-          setSelectedCredential(data[0].id)
-          setSelectedBucket(data[0].buckets?.[0]?.id || '')
-        }
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch credentials',
-      })
-    }
-  }, [selectedCredential])
-
   const fetchFiles = useCallback(async () => {
     try {
-      if (!selectedBucket) {
+      if (!selectedBucketId) {
         setFiles([])
         return
       }
+      setIsRefreshing(true)
       const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
       const response = await fetch('/api/files', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          bucketId: selectedBucket,
+          bucketId: selectedBucketId,
           prefix: currentPath === '/' ? '' : currentPath,
           tag: tagFilter.trim() || undefined,
           query: searchQuery.trim() || undefined,
@@ -153,49 +135,23 @@ export default function FilesPage() {
         description: 'Failed to fetch files',
       })
       setFiles([])
+    } finally {
+      setIsRefreshing(false)
     }
-  }, [selectedBucket, currentPath, tagFilter, searchQuery, viewMode])
+  }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode])
 
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
 
-  // lazy import preview type util in client component
-  // import at top-level to classify which files can be previewed
-  // getPreviewType is a pure function
-
   useEffect(() => {
-    fetchCredentials()
-  }, [fetchCredentials])
-
-  useEffect(() => {
-    if (selectedBucket) {
-      fetchFiles()
-    }
-  }, [selectedBucket, currentPath, tagFilter, searchQuery, viewMode, fetchFiles])
-
-  useEffect(() => {
-    if (!selectedCredential) {
-      setSelectedBucket('')
-      return
-    }
-
-    const credential = credentials.find((item) => item.id === selectedCredential)
-    if (!credential || credential.buckets.length === 0) {
-      setSelectedBucket('')
-      return
-    }
-
-    const isValid = credential.buckets.some((bucket) => bucket.id === selectedBucket)
-    if (!isValid) {
-      setSelectedBucket(credential.buckets[0].id)
-    }
-  }, [credentials, selectedCredential, selectedBucket])
+    fetchFiles()
+  }, [fetchFiles])
 
   useEffect(() => {
     setSelectedFileIds([])
     setShareTargets([])
-  }, [selectedBucket, currentPath])
+  }, [selectedBucketId, currentPath])
 
   useEffect(() => {
     if (editingTagsFile) {
@@ -207,6 +163,14 @@ export default function FilesPage() {
     }
   }, [editingTagsFile])
 
+  // Sync searchQuery with URL 'q' parameter (from Global Search)
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q !== null && q !== searchQuery) {
+      setSearchQuery(q)
+    }
+  }, [searchParams])
+
   useEffect(() => {
     if (!isUploadOpen) {
       setUploadTags('')
@@ -216,7 +180,7 @@ export default function FilesPage() {
 
 
   async function handleUpload(uploadFiles: File[], onProgress?: (fileIndex: number, progress: number) => void) {
-    if (!selectedBucket) {
+    if (!selectedBucketId) {
       throw new Error('Select a bucket before uploading')
     }
 
@@ -295,7 +259,7 @@ export default function FilesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'upload',
-              bucketId: selectedBucket,
+              bucketId: selectedBucketId,
               fileName: file.name,
               contentType: file.type,
               size: file.size,
@@ -345,7 +309,7 @@ export default function FilesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'multipartInit',
-              bucketId: selectedBucket,
+              bucketId: selectedBucketId,
               fileName: file.name,
               contentType: file.type,
               path: currentPath,
@@ -370,7 +334,7 @@ export default function FilesPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 action: 'multipartPresign',
-                bucketId: selectedBucket,
+                bucketId: selectedBucketId,
                 key,
                 uploadId,
                 partNumber,
@@ -391,7 +355,7 @@ export default function FilesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'multipartComplete',
-              bucketId: selectedBucket,
+              bucketId: selectedBucketId,
               key,
               uploadId,
               fileId,
@@ -560,7 +524,7 @@ export default function FilesPage() {
 
   async function handleSaveCdn(e: React.FormEvent) {
     if (e) e.preventDefault()
-    if (!selectedBucket) return
+    if (!selectedBucketId) return
 
     setIsSavingCdn(true)
     try {
@@ -568,7 +532,7 @@ export default function FilesPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bucketId: selectedBucket,
+          bucketId: selectedBucketId,
           ...cdnConfig,
         }),
       })
@@ -586,7 +550,6 @@ export default function FilesPage() {
       // Close modal, clear form, and refresh credentials to instantly unlock CDN URL
       setIsCdnDialogOpen(false)
       setCdnConfig({ cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' })
-      await fetchCredentials()
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -599,7 +562,7 @@ export default function FilesPage() {
   }
 
   async function handleCreateFolder() {
-    if (!selectedBucket) return
+    if (!selectedBucketId) return
     if (!newFolderName.trim()) return
 
     const tags = newFolderTags
@@ -613,7 +576,7 @@ export default function FilesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'createFolder',
-          bucketId: selectedBucket,
+          bucketId: selectedBucketId,
           path: currentPath,
           folderName: newFolderName.trim(),
           tags,
@@ -749,16 +712,13 @@ export default function FilesPage() {
     }
   }
 
-  const activeCredential = credentials.find((item) => item.id === selectedCredential)
-  const availableBuckets = activeCredential?.buckets || []
-
   return (
     <div className="min-h-screen">
       <header className="mb-8">
         <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Files</h1>
-            {selectedBucket && (
+            {selectedBucketId && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                 {getBreadcrumbs().map((crumb, index) => (
                   <div key={crumb.path} className="flex items-center gap-2">
@@ -775,35 +735,7 @@ export default function FilesPage() {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-              <Select value={selectedCredential} onValueChange={setSelectedCredential}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select credential" />
-                </SelectTrigger>
-                <SelectContent>
-                  {credentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id}>
-                      {cred.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={selectedBucket}
-                onValueChange={setSelectedBucket}
-                disabled={!selectedCredential || availableBuckets.length === 0}
-              >
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select bucket" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id}>
-                      {bucket.bucket}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucket}>
+            <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucketId}>
                 <Upload className="mr-2 h-4 w-4" />
                 Upload
               </Button>
@@ -816,23 +748,23 @@ export default function FilesPage() {
                   setShareTargets(targets)
                   setIsShareOpen(true)
                 }}
-                disabled={!selectedBucket || selectedFileIds.length === 0}
+              disabled={!selectedBucketId || selectedFileIds.length === 0}
                 variant="secondary"
               >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Selected
               </Button>
-              <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucket} variant="outline">
+            <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucketId} variant="outline">
                 <Folder className="mr-2 h-4 w-4" />
                 New Folder
               </Button>
               <Button
                 onClick={handleRefresh}
-                disabled={!selectedBucket || isRefreshing}
+              disabled={!selectedBucketId || isRefreshing}
                 variant="outline"
               >
                 <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-                {isRefreshing ? 'Refreshing' : 'Refresh'}
+              Refresh
               </Button>
             </div>
         </div>
@@ -891,10 +823,10 @@ export default function FilesPage() {
             </Button>
           )}
         </div>
-        {!selectedBucket ? (
+        {!selectedBucketId ? (
           <Card className="p-12 text-center bg-muted/30 border-border">
             <p className="text-muted-foreground">
-              Please select a credential and bucket to browse files
+              Please select a Cloud Identity and Storage Bucket in the header to browse files
             </p>
           </Card>
         ) : files.length === 0 ? (

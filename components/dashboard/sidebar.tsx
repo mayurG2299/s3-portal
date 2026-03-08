@@ -7,6 +7,7 @@ import {
   Home,
   FolderOpen,
   Users,
+  Users as UsersIcon,
   Link as LinkIcon,
   Settings,
   Shield,
@@ -15,11 +16,18 @@ import {
   ChevronRight,
   X,
   Mail,
+  Database
 } from 'lucide-react'
-import { switchTeam } from '@/app/actions/teams'
 import { ProfileActions } from './profile-actions'
-import { TeamSwitcher } from './team-switcher'
 import { cn } from '@/lib/utils'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface Team {
   id: string
@@ -66,6 +74,18 @@ export function Sidebar({
   pendingInviteCount = 0,
 }: SidebarProps) {
   const pathname = usePathname()
+  const {
+    selectedTeamId,
+    selectedIdentityId,
+    selectedBucketId,
+    identities,
+    setIdentity,
+    setBucket,
+    setTeam
+  } = useDashboard()
+
+  const activeIdentity = identities.find(id => id.id === selectedIdentityId)
+  const availableBuckets = activeIdentity?.buckets || []
 
   const navItems = useMemo(
     () => [
@@ -107,13 +127,13 @@ export function Sidebar({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 bg-white dark:bg-slate-950 flex flex-col z-50 border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out',
+          'fixed inset-y-0 left-0 bg-white dark:bg-slate-950 flex flex-col z-[100] border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out',
           sidebarExpanded ? 'w-64' : 'w-20',
           isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'
         )}
       >
         {/* Header */}
-        <div className="relative px-4 py-8 md:px-6">
+        <div className="relative px-4 py-6 md:px-6 md:py-8">
           {sidebarExpanded ? (
             <div className="flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleNavClick}>
@@ -139,19 +159,73 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Team Switcher */}
-        {sidebarExpanded && teams.length > 0 && (
-          <div className="px-4 pb-6 px-6">
-            <div className="p-1 rounded-2xl bg-slate-50 border border-slate-200 dark:bg-white/[0.03] dark:border-white/5">
-              <TeamSwitcher
-                teams={teams}
-                currentTeamId={currentTeamId || ''}
-                onTeamChange={switchTeam}
-              />
+        {/* Mobile Context Selectors */}
+        {isMobile && (
+          <div className="px-4 mb-8 space-y-4">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Team</p>
+              <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
+                <SelectTrigger className="w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20">
+                  <div className="flex items-center gap-2 truncate">
+                    <UsersIcon size={14} className="shrink-0" />
+                    <SelectValue placeholder="Select Team" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="text-sm font-semibold py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
+                      <span className="whitespace-normal break-words leading-tight">{t.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Cloud Identity</p>
+              <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
+                <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20">
+                  <div className="flex items-center gap-2 truncate">
+                    <Shield size={14} className="text-purple-400 shrink-0" />
+                    <SelectValue placeholder="Cloud Identity" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
+                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Identities</SelectItem>
+                  {identities.map((id) => (
+                    <SelectItem key={id.id} value={id.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
+                      <span className="whitespace-normal break-words leading-tight text-left">{id.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Storage Bucket</p>
+              <Select
+                value={selectedBucketId || 'all'}
+                onValueChange={(val) => setBucket(val === 'all' ? null : val)}
+                disabled={!selectedIdentityId}
+              >
+                <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20 disabled:opacity-50">
+                  <div className="flex items-center gap-2 truncate">
+                    <Database size={14} className="text-blue-400 shrink-0" />
+                    <SelectValue placeholder="Storage Bucket" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
+                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Buckets</SelectItem>
+                  {availableBuckets.map((bucket) => (
+                    <SelectItem key={bucket.id} value={bucket.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
+                      <span className="whitespace-normal break-words leading-tight text-left">{bucket.bucket}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
-
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-2 py-4" aria-label="Main navigation">
           {navItems.map(({ href, label, icon: Icon, badge }: any) => {

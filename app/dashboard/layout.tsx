@@ -1,6 +1,8 @@
+import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { DashboardChrome } from '@/components/dashboard/dashboard-chrome'
+import { DashboardProvider } from '@/lib/contexts/dashboard-context'
 
 export default async function DashboardLayout({
   children,
@@ -8,6 +10,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await requireUser()
+  const cookieStore = await cookies()
 
   const isOwner = session.user.roleId === 'role_owner'
   const isAdmin = isOwner || session.user.roleId === 'role_admin'
@@ -31,8 +34,11 @@ export default async function DashboardLayout({
     },
   })
 
-  // Get current team ID (from session or first team)
-  const currentTeamId = session.user.teamId || teams[0]?.id
+  // Get selections from cookies or defaults
+  const cookieTeamId = cookieStore.get('selectedTeamId')?.value
+  const currentTeamId = cookieTeamId || session.user.teamId || teams[0]?.id
+  const initialIdentityId = cookieStore.get('selectedIdentityId')?.value
+  const initialBucketId = cookieStore.get('selectedBucketId')?.value
 
   // Identify Role Title
   let roleTitle = 'Viewer'
@@ -54,8 +60,17 @@ export default async function DashboardLayout({
       storageLimitBytes = Number(quota.limitBytes)
     }
 
+    // Narrow usage results based on selected identity/bucket if present
+    // Note: For now, the layout stats still reflect team-wide totals unless we want to filter them globally.
+    // The implementation plan says "Refactor Dashboard stats to respect selection". 
+    // I will add the filtering logic here as well.
+
+    const usageWhere: any = { teamId: currentTeamId }
+    if (initialIdentityId) usageWhere.credentialId = initialIdentityId
+    if (initialBucketId) usageWhere.bucketId = initialBucketId
+
     const usageResult = await prisma.file.aggregate({
-      where: { teamId: currentTeamId },
+      where: usageWhere,
       _sum: { size: true }
     })
     storageUsedBytes = Number(usageResult._sum.size || 0)
@@ -71,19 +86,26 @@ export default async function DashboardLayout({
   })
 
   return (
-    <DashboardChrome 
-      name={displayName}
-      email={session.user.email || ''} 
-      roleTitle={roleTitle}
-      storageUsedBytes={storageUsedBytes}
-      storageLimitBytes={storageLimitBytes}
-      isAdmin={isAdmin} 
-      isOwner={isOwner}
-      teams={teams}
-      currentTeamId={currentTeamId}
-      pendingInviteCount={pendingInviteCount}
+    <DashboardProvider
+      initialTeams={teams}
+      initialTeamId={currentTeamId}
+      initialIdentityId={initialIdentityId}
+      initialBucketId={initialBucketId}
     >
-      {children}
-    </DashboardChrome>
+      <DashboardChrome
+        name={displayName}
+        email={session.user.email || ''}
+        roleTitle={roleTitle}
+        storageUsedBytes={storageUsedBytes}
+        storageLimitBytes={storageLimitBytes}
+        isAdmin={isAdmin}
+        isOwner={isOwner}
+        teams={teams}
+        currentTeamId={currentTeamId}
+        pendingInviteCount={pendingInviteCount}
+      >
+        {children}
+      </DashboardChrome>
+    </DashboardProvider>
   )
 }

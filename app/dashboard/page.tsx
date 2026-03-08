@@ -7,37 +7,58 @@ import { Button } from '@/components/ui/button'
 import { SignOutButton } from '@/components/dashboard/sign-out-button'
 import { StorageOverviewChart } from '@/components/dashboard/storage-overview-chart'
 import { cn } from '@/lib/utils'
+import { cookies } from 'next/headers'
 
 export default async function DashboardPage() {
   const session = await requireUser()
+  const cookieStore = await cookies()
 
-  // Fetch user stats
+  // Use team from cookie if available, fallback to session
+  const activeTeamId = cookieStore.get('selectedTeamId')?.value || session.user.teamId || null
+  const identityId = cookieStore.get('selectedIdentityId')?.value || undefined
+  const bucketId = cookieStore.get('selectedBucketId')?.value || undefined
+
+  // Fetch user stats scoped by context
   const [bucketsCount, filesCount, linksCount, teamsCount] =
     await Promise.all([
       prisma.awsBucket.count({
         where: { 
           credential: {
-            teamId: session.user.teamId || null,
+            id: identityId,
+            teamId: activeTeamId || null,
           }
         },
       }),
       prisma.file.count({
-        where: { teamId: session.user.teamId || null },
+        where: {
+          teamId: activeTeamId || null,
+          credentialId: identityId,
+          bucketId: bucketId
+        },
       }),
       prisma.link.count({
-        where: { file: { teamId: session.user.teamId || null } },
+        where: {
+          file: {
+            teamId: activeTeamId || null,
+            credentialId: identityId,
+            bucketId: bucketId
+          }
+        },
       }),
       prisma.teamMember.count({
-        where: { userId: session.user.id },
+        where: { teamId: activeTeamId || undefined },
       }),
     ])
 
   // Aggregate File Sizes (in Bytes) by Month for the Current Year
   const currentYear = new Date().getFullYear()
-  const currentTeamId = session.user.teamId // If we want team-scoped chart. Currently files are userId scoped in the stats above, let's keep consistency with userId for personal dashboard.
 
   const allFiles = await prisma.file.findMany({
-    where: { teamId: session.user.teamId || null },
+    where: {
+      teamId: activeTeamId || null,
+      credentialId: identityId,
+      bucketId: bucketId
+    },
     select: { size: true, createdAt: true }
   })
 
@@ -65,7 +86,11 @@ export default async function DashboardPage() {
   })
 
   const recentFiles = await prisma.file.findMany({
-    where: { teamId: session.user.teamId || null },
+    where: {
+      teamId: activeTeamId || null,
+      credentialId: identityId,
+      bucketId: bucketId
+    },
     take: 2,
     orderBy: { createdAt: 'desc' },
     include: {

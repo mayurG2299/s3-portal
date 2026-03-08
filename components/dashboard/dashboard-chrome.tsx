@@ -7,6 +7,15 @@ import { Sidebar } from './sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { GlobalSearch } from '@/components/dashboard/global-search'
 import { cn } from '@/lib/utils'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Database, Shield, Users } from 'lucide-react'
 
 interface Team {
   id: string
@@ -32,13 +41,30 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
+  const {
+    selectedIdentityId,
+    selectedBucketId,
+    identities,
+    setIdentity,
+    setBucket,
+    selectedTeamId,
+    setTeam
+  } = useDashboard()
+
+  const activeIdentity = identities.find(id => id.id === selectedIdentityId)
+  const availableBuckets = activeIdentity?.buckets || []
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
     const update = (e: MediaQueryListEvent | MediaQueryList) => {
       const mobile = e.matches
-      setIsMobile(mobile)
-      setSidebarOpen(!mobile) // open on desktop, closed on mobile
+      if (mobile) {
+        setIsMobile(true)
+        setSidebarOpen(false)
+      } else {
+        setIsMobile(false)
+        setSidebarOpen(true)
+      }
     }
     update(mq)
     mq.addEventListener('change', update)
@@ -67,7 +93,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         isAdmin={isAdmin}
         isOwner={isOwner}
         teams={teams}
-        currentTeamId={currentTeamId}
+        currentTeamId={selectedTeamId || currentTeamId}
         storageUsedBytes={storageUsedBytes}
         storageLimitBytes={storageLimitBytes}
         isOpen={sidebarOpen}
@@ -84,55 +110,95 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         )}
       >
         {/* Top Navigation Bar */}
-        <header className="h-16 flex-shrink-0 glass-navbar flex items-center justify-between px-6 lg:px-8">
-          <div className="flex-1 flex items-center min-w-0 pr-4">
+        <header className="h-16 flex-shrink-0 glass-navbar flex items-center justify-between px-4 lg:px-8 gap-4">
+          <div className="flex-1 flex items-center min-w-0 gap-3">
             <button
               onClick={handleToggle}
-              className="md:hidden mr-3 p-2 shrink-0 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all focus:outline-none"
+              className="md:hidden p-2 shrink-0 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all focus:outline-none"
               aria-label="Open menu"
             >
               <Menu size={20} />
             </button>
 
-            {/* Title / Subtitle for mobile view */}
-            <div className="md:hidden flex-1 min-w-0 flex flex-col justify-center">
-              <h2 className="text-sm font-black text-slate-900 dark:text-white truncate leading-tight tracking-tight">
-                {(() => {
-                  if (pathname.includes('/settings')) return <><span className="text-slate-500 dark:text-slate-300">Platform</span> <span className="text-[#b673ff]">Configuration</span></>
-                  if (pathname.includes('/files')) return <><span className="text-slate-500 dark:text-slate-300">File</span> <span className="text-[#b673ff]">Explorer</span></>
-                  if (pathname.includes('/teams')) return <><span className="text-slate-500 dark:text-slate-300">Team</span> <span className="text-[#b673ff]">Workspace</span></>
-                  if (pathname.includes('/links')) return <><span className="text-slate-500 dark:text-slate-300">Shared</span> <span className="text-[#b673ff]">Links</span></>
-                  if (pathname.includes('/admin/permissions')) return <><span className="text-slate-500 dark:text-slate-300">Access</span> <span className="text-[#b673ff]">Permissions</span></>
-                  if (pathname.includes('/admin/audit')) return <><span className="text-slate-500 dark:text-slate-300">Audit</span> <span className="text-[#b673ff]">Logs</span></>
-                  return <><span className="text-slate-500 dark:text-slate-300">System</span> <span className="text-[#b673ff]">Overview</span></>
-                })()}
-              </h2>
-              <p className="text-[10px] text-slate-400 font-medium truncate">
-                {(() => {
-                  if (pathname.includes('/settings')) return 'Manage cloud endpoints'
-                  if (pathname.includes('/files')) return 'Explore objects'
-                  if (pathname.includes('/teams')) return 'Team collaboration'
-                  if (pathname.includes('/links')) return 'Externally shared items'
-                  if (pathname.includes('/admin/permissions')) return 'Role and access logic'
-                  if (pathname.includes('/admin/audit')) return 'Monitor platform activity'
-                  return 'Infrastructure telemetry'
-                })()}
-              </p>
-            </div>
+            {/* Context Selectors (Cloud Identity & Storage Bucket) - Desktop Only in Header */}
+            {!isMobile && (
+              <div className="flex items-center gap-2 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
+                    <SelectTrigger className="w-[180px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20">
+                      <div className="flex items-center gap-2 truncate">
+                        <Shield size={14} className="text-purple-400 shrink-0" />
+                        <SelectValue placeholder="Cloud Identity" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                      <SelectItem value="all" className="text-xs">All Identities</SelectItem>
+                      {identities.map((id) => (
+                        <SelectItem key={id.id} value={id.id} className="text-xs">
+                          {id.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={selectedBucketId || 'all'}
+                    onValueChange={(val) => setBucket(val === 'all' ? null : val)}
+                    disabled={!selectedIdentityId}
+                  >
+                    <SelectTrigger className="w-[200px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20">
+                      <div className="flex items-center gap-2 truncate">
+                        <Database size={14} className="text-blue-400 shrink-0" />
+                        <SelectValue placeholder="Storage Bucket" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                      <SelectItem value="all" className="text-xs">All Buckets</SelectItem>
+                      {availableBuckets.map((bucket) => (
+                        <SelectItem key={bucket.id} value={bucket.id} className="text-xs">
+                          {bucket.bucket}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             <GlobalSearch />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Team Selector - Global Header */}
+            {!isMobile && (
+              <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
+                <SelectTrigger className="w-[160px] h-9 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20">
+                  <div className="flex items-center gap-2 truncate">
+                    <Users size={14} className="shrink-0" />
+                    <SelectValue placeholder="Select Team" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={t.id} className="text-xs font-semibold">
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <ThemeToggle />
 
             <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
-            <div className="flex items-center gap-3 pl-2">
+            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter">{name}</p>
+                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
                 <p className="text-[8px] font-bold text-[#8c2bee] uppercase tracking-widest">{roleTitle}</p>
               </div>
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px]">
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px] shrink-0">
                 <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-[#8c2bee] dark:text-white">
                   {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
                 </div>
