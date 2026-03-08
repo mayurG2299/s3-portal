@@ -9,10 +9,11 @@ import type { Role } from '@prisma/client'
 // Extend the next-auth JWT type
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string
-    email?: string
-    roleId?: string
-    teamId?: string
+    id: string;
+    email?: string;
+    roleId?: string;
+    roleLevel?: number;
+    teamId?: string;
   }
 }
 
@@ -20,12 +21,13 @@ declare module 'next-auth/jwt' {
 declare module 'next-auth' {
   interface Session {
     user: {
-      id: string
-      email?: string
-      name?: string | null
-      roleId?: string
-      teamId?: string
-    }
+      id: string;
+      email?: string;
+      name?: string | null;
+      roleId?: string;
+      roleLevel?: number;
+      teamId?: string;
+    };
   }
 }
 
@@ -55,31 +57,33 @@ export const authOptions: NextAuthOptions = {
             teamMembers: {
               include: {
                 team: true,
+                role: true,
               },
               orderBy: {
-                createdAt: 'asc',
+                createdAt: "asc",
               },
               take: 1,
             },
           },
-        })
+        });
 
         if (!user) {
-          return null
+          return null;
         }
 
         const isValid = await verifyPassword(
           credentials.password as string,
-          user.passwordHash
-        )
+          user.passwordHash,
+        );
 
         if (!isValid) {
-          return null
+          return null;
         }
 
-        // Get the user's roleId from first team membership
-        const primaryTeamMember = user.teamMembers[0]
-        const roleId = primaryTeamMember?.roleId
+        // Get the user's roleId and role level from first team membership
+        const primaryTeamMember = user.teamMembers[0];
+        const roleId = primaryTeamMember?.roleId;
+        const roleLevel = primaryTeamMember?.role?.level ?? 1;
         const teamId = primaryTeamMember?.team.id
 
         return {
@@ -87,8 +91,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           roleId,
+          roleLevel,
           teamId,
-        }
+        };
       },
     }),
   ],
@@ -98,6 +103,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = user.email
         token.roleId = (user as any).roleId
+        token.roleLevel = (user as any).roleLevel;
         token.teamId = (user as any).teamId
       }
 
@@ -105,6 +111,7 @@ export const authOptions: NextAuthOptions = {
       if (trigger === 'update' && session) {
         if (session.teamId) token.teamId = session.teamId
         if (session.roleId) token.roleId = session.roleId
+        if (session.roleLevel) token.roleLevel = session.roleLevel;
       }
 
       return token
@@ -113,6 +120,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.roleId = token.roleId as string
+        session.user.roleLevel = token.roleLevel as number;
         session.user.teamId = token.teamId as string
       }
       return session

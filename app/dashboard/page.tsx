@@ -154,7 +154,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
           { label: 'Cloud Infrastructure', val: bucketsCount, icon: HardDrive, color: 'indigo', desc: 'Active Buckets' },
-          { label: 'Data Ingress', val: filesCount, icon: FolderOpen, color: 'emerald', desc: 'Stored Objects' },
+          { label: 'Upload Activity', val: filesCount, icon: FolderOpen, color: 'emerald', desc: 'Total Files' },
           { label: 'Shared Links', val: linksCount, icon: LinkIcon, color: 'violet', desc: 'Secure Links' },
           { label: 'Personnel Access', val: teamsCount, icon: Users, color: 'amber', desc: 'Active Roles' }
         ].map((stat, i) => (

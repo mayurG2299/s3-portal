@@ -8,16 +8,22 @@ import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface SearchResult {
-  type: 'file' | 'bucket' | 'team' | 'member'
+  type: 'file' | 'link' | 'bucket' | 'team' | 'member'
   id: string
   title: string
   subtitle: string
   tags?: string[]
   description?: string | null
   url: string
+  hash?: string
   teamId?: string
   identityId?: string
   bucketId?: string
+  _searchMeta?: {
+    score: number
+    matchedField: string
+    query: string
+  }
 }
 
 export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: boolean) => void }) {
@@ -31,6 +37,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   } = useDashboard()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
+  const [searchMeta, setSearchMeta] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -66,6 +73,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
         if (res.ok) {
           const data = await res.json()
           setResults(data.results || [])
+          setSearchMeta(data.meta || null)
           setIsOpen(true)
         }
       } catch (error) {
@@ -105,6 +113,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   const getIcon = (type: string) => {
     switch (type) {
       case 'file': return <File size={14} className="text-emerald-500" />
+      case 'link': return <LinkIcon size={14} className="text-blue-500" />
       case 'bucket': return <HardDrive size={14} className="text-indigo-500" />
       case 'team': return <Users size={14} className="text-amber-500" />
       case 'member': return <User size={14} className="text-violet-500" />
@@ -115,6 +124,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'file': return 'File or Folder'
+      case 'link': return 'Shared Link'
       case 'bucket': return 'Bucket'
       case 'team': return 'Team'
       case 'member': return 'Team Member'
@@ -154,13 +164,21 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">No results found for "{query}"</p>
-              <p className="text-[10px] text-muted-foreground/70">Check for typos or try a different term.</p>
+                <p className="text-xs text-muted-foreground mb-1">No results found for &ldquo;{query}&rdquo;</p>
+                <p className="text-[10px] text-muted-foreground/70">Try a different search term or check your filters.</p>
+                {searchMeta && (
+                  <p className="text-[9px] text-muted-foreground/50 mt-2">
+                    Searched: {searchMeta.scopes?.files || 0} files, {searchMeta.scopes?.links || 0} links, {searchMeta.scopes?.buckets || 0} buckets
+                  </p>
+                )}
             </div>
           ) : (
             <div className="py-2">
-              <div className="px-3 pb-2 pt-1">
+                  <div className="px-3 pb-2 pt-1 flex items-center justify-between">
                 <p className="text-[10px] font-black tracking-widest text-[#8c2bee] uppercase">Results</p>
+                    {searchMeta && searchMeta.totalResults > 0 && (
+                      <p className="text-[9px] text-muted-foreground">{searchMeta.totalResults} found</p>
+                    )}
               </div>
               {results.map((res, i) => (
                 <button

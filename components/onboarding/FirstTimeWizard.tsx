@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button'
 import { OnboardingStep } from './OnboardingStep'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Toast, toast } from '@/hooks/use-toast'
+import { toast } from '@/hooks/use-toast'
 import { Zap, Database, Upload, ChevronRight, ChevronLeft, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWindowSize } from '@/hooks/use-window-size'
+import { useRBAC } from '@/components/rbac-provider'
 
 interface FirstTimeWizardProps {
   open?: boolean
@@ -42,6 +43,10 @@ export function FirstTimeWizard({
   const [bucketName, setBucketName] = useState('')
   const [internalOpen, setInternalOpen] = useState(false)
   const isMobile = useWindowSize().width < 768
+  const rbac = useRBAC()
+
+  // Check if user can create credentials
+  const canCreateCredentials = rbac.canEditScreen('CREDENTIALS_CREATE')
 
   // Use controlled open state if provided, otherwise use internal state
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -63,7 +68,12 @@ export function FirstTimeWizard({
 
   const handleNext = () => {
     if (currentStep === 'welcome') {
-      setCurrentStep('credentials')
+      // Skip credentials step if user cannot create credentials
+      if (!canCreateCredentials) {
+        setCurrentStep('upload')
+      } else {
+        setCurrentStep('credentials')
+      }
     } else if (currentStep === 'credentials') {
       setCurrentStep('upload')
     }
@@ -73,7 +83,8 @@ export function FirstTimeWizard({
     if (currentStep === 'credentials') {
       setCurrentStep('welcome')
     } else if (currentStep === 'upload') {
-      setCurrentStep('credentials')
+      // Go back to welcome if user can't create credentials, otherwise to credentials
+      setCurrentStep(canCreateCredentials ? 'credentials' : 'welcome')
     }
   }
 
@@ -139,10 +150,12 @@ export function FirstTimeWizard({
     setOpen(false)
   }
 
-  // Calculate step progress
-  const stepIndex = { welcome: 0, credentials: 1, upload: 2 }[currentStep]
-  const stepCount = 3
-  const progress = ((stepIndex + 1) / stepCount) * 100
+  // Calculate step progress (adjust for skipped credentials step)
+  const totalSteps = canCreateCredentials ? 3 : 2
+  const stepIndex = canCreateCredentials
+    ? { welcome: 0, credentials: 1, upload: 2 }[currentStep]
+    : { welcome: 0, upload: 1, credentials: 1 }[currentStep] // credentials should never be active
+  const progress = ((stepIndex + 1) / totalSteps) * 100
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -165,7 +178,7 @@ export function FirstTimeWizard({
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              {Array.from({ length: stepCount }).map((_, i) => (
+              {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
                   key={i}
                   className={cn(
@@ -176,7 +189,7 @@ export function FirstTimeWizard({
               ))}
             </div>
             <span className="text-xs font-medium text-muted-foreground">
-              {stepIndex + 1} of {stepCount}
+              {stepIndex + 1} of {totalSteps}
             </span>
           </div>
         </div>

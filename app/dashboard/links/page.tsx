@@ -177,6 +177,8 @@ export default function LinksPage() {
                           className="h-9 w-9 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
                           onClick={() => handleCopyLink(link.hash)}
                           disabled={isInactive}
+                          aria-label="Copy share link"
+                          title="Copy link to clipboard"
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
@@ -190,6 +192,7 @@ export default function LinksPage() {
                               : "text-muted-foreground hover:text-amber-500"
                           )}
                           onClick={() => handleDelete(link.id, !link.expiresAt)}
+                          aria-label={!link.expiresAt ? "Delete permanent link" : "Revoke share link"}
                           title={!link.expiresAt ? "Delete Link" : "Revoke Link"}
                         >
                           {!link.expiresAt ? (
@@ -261,19 +264,19 @@ export default function LinksPage() {
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
                         link.passwordHash ? "bg-amber-400/10 border-amber-400/20 text-amber-500 dark:text-amber-400" : "bg-transparent border-border text-muted-foreground"
-                      )} title={link.passwordHash ? "Password Protected" : "No Password"}>
+                      )} title={link.passwordHash ? "Password Protected" : "No Password"} aria-label={link.passwordHash ? "Password protected" : "No password"}>
                         <Lock size={12} strokeWidth={2.5} />
                       </div>
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
                         link.allowDownload ? "bg-primary/10 border-primary/20 text-primary" : "bg-transparent border-border text-muted-foreground"
-                      )} title={link.allowDownload ? "Downloads Allowed" : "Preview Only"}>
+                      )} title={link.allowDownload ? "Downloads Allowed" : "Preview Only"} aria-label={link.allowDownload ? "Downloads allowed" : "Preview only"}>
                         <Download size={12} strokeWidth={2.5} />
                       </div>
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
                         link.allowPreview ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-500 dark:text-emerald-400" : "bg-transparent border-border text-muted-foreground"
-                      )} title={link.allowPreview ? "Preview Active" : "Preview Disabled"}>
+                      )} title={link.allowPreview ? "Preview Active" : "Preview Disabled"} aria-label={link.allowPreview ? "Preview enabled" : "Preview disabled"}>
                         <Shield size={12} strokeWidth={2.5} />
                       </div>
                     </div>
@@ -282,6 +285,7 @@ export default function LinksPage() {
                       <button
                         onClick={() => handleCopyLink(link.hash)}
                         className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5"
+                        aria-label="Copy share URL"
                       >
                         Copy Share URL
                         <ExternalLink size={10} />

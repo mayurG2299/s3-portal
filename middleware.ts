@@ -61,38 +61,24 @@ export async function middleware(request: NextRequest) {
 
   // Check role-based access for protected routes
   if (token) {
-    const roleId = token.roleId as string | undefined
-
-    // Map system roles to permission levels
-    let userLevel = 0
-    if (roleId) {
-      if (roleId === 'role_owner') userLevel = 100
-      else if (roleId === 'role_admin') userLevel = 50
-      else if (roleId === 'role_viewer') userLevel = 10
-      else {
-        // Custom roles default to viewer level
-        userLevel = 10
-      }
-    }
+    // Get role level from token (already includes custom role tier)
+    const roleLevel = (token.roleLevel as number) ?? 1;
 
     // Check protected route requirements
     for (const route of PROTECTED_ROUTES) {
       if (route.pattern.test(pathname)) {
-        if (route.requiredLevel && userLevel < route.requiredLevel) {
+        if (route.requiredLevel && roleLevel < route.requiredLevel) {
           // Return 403 for API routes in production, redirect for pages
-          if (isProduction && pathname.startsWith('/api/')) {
-            return NextResponse.json(
-              { message: 'Forbidden' },
-              { status: 403 }
-            )
+          if (isProduction && pathname.startsWith("/api/")) {
+            return NextResponse.json({ message: "Forbidden" }, { status: 403 });
           }
 
           // For UI routes, redirect to dashboard
-          if (pathname !== '/dashboard') {
-            return NextResponse.redirect(new URL('/dashboard', request.url))
+          if (pathname !== "/dashboard") {
+            return NextResponse.redirect(new URL("/dashboard", request.url));
           }
         }
-        break
+        break;
       }
     }
   }

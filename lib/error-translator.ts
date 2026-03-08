@@ -171,3 +171,77 @@ export function extractAWSErrorCode(errorMessage: string): string | undefined {
   const codeMatch = errorMessage.match(/(?:Code|Error)['"]?\s*:?\s*['"]?([A-Z][a-zA-Z0-9]+)/);
   return codeMatch?.[1];
 }
+
+/**
+ * Translates any error (AWS, database, network, etc.) to user-friendly message
+ * @param error - Error object or message string
+ * @returns Translated error with message and suggestion
+ */
+export function translateError(error: unknown): TranslatedError {
+  let errorMessage = 'Unknown error'
+  
+  if (error instanceof Error) {
+    errorMessage = error.message
+  } else if (typeof error === 'string') {
+    errorMessage = error
+  } else if (error && typeof error === 'object' && 'message' in error) {
+    errorMessage = String((error as any).message)
+  }
+
+  // Check if it's an AWS error
+  if (errorMessage.includes('InvalidAccessKeyId') || 
+      errorMessage.includes('SignatureDoesNotMatch') ||
+      errorMessage.includes('AccessDenied') ||
+      errorMessage.includes('NoSuchBucket') ||
+      errorMessage.includes('NoSuchKey') ||
+      errorMessage.includes('ExpiredToken') ||
+      errorMessage.includes('ServiceUnavailable') ||
+      errorMessage.includes('RequestTimeout')) {
+    return translateAWSError(errorMessage)
+  }
+
+  // Database connection error
+  if (errorMessage.includes('ECONNREFUSED') || 
+      errorMessage.includes('database') ||
+      errorMessage.includes('connection') ||
+      errorMessage.includes('ECONNRESET')) {
+    return {
+      message: 'Service temporarily unavailable. Please try again.',
+      suggestion: 'If this problem continues, contact your administrator.',
+    }
+  }
+
+  // Network error
+  if (errorMessage.includes('timeout') || 
+      errorMessage.includes('ETIMEDOUT') ||
+      errorMessage.includes('network')) {
+    return {
+      message: 'Connection timeout. Please check your network.',
+      suggestion: 'Check your internet connection and try again.',
+    }
+  }
+
+  // CORS error
+  if (errorMessage.includes('CORS') || 
+      errorMessage.includes('cross-origin')) {
+    return {
+      message: 'Upload blocked by storage configuration.',
+      suggestion: 'Contact your administrator to configure cross-origin settings.',
+    }
+  }
+
+  // Storage quota exceeded
+  if (errorMessage.includes('quota') || 
+      errorMessage.includes('limit') && errorMessage.includes('storage')) {
+    return {
+      message: 'Storage limit reached. Please remove files or contact your admin.',
+      suggestion: 'Delete some files to free up space, or request a storage increase.',
+    }
+  }
+
+  // Generic fallback
+  return {
+    message: 'Something went wrong. Please try again.',
+    suggestion: 'If the problem continues, contact your administrator.',
+  }
+}

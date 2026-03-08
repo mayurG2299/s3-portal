@@ -45,14 +45,6 @@ export default async function HomePage() {
       {/* Hero Section */}
       <section className="relative pt-20 pb-20 sm:pt-32 sm:pb-32 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#8c2bee]/10 border border-[#8c2bee]/20 mb-8 animate-fade-in">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#b673ff] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#8c2bee]"></span>
-            </span>
-            <span className="text-xs font-bold text-[#d8b4fe] uppercase tracking-widest">v2.0 Landing</span>
-          </div>
-
           <h2 className="text-5xl sm:text-7xl font-black text-white leading-[1.05] tracking-tight mb-8 animate-slide-up">
             Your S3 Storage, <br />
             <span className="gradient-text">Beautifully Reimagined.</span>

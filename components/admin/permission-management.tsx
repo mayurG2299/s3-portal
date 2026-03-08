@@ -69,7 +69,7 @@ export function PermissionManagement({ teamMembers, currentUserId, teamId }: Pro
           )}
         >
           <Zap size={14} strokeWidth={activeTab === 'roles' ? 3 : 2} />
-          <span>Authority Matrix</span>
+          <span>Permissions</span>
         </button>
       </div>
 

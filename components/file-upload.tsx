@@ -205,7 +205,7 @@ export function FileUpload({
                   Drop Resources <span className="text-muted-foreground">or</span> <span className="gradient-text">Browse Files</span>
                 </p>
                 <div className="flex items-center justify-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                <span>Max {maxFiles} Entities</span>
+                  <span>Maximum {maxFiles} files per upload</span>
                 <div className="h-1 w-1 rounded-full bg-slate-700" />
                 <span>Limit {formatFileSize(maxSize)}</span>
               </div>

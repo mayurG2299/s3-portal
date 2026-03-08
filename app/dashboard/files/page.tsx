@@ -56,6 +56,7 @@ interface StoredFile {
 export default function FilesPage() {
   const { selectedIdentityId, selectedBucketId } = useDashboard()
   const [files, setFiles] = useState<StoredFile[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false)
@@ -106,9 +107,11 @@ export default function FilesPage() {
     try {
       if (!selectedBucketId) {
         setFiles([])
+        setLoadError(null)
         return
       }
       setIsRefreshing(true)
+      setLoadError(null)
       const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
       const response = await fetch('/api/files', {
         method: 'POST',
@@ -123,17 +126,19 @@ export default function FilesPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch files')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.message || 'Failed to load files from storage'
+        setLoadError(errorMessage)
+        setFiles([])
+        return
       }
 
       const data = await response.json()
       setFiles(data.objects || [])
+      setLoadError(null)
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch files',
-      })
+      const message = error instanceof Error ? error.message : 'Failed to load files from storage. Please check your connection and try again.'
+      setLoadError(message)
       setFiles([])
     } finally {
       setIsRefreshing(false)
@@ -169,7 +174,7 @@ export default function FilesPage() {
     if (q !== null && q !== searchQuery) {
       setSearchQuery(q)
     }
-  }, [searchParams])
+  }, [searchParams, searchQuery])
 
   useEffect(() => {
     if (!isUploadOpen) {
@@ -828,6 +833,16 @@ export default function FilesPage() {
             <p className="text-muted-foreground">
               Please select your AWS Credentials and Storage Bucket in the header to browse files
             </p>
+          </Card>
+        ) : loadError ? (
+          <Card className="p-12 text-center bg-destructive/10 border-destructive/30">
+            <Folder className="mx-auto h-12 w-12 text-destructive mb-4" />
+            <p className="text-destructive font-medium mb-2">Unable to load files</p>
+            <p className="text-sm text-muted-foreground mb-4">{loadError}</p>
+            <Button onClick={() => fetchFiles()} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
           </Card>
         ) : files.length === 0 ? (
             <Card className="p-12 text-center bg-muted/30 border-border">

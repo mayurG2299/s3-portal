@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { GlobalSearch } from '@/components/dashboard/global-search'
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { RBACProvider } from '@/components/rbac-provider'
 import {
   Select,
   SelectContent,
@@ -227,7 +228,9 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
             'p-6 lg:p-8'
           )}
         >
-          {children}
+          <RBACProvider>
+            {children}
+          </RBACProvider>
         </main>
       </div>
     </div>
