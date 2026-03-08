@@ -45,6 +45,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
     selectedIdentityId,
     selectedBucketId,
     identities,
+    isLoading,
     setIdentity,
     setBucket,
     selectedTeamId,
@@ -125,10 +126,13 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               <div className="flex items-center gap-2 max-w-xl">
                 <div className="flex items-center gap-2">
                   <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
-                    <SelectTrigger className="w-[180px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20">
+                    <SelectTrigger className={cn(
+                      "w-[180px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20",
+                      isLoading && "animate-pulse opacity-50 pointer-events-none"
+                    )}>
                       <div className="flex items-center gap-2 truncate">
                         <Shield size={14} className="text-purple-400 shrink-0" />
-                        <SelectValue placeholder="Cloud Identity" />
+                        <SelectValue placeholder={isLoading ? "..." : "Cloud Identity"} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
@@ -148,10 +152,13 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                     onValueChange={(val) => setBucket(val === 'all' ? null : val)}
                     disabled={!selectedIdentityId}
                   >
-                    <SelectTrigger className="w-[200px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20">
+                    <SelectTrigger className={cn(
+                      "w-[200px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20",
+                      isLoading && "animate-pulse opacity-50 pointer-events-none"
+                    )}>
                       <div className="flex items-center gap-2 truncate">
                         <Database size={14} className="text-blue-400 shrink-0" />
-                        <SelectValue placeholder="Storage Bucket" />
+                        <SelectValue placeholder={isLoading ? "..." : "Storage Bucket"} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
@@ -167,17 +174,24 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               </div>
             )}
 
-            <GlobalSearch />
+            <GlobalSearch onFocusChange={(focused: boolean) => {
+              if (focused && isMobile) {
+                setSidebarOpen(false)
+              }
+            }} />
           </div>
 
           <div className="flex items-center gap-3">
             {/* Team Selector - Global Header */}
             {!isMobile && (
               <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
-                <SelectTrigger className="w-[160px] h-9 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20">
+                <SelectTrigger className={cn(
+                  "w-[160px] h-9 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20",
+                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                )}>
                   <div className="flex items-center gap-2 truncate">
                     <Users size={14} className="shrink-0" />
-                    <SelectValue placeholder="Select Team" />
+                    <SelectValue placeholder={isLoading ? "..." : "Select Team"} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">

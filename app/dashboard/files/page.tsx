@@ -1050,106 +1050,118 @@ export default function FilesPage() {
                 : `Generate a shareable link for ${shareTargets.length === 1 ? shareTargets[0].name : `${shareTargets.length} files`}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
-            {shareTargets.length > 1 && (
-              <Card className="p-3 text-sm text-muted-foreground bg-muted/50 border-border">
-                {shareTargets.slice(0, 3).map((file) => file.name).join(', ')}
-                {shareTargets.length > 3 && ` +${shareTargets.length - 3} more`}
-              </Card>
-            )}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleShare()
+            }}
+          >
+            <div className="space-y-6">
+              {shareTargets.length > 1 && (
+                <Card className="p-3 text-sm text-muted-foreground bg-muted/50 border-border">
+                  {shareTargets.slice(0, 3).map((file) => file.name).join(', ')}
+                  {shareTargets.length > 3 && ` +${shareTargets.length - 3} more`}
+                </Card>
+              )}
 
-            <div className="space-y-2">
-              <Label>Link Type</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Preview Page', value: 'preview' },
-                  { label: 'Auto Download', value: 'download' },
-                  { label: 'Direct S3/CDN', value: 'direct' },
-                ].map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
-                    onClick={() => {
-                      setShareSettings((prev) => ({
-                        ...prev,
-                        linkMode: option.value as 'preview' | 'download' | 'direct',
-                      }))
-                    }}
-                    className="h-auto py-2 whitespace-normal text-xs"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
+              <div className="space-y-2">
+                <Label>Link Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Preview Page', value: 'preview' },
+                    { label: 'Auto Download', value: 'download' },
+                    { label: 'Direct S3/CDN', value: 'direct' },
+                  ].map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
+                      onClick={() => {
+                        setShareSettings((prev) => ({
+                          ...prev,
+                          linkMode: option.value as 'preview' | 'download' | 'direct',
+                        }))
+                      }}
+                      className="h-auto py-2 whitespace-normal text-xs"
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Expiration</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: '1 hour', value: '3600' },
+                    { label: '1 day', value: '86400' },
+                    { label: '1 week', value: '604800' },
+                    { label: '30 days', value: '2592000' },
+                  ].map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={
+                        shareSettings.expiryMode === 'preset' && shareSettings.expiresIn === option.value
+                          ? 'default'
+                          : 'outline'
+                      }
+                      onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'preset', expiresIn: option.value }))}
+                      className="h-auto py-2 whitespace-normal text-xs"
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {shareSettings.linkMode !== 'direct' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="share-password">Password (optional)</Label>
+                    <Input
+                      id="share-password"
+                      type="password"
+                      value={shareSettings.password}
+                      onChange={(e) => setShareSettings((prev) => ({ ...prev, password: e.target.value }))}
+                      placeholder="Set a password for this link"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="share-max-downloads">Download Limit (optional)</Label>
+                    <Input
+                      id="share-max-downloads"
+                      type="number"
+                      value={shareSettings.maxDownloads}
+                      onChange={(e) => setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))}
+                      placeholder="Max downloads allowed"
+                      autoComplete="off"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() => setIsShareOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSharing || shareTargets.length === 0}
+                  className="btn-primary-gradient"
+                >
+                  {isSharing ? 'Generating...' : 'Generate Link'}
+                </Button>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label>Expiration</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: '1 hour', value: '3600' },
-                  { label: '1 day', value: '86400' },
-                  { label: '1 week', value: '604800' },
-                  { label: '30 days', value: '2592000' },
-                ].map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={
-                      shareSettings.expiryMode === 'preset' && shareSettings.expiresIn === option.value
-                        ? 'default'
-                        : 'outline'
-                    }
-                    onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'preset', expiresIn: option.value }))}
-                    className="h-auto py-2 whitespace-normal text-xs"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {shareSettings.linkMode !== 'direct' && (
-              <>
-                <div className="space-y-2">
-                  <Label>Password (optional)</Label>
-                  <Input
-                    type="password"
-                    value={shareSettings.password}
-                    onChange={(e) => setShareSettings((prev) => ({ ...prev, password: e.target.value }))}
-                    placeholder="Set a password for this link"
-                    autoComplete="new-password"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Download Limit (optional)</Label>
-                  <Input
-                    type="number"
-                    value={shareSettings.maxDownloads}
-                    onChange={(e) => setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))}
-                    placeholder="Max downloads allowed"
-                    autoComplete="off"
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setIsShareOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleShare}
-                disabled={isSharing || shareTargets.length === 0}
-                className="btn-primary-gradient"
-              >
-                {isSharing ? 'Generating...' : 'Generate Link'}
-              </Button>
-            </div>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 

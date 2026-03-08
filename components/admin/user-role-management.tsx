@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Shield, Crown, Eye, Lock, ShieldAlert } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+import { useSearchParams } from 'next/navigation'
 
 type TeamMemberWithUser = {
   id: string
@@ -64,6 +67,8 @@ const getRoleIcon = (roleName: string, level: number) => {
 
 export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId }: Props) {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
+  const highlightMemberId = searchParams.get('memberId')
   const [updating, setUpdating] = useState<string | null>(null)
   const [availableRoles, setAvailableRoles] = useState<Role[]>([])
   const [loadingRoles, setLoadingRoles] = useState(true)
@@ -164,16 +169,20 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
         {teamMembers.map((member, idx) => {
           const isCurrentUser = member.userId === currentUserId
           const isOwner = member.role.level >= 100 || member.userId === ownerId
+          const isHighlighted = highlightMemberId === member.id
+
           // Row is locked if: it's you, it's the owner (and you're not the owner), or your level <= their level
           const isLocked = isCurrentUser || (isOwner && !isCurrentUser) || (callerLevel < 100 && member.role.level >= callerLevel && !isOwner)
 
           return (
             <div
               key={member.id}
-              className={`group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all duration-300 animate-fade-in ${isOwner
-                ? 'bg-amber-500/5 border-amber-500/20 dark:border-amber-500/10'
-                : 'bg-muted/30 border-border hover:border-primary/50 hover:bg-muted/50'
-                }`}
+              id={`member-${member.id}`}
+              className={cn(
+                "group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all duration-500 animate-fade-in",
+                isOwner ? "bg-amber-500/5 border-amber-500/20 dark:border-amber-500/10" : "bg-muted/30 border-border hover:border-primary/50 hover:bg-muted/50",
+                isHighlighted && "ring-2 ring-[#8c2bee] border-[#8c2bee] shadow-[0_0_20px_rgba(140,43,238,0.2)] dark:shadow-[0_0_40px_rgba(140,43,238,0.1)] bg-primary/[0.03] scale-[1.02] z-10"
+              )}
               style={{ animationDelay: `${idx * 20}ms` }}
             >
               <div className="flex items-center gap-4 mb-4 sm:mb-0">

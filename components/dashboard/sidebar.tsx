@@ -79,6 +79,7 @@ export function Sidebar({
     selectedIdentityId,
     selectedBucketId,
     identities,
+    isLoading,
     setIdentity,
     setBucket,
     setTeam
@@ -165,10 +166,13 @@ export function Sidebar({
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Team</p>
               <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
-                <SelectTrigger className="w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20">
+                <SelectTrigger className={cn(
+                  "w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20",
+                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                )}>
                   <div className="flex items-center gap-2 truncate">
                     <UsersIcon size={14} className="shrink-0" />
-                    <SelectValue placeholder="Select Team" />
+                    <SelectValue placeholder={isLoading ? "Loading..." : "Select Team"} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
@@ -184,10 +188,13 @@ export function Sidebar({
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Cloud Identity</p>
               <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
-                <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20">
+                <SelectTrigger className={cn(
+                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20",
+                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                )}>
                   <div className="flex items-center gap-2 truncate">
                     <Shield size={14} className="text-purple-400 shrink-0" />
-                    <SelectValue placeholder="Cloud Identity" />
+                    <SelectValue placeholder={isLoading ? "Loading..." : "Cloud Identity"} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
@@ -208,10 +215,13 @@ export function Sidebar({
                 onValueChange={(val) => setBucket(val === 'all' ? null : val)}
                 disabled={!selectedIdentityId}
               >
-                <SelectTrigger className="w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20 disabled:opacity-50">
+                <SelectTrigger className={cn(
+                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20 disabled:opacity-50",
+                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                )}>
                   <div className="flex items-center gap-2 truncate">
                     <Database size={14} className="text-blue-400 shrink-0" />
-                    <SelectValue placeholder="Storage Bucket" />
+                    <SelectValue placeholder={isLoading ? "Loading..." : "Storage Bucket"} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">

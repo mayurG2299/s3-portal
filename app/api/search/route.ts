@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
         subtitle: m.role.name,
         tags: [],
         description: m.role.description,
-        url: '/dashboard/teams',
+        url: `/dashboard/teams?memberId=${m.id}`,
         teamId: m.teamId
       }))
     ]

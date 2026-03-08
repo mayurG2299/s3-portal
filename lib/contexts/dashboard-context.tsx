@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import Cookies from 'js-cookie'
+import { useRouter } from 'next/navigation'
 
 export interface Bucket {
   id: string
@@ -49,6 +50,7 @@ export function DashboardProvider({
   initialIdentityId?: string | null
   initialBucketId?: string | null
 }) {
+  const router = useRouter()
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(initialTeamId)
   const [selectedIdentityId, setSelectedIdentityId] = useState<string | null>(initialIdentityId || null)
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(initialBucketId || null)
@@ -87,6 +89,7 @@ export function DashboardProvider({
     Cookies.set('selectedTeamId', id, { expires: 7 })
     Cookies.remove('selectedIdentityId')
     Cookies.remove('selectedBucketId')
+    router.refresh()
   }
 
   const setIdentity = (id: string | null) => {
@@ -98,6 +101,7 @@ export function DashboardProvider({
       Cookies.remove('selectedIdentityId')
     }
     Cookies.remove('selectedBucketId')
+    router.refresh()
   }
 
   const setBucket = (id: string | null) => {
@@ -107,6 +111,7 @@ export function DashboardProvider({
     } else {
       Cookies.remove('selectedBucketId')
     }
+    router.refresh()
   }
 
   return (

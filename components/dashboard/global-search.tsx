@@ -20,7 +20,7 @@ interface SearchResult {
   bucketId?: string
 }
 
-export function GlobalSearch() {
+export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: boolean) => void }) {
   const {
     selectedTeamId,
     selectedIdentityId,
@@ -40,11 +40,12 @@ export function GlobalSearch() {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+        onFocusChange?.(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [onFocusChange])
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -79,6 +80,7 @@ export function GlobalSearch() {
 
   const handleSelect = (result: SearchResult) => {
     setIsOpen(false)
+    onFocusChange?.(false)
 
     // Synchronize global context before navigating
     if (result.teamId && result.teamId !== selectedTeamId) {
@@ -137,6 +139,7 @@ export function GlobalSearch() {
         }}
         onFocus={() => {
           if (query.trim() !== '') setIsOpen(true)
+          onFocusChange?.(true)
         }}
         autoComplete="off"
         className="block w-full pl-8 pr-3 py-1.5 md:py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-[10px] md:text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm dark:shadow-none"

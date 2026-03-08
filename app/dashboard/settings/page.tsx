@@ -362,7 +362,7 @@ export default function SettingsPage() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">CDN Endpoint</Label>
                           <Input
@@ -414,7 +414,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-7 space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
+        <div className="lg:col-span-12 space-y-8 animate-slide-up" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-bold text-foreground tracking-tight">Saved Connections</h3>
@@ -422,7 +422,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {credentials.length === 0 ? (
               <div className="col-span-full glass-card p-12 text-center">
                 <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-muted mb-4 opacity-50">
@@ -639,7 +639,7 @@ export default function SettingsPage() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-1.5">
                             <Label className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">CDN Link (optional)</Label>
                             <Input
