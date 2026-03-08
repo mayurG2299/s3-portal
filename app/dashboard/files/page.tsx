@@ -826,7 +826,7 @@ export default function FilesPage() {
         {!selectedBucketId ? (
           <Card className="p-12 text-center bg-muted/30 border-border">
             <p className="text-muted-foreground">
-              Please select a Cloud Identity and Storage Bucket in the header to browse files
+              Please select your AWS Credentials and Storage Bucket in the header to browse files
             </p>
           </Card>
         ) : files.length === 0 ? (

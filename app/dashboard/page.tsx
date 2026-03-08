@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SignOutButton } from '@/components/dashboard/sign-out-button'
 import { StorageOverviewChart } from '@/components/dashboard/storage-overview-chart'
+import { FirstTimeWizard } from '@/components/onboarding/FirstTimeWizard'
 import { cn } from '@/lib/utils'
 import { cookies } from 'next/headers'
 
@@ -116,7 +117,7 @@ export default async function DashboardPage() {
               Welcome back, <span className="gradient-text">{session.user.name || 'Admin'}</span>
             </h2>
             <p className="text-muted-foreground font-medium">
-              Manage your global S3 infrastructure with ease.
+              Manage your S3 storage, upload files, and share with your team.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -234,6 +235,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* First-time user onboarding wizard */}
+      <FirstTimeWizard currentCredentialsCount={bucketsCount} />
     </div>
   )
 }

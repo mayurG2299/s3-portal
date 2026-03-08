@@ -121,7 +121,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               <Menu size={20} />
             </button>
 
-            {/* Context Selectors (Cloud Identity & Storage Bucket) - Desktop Only in Header */}
+            {/* Context Selectors (AWS Credentials & Storage Bucket) - Desktop Only in Header */}
             {!isMobile && (
               <div className="flex items-center gap-2 max-w-xl">
                 <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                     )}>
                       <div className="flex items-center gap-2 truncate">
                         <Shield size={14} className="text-purple-400 shrink-0" />
-                        <SelectValue placeholder={isLoading ? "..." : "Cloud Identity"} />
+                        <SelectValue placeholder={isLoading ? "..." : "AWS Credentials"} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">

@@ -88,8 +88,8 @@ export default async function TeamsPage() {
                   <UserPlus size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground tracking-tight">Expand Workspace</h3>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Add users and assign initial roles</p>
+                  <h3 className="font-bold text-foreground tracking-tight">Invite Team Members</h3>
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Add people to your team</p>
                 </div>
               </div>
               <Button
@@ -127,7 +127,7 @@ export default async function TeamsPage() {
               </div>
 
               <div>
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Access Slug</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Team URL</Label>
                 <div className="text-sm font-bold text-primary tracking-tight font-mono bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">/{team.slug}</div>
               </div>
 
@@ -146,8 +146,8 @@ export default async function TeamsPage() {
 
               <div className="pt-4 border-t border-border">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Capacity Used</span>
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{team.members.length} / UNLIMITED</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Team Members</span>
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{team.members.length} member{team.members.length === 1 ? '' : 's'}</span>
                 </div>
               </div>
             </div>

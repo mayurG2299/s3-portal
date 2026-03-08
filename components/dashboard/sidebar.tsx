@@ -186,7 +186,7 @@ export function Sidebar({
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Cloud Identity</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">AWS Credentials</p>
               <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
                 <SelectTrigger className={cn(
                   "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20",
@@ -194,7 +194,7 @@ export function Sidebar({
                 )}>
                   <div className="flex items-center gap-2 truncate">
                     <Shield size={14} className="text-purple-400 shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "Cloud Identity"} />
+                    <SelectValue placeholder={isLoading ? "Loading..." : "AWS Credentials"} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">

@@ -16,6 +16,7 @@ import {
 import { toast } from '@/hooks/use-toast'
 import { Pencil, Trash2, Key, Globe, ShieldCheck, Plus, AlertCircle, Cloud, Server, Users, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { translateAWSError } from '@/lib/error-translator'
 
 type Credential = {
   id: string
@@ -126,7 +127,8 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to add credentials')
+        const translated = translateAWSError(error.message || 'Unknown error')
+        throw new Error(translated.message)
       }
 
       toast({
@@ -139,10 +141,13 @@ export default function SettingsPage() {
       ])
       fetchCredentials()
     } catch (error: any) {
+      const errorMessage = error.message || 'Failed to add credentials'
+      const translated = translateAWSError(errorMessage)
+      
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: error.message,
+        title: 'Could not add credentials',
+        description: translated.message,
       })
     } finally {
       setIsSavingCredential(false)
