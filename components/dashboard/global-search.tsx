@@ -248,14 +248,14 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setHighlightedIndex(prev => {
-        const next = prev < Math.min(results.length, 8) - 1 ? prev + 1 : 0
+        const next = prev < Math.min(results.length, 8) - 1 ? prev + 1 : prev // Stop at end, don't loop
         scrollToItem(next)
         return next
       })
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setHighlightedIndex(prev => {
-        const next = prev > 0 ? prev - 1 : Math.min(results.length, 8) - 1
+        const next = prev > 0 ? prev - 1 : 0 // Stop at top, don't loop
         scrollToItem(next)
         return next
       })
@@ -427,6 +427,14 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
                     id={`search-result-${i}`}
                     role="option"
                     aria-selected={isHighlighted}
+                          onMouseDown={(e) => {
+                            // Prevent blur timeout from hiding dropdown before click registers
+                            if (blurTimeoutRef.current) {
+                              clearTimeout(blurTimeoutRef.current)
+                            }
+                            // Prevent default to keep the focus active on the input field
+                            e.preventDefault()
+                          }}
                     onClick={() => handleSelect(res)}
                     onMouseEnter={() => setHighlightedIndex(i)}
                     className={cn(
