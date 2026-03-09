@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, HardDrive, File, FolderOpen, Users, User, Link as LinkIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -44,6 +44,8 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   
   // Track if search is active (focused or has query)
   const isSearchActive = isFocused || query.trim() !== ''
@@ -90,6 +92,44 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
 
     return () => clearTimeout(timer)
   }, [query, selectedTeamId, selectedIdentityId, selectedBucketId])
+
+  // On files page, keep the header input in sync with URL query so back/forward works.
+  useEffect(() => {
+    if (!pathname.startsWith('/dashboard/files')) {
+      return
+    }
+
+    const qFromUrl = searchParams.get('q') || ''
+    if (qFromUrl !== query) {
+      setQuery(qFromUrl)
+    }
+  }, [pathname, searchParams, query])
+
+  // On files page, typing in header search updates ?q=... and drives file filtering.
+  useEffect(() => {
+    if (!pathname.startsWith('/dashboard/files')) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString())
+      const trimmed = query.trim()
+      const existingQ = params.get('q') || ''
+
+      if (trimmed) {
+        if (existingQ === trimmed) return
+        params.set('q', trimmed)
+      } else {
+        if (!existingQ) return
+        params.delete('q')
+      }
+
+      const next = params.toString()
+      router.replace(next ? `${pathname}?${next}` : pathname)
+    }, 250)
+
+    return () => clearTimeout(timer)
+  }, [pathname, query, router, searchParams])
 
   const handleSelect = (result: SearchResult) => {
     setIsOpen(false)

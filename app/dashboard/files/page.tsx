@@ -68,7 +68,7 @@ export default function FilesPage() {
   const [isSharing, setIsSharing] = useState(false)
   const [tagFilter, setTagFilter] = useState('')
   const searchParams = useSearchParams()
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
+  const searchQuery = (searchParams.get('q') || '').trim()
   const [viewMode, setViewMode] = useState<'all' | 'favorites' | 'recents'>('all')
   const [editingTagsFile, setEditingTagsFile] = useState<StoredFile | null>(null)
   const [tagInput, setTagInput] = useState('')
@@ -168,14 +168,6 @@ export default function FilesPage() {
     }
   }, [editingTagsFile])
 
-  // Sync searchQuery with URL 'q' parameter (from Global Search)
-  useEffect(() => {
-    const q = searchParams.get('q')
-    if (q !== null && q !== searchQuery) {
-      setSearchQuery(q)
-    }
-  }, [searchParams, searchQuery])
-
   useEffect(() => {
     if (!isUploadOpen) {
       setUploadTags('')
@@ -217,6 +209,12 @@ export default function FilesPage() {
           throw new Error(`Part ${partNumber} upload failed with status ${partUpload.status}`)
         }
         const etag = partUpload.headers.get('ETag') || ''
+        if (!etag) {
+          throw new Error(
+            `Part ${partNumber} uploaded but ETag header is not readable. ` +
+            `Update bucket CORS to expose ETag (Access-Control-Expose-Headers: ETag).`
+          )
+        }
         return { ETag: etag.replace(/"/g, ''), PartNumber: partNumber }
       } catch (error: any) {
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
@@ -822,21 +820,9 @@ export default function FilesPage() {
             className="max-w-xs"
             autoComplete="new-password"
           />
-          <Input
-            placeholder="Search files"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            className="max-w-xs"
-            autoComplete="new-password"
-          />
           {tagFilter && (
             <Button variant="ghost" size="sm" onClick={() => setTagFilter('')}>
               Clear
-            </Button>
-          )}
-          {searchQuery && (
-            <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
-              Clear Search
             </Button>
           )}
         </div>
