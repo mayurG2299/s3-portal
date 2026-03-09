@@ -41,6 +41,7 @@ interface DashboardChromeProps {
 export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, isAdmin, isOwner, teams, currentTeamId, children, pendingInviteCount = 0 }: DashboardChromeProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const [isSearchActive, setIsSearchActive] = useState(false)
   const pathname = usePathname()
   const {
     selectedIdentityId,
@@ -124,7 +125,11 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
 
             {/* Context Selectors (AWS Credentials & Storage Bucket) - Desktop Only in Header */}
             {!isMobile && (
-              <div className="flex items-center gap-2 max-w-xl">
+              <div className={cn(
+                "flex items-center gap-2 max-w-xl",
+                "transition-all duration-500 ease-out",
+                isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
+              )}>
                 <div className="flex items-center gap-2">
                   <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
                     <SelectTrigger className={cn(
@@ -176,13 +181,18 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
             )}
 
             <GlobalSearch onFocusChange={(focused: boolean) => {
+              setIsSearchActive(focused)
               if (focused && isMobile) {
                 setSidebarOpen(false)
               }
             }} />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className={cn(
+            "flex items-center gap-3",
+            "transition-all duration-500 ease-out origin-right",
+            isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
+          )}>
             {/* Team Selector - Global Header */}
             {!isMobile && (
               <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
@@ -205,17 +215,22 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               </Select>
             )}
 
-            <ThemeToggle />
+            <div className={cn(
+              "flex items-center gap-3 transition-all duration-500 ease-out origin-right",
+              isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
+            )}>
+              <ThemeToggle />
 
-            <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
-                <p className="text-[8px] font-bold text-[#8c2bee] uppercase tracking-widest">{roleTitle}</p>
-              </div>
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px] shrink-0">
-                <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-[#8c2bee] dark:text-white">
-                  {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
+              <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
+                  <p className="text-[8px] font-bold text-[#8c2bee] uppercase tracking-widest">{roleTitle}</p>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px] shrink-0">
+                  <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-[#8c2bee] dark:text-white">
+                    {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
+                  </div>
                 </div>
               </div>
             </div>

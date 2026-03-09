@@ -40,8 +40,13 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   const [searchMeta, setSearchMeta] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  
+  // Track if search is active (focused or has query)
+  const isSearchActive = isFocused || query.trim() !== ''
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -133,26 +138,52 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   }
 
   return (
-    <div ref={wrapperRef} className="flex-1 max-w-[140px] sm:max-w-md relative group z-50 transition-all duration-300 focus-within:max-w-md">
-      <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-[#8c2bee] transition-colors">
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div 
+      ref={wrapperRef} 
+      className={cn(
+        "relative z-50",
+        isSearchActive 
+          ? "flex-1 max-w-none"  // Expand fully when active
+          : "flex-1 max-w-[140px] sm:max-w-md",
+        "transition-all duration-500 ease-out"  // Smooth expansion with ease-out
+      )}
+    >
+      <div className={cn(
+        "absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none transition-all duration-500",
+        isSearchActive ? "text-[#8c2bee]" : "text-slate-500"
+      )}>
+        <svg className={cn(
+          "h-3.5 w-3.5 transition-transform duration-500",
+          isSearchActive && "scale-110"
+        )} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
       <input
+        ref={inputRef}
         type="text"
         placeholder="Search..."
         value={query}
+        autoComplete="off"
         onChange={(e) => {
           setQuery(e.target.value)
           if (!isOpen && e.target.value.trim() !== '') setIsOpen(true)
         }}
         onFocus={() => {
+          setIsFocused(true)
           if (query.trim() !== '') setIsOpen(true)
           onFocusChange?.(true)
         }}
-        autoComplete="off"
-        className="block w-full pl-8 pr-3 py-1.5 md:py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-[10px] md:text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05] transition-all shadow-sm dark:shadow-none"
+        onBlur={() => {
+          setIsFocused(false)
+          onFocusChange?.(false)
+        }}
+        className={cn(
+          "block w-full pl-8 pr-3 py-1.5 md:py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-[10px] md:text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500",
+          "focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05]",
+          "transition-all duration-500 ease-out shadow-sm dark:shadow-none",
+          isSearchActive && "dark:bg-white/[0.08] dark:border-white/10 shadow-lg shadow-purple-500/30"
+        )}
       />
 
       {/* Dropdown Results */}
@@ -184,7 +215,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
                 <button
                   key={`${res.type}-${res.id}-${i}`}
                   onClick={() => handleSelect(res)}
-                  className="w-full flex w-full text-left items-start gap-3 px-3 py-2 hover:bg-accent/50 transition-colors group cursor-pointer"
+                  className="w-full flex text-left items-start gap-3 px-3 py-2 hover:bg-accent/50 transition-colors group cursor-pointer"
                 >
                   <div className="mt-0.5 p-1.5 rounded-md bg-background border border-border shadow-sm group-hover:bg-accent group-hover:border-accent-foreground/10 transition-colors">
                     {getIcon(res.type)}

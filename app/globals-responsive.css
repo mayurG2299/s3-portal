@@ -1,0 +1,64 @@
+/* Add to globals.css or appropriate stylesheet to ensure minimum touch targets */
+
+/* Ensure all interactive elements are at least 44x44px (Apple/Google standard) */
+@layer components {
+  /* Buttons - Ensure minimum height */
+  @apply button-base;
+  
+  /* Link elements should be touchable */
+  a {
+    @apply min-h-[44px] inline-flex items-center;
+  }
+
+  /* Input fields - Mobile friendly */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  select,
+  textarea {
+    @apply min-h-[44px];
+  }
+
+  /* Better mobile spacing */
+  @media (max-width: 640px) {
+    /* Increase gap between list items on mobile */
+    .list-item {
+      @apply mb-3;
+    }
+
+    /* Better padding on cards on mobile */
+    .card {
+      @apply p-4 sm:p-6;
+    }
+
+    /* Responsive font sizes */
+    h1 { @apply text-2xl sm:text-3xl; }
+    h2 { @apply text-xl sm:text-2xl; }
+    h3 { @apply text-lg sm:text-xl; }
+  }
+
+  /* Landscape mode optimization */
+  @media (max-height: 500px) {
+    /* Reduce vertical padding in landscape */
+    .modal,
+    .dialog {
+      @apply max-h-[90vh];
+    }
+  }
+}
+
+/* Ensure proper text sizing across devices */
+@layer utilities {
+  .text-responsive {
+    @apply text-sm md:text-base lg:text-lg;
+  }
+
+  .p-responsive {
+    @apply p-4 md:p-6 lg:p-8;
+  }
+
+  .gap-responsive {
+    @apply gap-3 md:gap-4 lg:gap-6;
+  }
+}

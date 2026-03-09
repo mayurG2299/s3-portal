@@ -248,7 +248,16 @@ export default function FilesPage() {
 
       const workers = Array(Math.min(MAX_CONCURRENT_PARTS, parts.length)).fill(null).map(() => worker())
       await Promise.all(workers)
-      return results.filter((r) => r !== null) as Array<{ ETag: string; PartNumber: number }>
+      
+      // Filter nulls and sort by PartNumber (required by AWS S3)
+      const uploadedParts = results
+        .filter((r) => r !== null) as Array<{ ETag: string; PartNumber: number }>
+      
+      if (uploadedParts.length !== parts.length) {
+        throw new Error(`Only ${uploadedParts.length}/${parts.length} parts uploaded successfully`)
+      }
+      
+      return uploadedParts.sort((a, b) => a.PartNumber - b.PartNumber)
     }
 
     for (let fileIndex = 0; fileIndex < uploadFiles.length; fileIndex++) {
@@ -367,7 +376,10 @@ export default function FilesPage() {
               parts: uploadedParts,
             }),
           })
-          if (!completeRes.ok) throw new Error('Failed to complete multipart upload')
+          if (!completeRes.ok) {
+            const errorData = await completeRes.json().catch(() => ({ message: 'Unknown error' }))
+            throw new Error(`Multipart completion failed: ${errorData.message || 'Unknown error'} (Status: ${completeRes.status})`)
+          }
           onProgress?.(fileIndex, 100)
         }
       } catch (error: any) {

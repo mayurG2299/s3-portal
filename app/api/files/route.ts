@@ -442,6 +442,23 @@ export async function POST(request: NextRequest) {
 
     if (action === "multipartComplete") {
       const validated = multipartCompleteSchema.parse(body);
+      
+      // Validate parts are sorted and contiguous
+      const sortedParts = [...validated.parts].sort((a, b) => a.PartNumber - b.PartNumber);
+      for (let i = 0; i < sortedParts.length; i++) {
+        if (sortedParts[i].PartNumber !== i + 1) {
+          return NextResponse.json(
+            { message: `Parts must be contiguous: missing part ${i + 1}` },
+            { status: 400 }
+          );
+        }
+        if (!sortedParts[i].ETag || sortedParts[i].ETag.trim() === '') {
+          return NextResponse.json(
+            { message: `Part ${i + 1} has empty ETag` },
+            { status: 400 }
+          );
+        }
+      }
 
       const file = await prisma.file.findUnique({
         where: { id: validated.fileId },
@@ -497,12 +514,40 @@ export async function POST(request: NextRequest) {
       }
 
       const config = decryptAWSConfig(file.credential, file.bucket);
-      await completeMultipartUpload(
-        config,
-        validated.key,
-        validated.uploadId,
-        validated.parts,
-      );
+      
+      try {
+        await completeMultipartUpload(
+          config,
+          validated.key,
+          validated.uploadId,
+          sortedParts,  // Use sorted parts
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error from S3';
+        const errorDesc = message.includes('NoSuchUpload') 
+          ? 'Upload ID expired or invalid (try uploading again)'
+          : message.includes('InvalidPartOrder')
+          ? 'Parts out of order or duplicate part numbers'
+          : message.includes('InvalidPart')
+          ? 'One or more parts are missing or corrupted'
+          : message;
+        
+        await logUserAction({
+          request,
+          action: "FILE_MULTIPART_COMPLETE",
+          success: false,
+          userId: session.user.id,
+          teamId: file.teamId,
+          resourceType: "file",
+          resourceId: file.id,
+          errorMessage: `S3 error: ${message}`,
+        });
+        
+        return NextResponse.json(
+          { message: `Failed to finalize upload: ${errorDesc}` },
+          { status: 400 }
+        );
+      }
 
       // Update file size/contentType after completion and adjust quota
       const meta = await getS3ObjectMetadata(config, validated.key);
@@ -756,8 +801,10 @@ export async function POST(request: NextRequest) {
 
       const query = validated.query?.trim().toLowerCase()
       const filteredFolders = query
-        ? folderItems.filter((folder) =>
-            folder.name.toLowerCase().includes(query)
+        ? folderItems.filter(
+            (folder) =>
+              folder.name.toLowerCase().includes(query) ||
+              folder.key.toLowerCase().includes(query)
           )
         : folderItems
 
@@ -776,7 +823,8 @@ export async function POST(request: NextRequest) {
         ? filteredFilesByTag.filter(
             (file) =>
               file &&
-              file.name.toLowerCase().includes(query)
+              (file.name.toLowerCase().includes(query) ||
+                file.key.toLowerCase().includes(query))
           )
         : filteredFilesByTag
 

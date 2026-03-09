@@ -14,10 +14,22 @@ const config = {
       center: true,
       padding: '2rem',
       screens: {
-        '2xl': '1400px',
+        'sm': '100%',     // Mobile: no max-width
+        'md': '100%',     // Tablet: no max-width  
+        'lg': '100%',     // Laptop: no max-width
+        'xl': '1280px',   // Desktop: constrain
+        '2xl': '1400px',  // Wide: constrain
+        '3xl': '1536px',  // Full HD: increase
+        '4xl': '1664px',  // 4K: increase further
+        '5xl': '1920px',  // Ultrawide: full width
       },
     },
     extend: {
+      screens: {
+        '3xl': '1920px',  // Full HD monitors
+        '4xl': '2560px',  // 4K monitors
+        '5xl': '3440px',  // Ultrawide monitors
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
