@@ -88,8 +88,8 @@ export function calculateRelevanceScore(
   }
 
   // Check if query words appear in target
-  const queryWords = lowerQuery.split(/\\s+/)
-  const targetWords = lowerTarget.split(/\\s+/)
+  const queryWords = lowerQuery.split(/\s+/)
+  const targetWords = lowerTarget.split(/\s+/)
   
   let wordMatchScore = 0
   for (const qWord of queryWords) {

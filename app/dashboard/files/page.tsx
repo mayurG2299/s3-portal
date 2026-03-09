@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { formatFileSize, formatRelativeTime } from '@/lib/utils'
+import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import FilePreviewModal from '@/components/file-preview-modal'
 import DirectLinkModal from '@/components/DirectLinkModal'
 import { getPreviewType } from '@/lib/preview-utils'
@@ -140,7 +140,7 @@ export default function FilesPage() {
           bucketId: selectedBucketId,
           prefix: currentPath === '/' ? '' : currentPath,
           tag: tagFilter.trim() || undefined,
-          query: searchQuery.trim() || undefined,
+          query: searchQuery.trim().length >= 3 ? searchQuery.trim() : undefined,
         }),
       })
 
@@ -861,18 +861,28 @@ export default function FilesPage() {
               Retry
             </Button>
           </Card>
-        ) : files.length === 0 ? (
+          ) : files.length === 0 && !isRefreshing ? (
             <Card className="p-12 text-center bg-muted/30 border-border">
               <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">No files yet</p>
-              <Button onClick={() => setIsUploadOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Files
-            </Button>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery.trim().length >= 3 ? `No results found for "${searchQuery}"` : 'No files yet'}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setIsUploadOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Files
+                  </Button>
+                )}
             </Card>
         ) : (
-              <div className="space-y-2">
-                {files.map((file) => (
+                <div className={cn("space-y-2 transition-opacity duration-200", isRefreshing && "opacity-50 pointer-events-none")}>
+                  {files.length === 0 && isRefreshing && (
+                    <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/10 rounded-xl border border-dashed border-border">
+                      <RefreshCw className="h-8 w-8 animate-spin text-primary/40 mb-3" />
+                      <p className="text-sm text-muted-foreground animate-pulse">Syncing files...</p>
+                    </div>
+                  )}
+                  {files.map((file) => (
                   <Card key={file.id} className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1">
