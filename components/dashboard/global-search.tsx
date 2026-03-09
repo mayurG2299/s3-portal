@@ -33,7 +33,14 @@ const HighlightMatch = ({ text, query }: { text: string; query: string }) => {
     <span>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase()
-          ? <strong key={i} className="text-foreground">{part}</strong>
+          ? (
+            <mark
+              key={i}
+              className="rounded-sm bg-amber-200/90 px-0.5 text-slate-950 dark:bg-amber-400/40 dark:text-amber-100"
+            >
+              {part}
+            </mark>
+          )
           : part
       )}
     </span>
@@ -263,6 +270,9 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
       e.preventDefault()
       if (highlightedIndex >= 0 && highlightedIndex < results.length) {
         handleSelect(results[highlightedIndex])
+      } else if (results.length > 0) {
+        // Fallback to first visible result to prevent Enter-key no-op races.
+        handleSelect(results[0])
       }
     }
   }

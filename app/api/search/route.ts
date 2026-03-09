@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
         subtitle: b.credential?.name || "AWS Config",
         tags: [],
         description: null,
-        url: "/dashboard/settings",
+        url: `/dashboard/files?path=${encodeURIComponent('/')}&bucketId=${encodeURIComponent(b.id)}`,
         teamId: b.credential?.teamId,
         identityId: b.credentialId,
         bucketId: b.id,
@@ -255,7 +255,7 @@ export async function GET(request: NextRequest) {
         subtitle: t.slug,
         tags: [],
         description: null,
-        url: "/dashboard/teams",
+        url: `/teams/${encodeURIComponent(t.id)}`,
         teamId: t.id,
       })),
       ...members.map((m) => ({
