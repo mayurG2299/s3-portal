@@ -41,6 +41,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [isSelecting, setIsSelecting] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -81,7 +82,11 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
           const data = await res.json()
           setResults(data.results || [])
           setSearchMeta(data.meta || null)
-          setIsOpen(true)
+          // Check if input is still focused by checking the DOM directly
+          // (avoid stale closure from isFocused state var)
+          if (inputRef.current === document.activeElement) {
+            setIsOpen(true)
+          }
         }
       } catch (error) {
         console.error('Search error:', error)
@@ -131,10 +136,27 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
     return () => clearTimeout(timer)
   }, [pathname, query, router, searchParams])
 
-  const handleSelect = (result: SearchResult) => {
-    setIsOpen(false)
-    onFocusChange?.(false)
+  const navigationInProgress = useRef(false)
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (navigationInProgress.current) {
+        setIsOpen(false)
+        onFocusChange?.(false)
+        setIsSelecting(false)
+        navigationInProgress.current = false
+      }
+    }
+    window.addEventListener('popstate', handleRouteChange)
+    window.addEventListener('pushstate', handleRouteChange)
+    window.addEventListener('replacestate', handleRouteChange)
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange)
+      window.removeEventListener('pushstate', handleRouteChange)
+      window.removeEventListener('replacestate', handleRouteChange)
+    }
+  }, [onFocusChange])
 
+  const handleSelect = (result: SearchResult) => {
     // Synchronize global context before navigating
     if (result.teamId && result.teamId !== selectedTeamId) {
       setTeam(result.teamId)
@@ -146,13 +168,28 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
       if (result.bucketId) setBucket(result.bucketId)
     }
 
-    // Pass the search query to the Files page for consistent local filtering
-    const url = result.type === 'file'
-      ? `${result.url}?q=${encodeURIComponent(query)}`
-      : result.url
+    const destination = new URL(result.url, window.location.origin)
 
-    router.push(url)
+    // Pass search query to Files page for consistent local filtering.
+    if (result.type === 'file') {
+      const trimmedQuery = query.trim()
+      if (trimmedQuery) {
+        destination.searchParams.set('q', trimmedQuery)
+      }
+    }
+
+    const url = `${destination.pathname}${destination.search}`
+
+    // Fully reset search state
+    setIsOpen(false)
+    setIsFocused(false)
     setQuery('')
+    onFocusChange?.(false)
+    // Note: Don't reset isSelecting yet - it needs to remain true to block the blur event
+    // It will be reset after navigation completes
+
+    navigationInProgress.current = true
+    router.push(url)
   }
 
   const getIcon = (type: string) => {
@@ -215,6 +252,10 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
           onFocusChange?.(true)
         }}
         onBlur={() => {
+          // Don't blur if we're actively selecting a result
+          if (isSelecting) {
+            return
+          }
           setIsFocused(false)
           onFocusChange?.(false)
         }}
@@ -254,6 +295,11 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
               {results.map((res, i) => (
                 <button
                   key={`${res.type}-${res.id}-${i}`}
+                  onMouseDown={(event) => {
+                    // Prevent input blur before click and mark that we're selecting
+                    event.preventDefault()
+                    setIsSelecting(true)
+                  }}
                   onClick={() => handleSelect(res)}
                   className="w-full flex text-left items-start gap-3 px-3 py-2 hover:bg-accent/50 transition-colors group cursor-pointer"
                 >

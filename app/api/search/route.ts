@@ -2,8 +2,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import fuzzysort from 'fuzzysort'
 import { searchAndRank, type SearchItem } from "@/lib/search-utils";
+
+function normalizeFolderPath(path: string): string {
+  const trimmed = path.trim()
+  if (!trimmed || trimmed === '/') {
+    return '/'
+  }
+
+  const withoutEdgeSlashes = trimmed.replace(/^\/+|\/+$/g, '')
+  return withoutEdgeSlashes ? `/${withoutEdgeSlashes}/` : '/'
+}
+
+function getFolderPathFromKey(key: string): string {
+  if (!key) {
+    return '/'
+  }
+
+  if (key.endsWith('/')) {
+    return normalizeFolderPath(key)
+  }
+
+  const lastSlashIndex = key.lastIndexOf('/')
+  if (lastSlashIndex === -1) {
+    return '/'
+  }
+
+  return normalizeFolderPath(key.slice(0, lastSlashIndex + 1))
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,6 +75,7 @@ export async function GET(request: NextRequest) {
             {
               OR: [
                 { name: dbQuery },
+                { key: dbQuery },
                 { tags: { has: query.toLowerCase().trim() } },
                 { description: dbQuery },
               ],
@@ -162,7 +189,9 @@ export async function GET(request: NextRequest) {
       // 5. Team Members - searched by user name or email
       prisma.teamMember.findMany({
         where: {
-          teamId: teamId || undefined,
+          ...(teamId
+            ? { teamId }
+            : { team: { members: { some: { userId } } } }),
           user: {
             OR: [{ name: dbQuery }, { email: dbQuery }],
           },
@@ -187,7 +216,7 @@ export async function GET(request: NextRequest) {
         subtitle: f.bucket?.bucket || "Unknown Bucket",
         tags: f.tags || [],
         description: f.description,
-        url: `/dashboard/files`,
+        url: `/dashboard/files?path=${encodeURIComponent(getFolderPathFromKey(f.key))}`,
         // Context for UI sync
         teamId: f.teamId,
         identityId: f.credentialId,

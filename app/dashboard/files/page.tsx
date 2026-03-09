@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -102,6 +102,25 @@ export default function FilesPage() {
     allowPreview: true,
   })
   const [currentPath, setCurrentPath] = useState('/')
+  const appliedPathFromUrlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const rawPath = searchParams.get('path')
+    if (!rawPath) {
+      return
+    }
+
+    const trimmed = rawPath.trim()
+    const withoutEdgeSlashes = trimmed.replace(/^\/+|\/+$/g, '')
+    const normalizedPath = withoutEdgeSlashes ? `/${withoutEdgeSlashes}/` : '/'
+
+    if (appliedPathFromUrlRef.current === normalizedPath) {
+      return
+    }
+
+    appliedPathFromUrlRef.current = normalizedPath
+    setCurrentPath(normalizedPath)
+  }, [searchParams])
 
   const fetchFiles = useCallback(async () => {
     try {
