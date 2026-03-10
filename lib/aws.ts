@@ -12,6 +12,7 @@ import {
   HeadObjectCommand,
   HeadBucketCommand,
 } from '@aws-sdk/client-s3'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
 import { getSignedUrl as getCloudfrontSignedUrl } from '@aws-sdk/cloudfront-signer'
@@ -44,6 +45,7 @@ export interface S3Object {
 export interface S3ListResult {
   objects: S3Object[]
   prefixes: string[]
+  isTruncated: boolean
 }
 
 /**
@@ -85,6 +87,10 @@ export function createS3Client(config: AWSConfig): S3Client {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
     },
+    requestHandler: new NodeHttpHandler({
+      requestTimeout: 15000,
+      connectionTimeout: 5000,
+    }),
     requestChecksumCalculation: 'NEVER',
     responseChecksumValidation: 'NEVER',
   } as any)
@@ -320,11 +326,14 @@ export async function listS3ObjectsWithPrefixes(
   maxKeys: number = 1000
 ): Promise<S3ListResult> {
   const client = createS3Client(config)
+  const MAX_PAGES = 20
 
   const objects: S3Object[] = []
   const prefixes = new Set<string>()
 
   let continuationToken: string | undefined
+  let pageCount = 0
+  let hitPageLimit = false
 
   do {
     const command = new ListObjectsV2Command({
@@ -354,9 +363,19 @@ export async function listS3ObjectsWithPrefixes(
     continuationToken = response.IsTruncated
       ? response.NextContinuationToken
       : undefined
+
+    pageCount += 1
+    if (pageCount >= MAX_PAGES && continuationToken) {
+      hitPageLimit = true
+      continuationToken = undefined
+    }
   } while (continuationToken)
 
-  return { objects, prefixes: Array.from(prefixes) }
+  return {
+    objects,
+    prefixes: Array.from(prefixes),
+    isTruncated: hitPageLimit,
+  }
 }
 
 /**

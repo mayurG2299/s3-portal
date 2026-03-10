@@ -24,6 +24,17 @@ import {
 
 const prismaAny = prisma as any
 
+/**
+ * Chunk array into smaller batches to avoid Prisma bind variable limit
+ */
+function chunk<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size))
+  }
+  return chunks
+}
+
 const uploadSchema = z.object({
   bucketId: z.string(),
   fileName: z.string(),
@@ -70,7 +81,9 @@ const listSchema = z.object({
   prefix: z.string().optional(),
   tag: z.string().optional(),
   query: z.string().optional(),
-})
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(1000).optional(),
+});
 
 const deleteSchema = z.object({
   id: z.string(),
@@ -642,11 +655,11 @@ export async function POST(request: NextRequest) {
       const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/, '')
 
       const config = decryptAWSConfig(bucket.credential, bucket)
-      const { objects: s3Objects, prefixes } = await listS3ObjectsWithPrefixes(
-        config,
-        normalizedPrefix,
-        '/'
-      )
+      const {
+        objects: s3Objects,
+        prefixes,
+        isTruncated,
+      } = await listS3ObjectsWithPrefixes(config, normalizedPrefix, "/");
 
       const folderObjectKeys = new Set(
         s3Objects.filter((obj) => obj.key.endsWith('/')).map((obj) => obj.key)
@@ -657,19 +670,19 @@ export async function POST(request: NextRequest) {
       const fileObjects = s3Objects.filter((obj) => !obj.key.endsWith('/'))
 
       const allKeys = [...mergedPrefixes, ...fileObjects.map((obj) => obj.key)]
+      const CHUNK_SIZE = 500;
       const existing = allKeys.length
-        ? await prisma.file.findMany({
-            where: {
-              bucketId: validated.bucketId,
-              key: { in: allKeys },
-            },
-            select: {
-              id: true,
-              key: true,
-              contentType: true,
-            },
-          })
-        : []
+        ? (
+            await Promise.all(
+              chunk(allKeys, CHUNK_SIZE).map((keys) =>
+                prisma.file.findMany({
+                  where: { bucketId: validated.bucketId, key: { in: keys } },
+                  select: { id: true, key: true, contentType: true },
+                }),
+              ),
+            )
+          ).flat()
+        : [];
 
       const existingByKey = new Map(existing.map((file) => [file.key, file]))
 
@@ -696,27 +709,33 @@ export async function POST(request: NextRequest) {
         })
 
       if (toCreate.length > 0) {
-        await prisma.file.createMany({
-          data: toCreate,
-          skipDuplicates: true,
-        })
+        const chunks = chunk(toCreate, CHUNK_SIZE);
+        for (const batch of chunks) {
+          await prisma.file.createMany({
+            data: batch,
+            skipDuplicates: true,
+          });
+        }
       }
 
       const synced = allKeys.length
-        ? await prisma.file.findMany({
-            where: {
-              bucketId: validated.bucketId,
-              key: { in: allKeys },
-            },
-            select: {
-              id: true,
-              key: true,
-              contentType: true,
-              tags: true,
-              description: true,
-            },
-          } as any)
-        : []
+        ? (
+            await Promise.all(
+              chunk(allKeys, CHUNK_SIZE).map((keys) =>
+                prisma.file.findMany({
+                  where: { bucketId: validated.bucketId, key: { in: keys } },
+                  select: {
+                    id: true,
+                    key: true,
+                    contentType: true,
+                    tags: true,
+                    description: true,
+                  },
+                } as any),
+              ),
+            )
+          ).flat()
+        : [];
 
       const syncedTyped = synced as Array<{
         id: string
@@ -828,17 +847,27 @@ export async function POST(request: NextRequest) {
           )
         : filteredFilesByTag
 
+      const allFilteredFiles = filteredFiles.filter(Boolean).map((file) => ({
+        ...file,
+        isFavorite: favoriteIdSet.has(file!.id),
+      }));
+
+      const page = validated.page ?? 1;
+      const pageSize = validated.pageSize ?? 200;
+      const totalFiles = allFilteredFiles.length;
+      const totalPages = Math.max(1, Math.ceil(totalFiles / pageSize));
+      const start = (page - 1) * pageSize;
+      const pagedFiles = allFilteredFiles.slice(start, start + pageSize);
+
       return NextResponse.json({
-        objects: [
-          ...filteredFolders,
-          ...filteredFiles
-            .filter(Boolean)
-            .map((file) => ({
-              ...file,
-              isFavorite: favoriteIdSet.has(file!.id),
-            })),
-        ],
-      })
+        objects: [...filteredFolders, ...pagedFiles],
+        totalFiles,
+        totalPages,
+        page,
+        pageSize,
+        hasMore: page < totalPages,
+        isTruncated: isTruncated || false,
+      });
     }
 
     if (action === 'favorites') {

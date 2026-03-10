@@ -81,6 +81,13 @@ export default function FilesPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
+  const [isTruncated, setIsTruncated] = useState(false)
+  const [truncationDismissed, setTruncationDismissed] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalFiles, setTotalFiles] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const PAGE_SIZE = 200
 
   // CDN Configuration Modal State
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
@@ -102,46 +109,66 @@ export default function FilesPage() {
     allowPreview: true,
   })
   const [currentPath, setCurrentPath] = useState('/')
-  const appliedPathFromUrlRef = useRef<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const inFlightRequestKeyRef = useRef<string | null>(null)
+  const lastEffectRequestKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     const rawPath = searchParams.get('path')
-    if (!rawPath) {
-      return
-    }
 
-    const trimmed = rawPath.trim()
+    const trimmed = (rawPath || '').trim()
     const withoutEdgeSlashes = trimmed.replace(/^\/+|\/+$/g, '')
     const normalizedPath = withoutEdgeSlashes ? `/${withoutEdgeSlashes}/` : '/'
 
-    if (appliedPathFromUrlRef.current === normalizedPath) {
-      return
-    }
+    setCurrentPath((prev) => {
+      if (prev === normalizedPath) {
+        return prev
+      }
 
-    appliedPathFromUrlRef.current = normalizedPath
-    setCurrentPath(normalizedPath)
+      setIsTruncated(false)
+      setTruncationDismissed(false)
+      return normalizedPath
+    })
   }, [searchParams])
 
   const fetchFiles = useCallback(async () => {
+    if (!selectedBucketId) {
+      setFiles([])
+      setLoadError(null)
+      return
+    }
+
+    const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
+    const requestPayload = {
+      action,
+      bucketId: selectedBucketId,
+      prefix: currentPath === '/' ? '' : currentPath,
+      tag: tagFilter.trim() || undefined,
+      query: searchQuery.trim().length >= 3 ? searchQuery.trim() : undefined,
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+    }
+    const requestKey = JSON.stringify(requestPayload)
+
+    if (inFlightRequestKeyRef.current === requestKey) {
+      return
+    }
+
+    // Cancel any in-flight request before starting a new one.
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    inFlightRequestKeyRef.current = requestKey
+
     try {
-      if (!selectedBucketId) {
-        setFiles([])
-        setLoadError(null)
-        return
-      }
       setIsRefreshing(true)
       setLoadError(null)
-      const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
       const response = await fetch('/api/files', {
         method: 'POST',
+        signal: abortControllerRef.current.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          bucketId: selectedBucketId,
-          prefix: currentPath === '/' ? '' : currentPath,
-          tag: tagFilter.trim() || undefined,
-          query: searchQuery.trim().length >= 3 ? searchQuery.trim() : undefined,
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
       if (!response.ok) {
@@ -154,28 +181,59 @@ export default function FilesPage() {
 
       const data = await response.json()
       setFiles(data.objects || [])
+      setIsTruncated(data.isTruncated || false)
+      setTruncationDismissed(false)
+      setTotalFiles(data.totalFiles ?? 0)
+      setTotalPages(data.totalPages ?? 1)
+      setHasMore(data.hasMore ?? false)
       setLoadError(null)
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
+
       const message = error instanceof Error ? error.message : 'Failed to load files from storage. Please check your connection and try again.'
       setLoadError(message)
       setFiles([])
     } finally {
+      if (inFlightRequestKeyRef.current === requestKey) {
+        inFlightRequestKeyRef.current = null
+      }
       setIsRefreshing(false)
     }
-  }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode])
+  }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage])
 
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
 
   useEffect(() => {
+    if (!selectedBucketId) {
+      return
+    }
+
+    const effectKey = JSON.stringify({
+      selectedBucketId,
+      currentPath,
+      tagFilter,
+      searchQuery,
+      viewMode,
+      currentPage,
+    })
+
+    if (lastEffectRequestKeyRef.current === effectKey) {
+      return
+    }
+
+    lastEffectRequestKeyRef.current = effectKey
     fetchFiles()
-  }, [fetchFiles])
+  }, [fetchFiles, selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage])
 
   useEffect(() => {
     setSelectedFileIds([])
     setShareTargets([])
-  }, [selectedBucketId, currentPath])
+    setCurrentPage(1)
+  }, [selectedBucketId, currentPath, tagFilter, searchQuery])
 
   useEffect(() => {
     if (editingTagsFile) {
@@ -875,13 +933,34 @@ export default function FilesPage() {
                 )}
             </Card>
         ) : (
-                <div className={cn("space-y-2 transition-opacity duration-200", isRefreshing && "opacity-50 pointer-events-none")}>
-                  {files.length === 0 && isRefreshing && (
-                    <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/10 rounded-xl border border-dashed border-border">
-                      <RefreshCw className="h-8 w-8 animate-spin text-primary/40 mb-3" />
-                      <p className="text-sm text-muted-foreground animate-pulse">Syncing files...</p>
+                <>
+                  {isTruncated && !truncationDismissed && (
+                    <div className="glass-card bg-amber-50/50 dark:bg-amber-500/[0.03] border border-amber-500/20 dark:border-amber-500/10 p-5 rounded-2xl flex gap-4 items-start mb-6">
+                      <div className="h-10 w-10 rounded-xl bg-amber-500/20 dark:bg-amber-500/10 flex-shrink-0 flex items-center justify-center text-amber-600 dark:text-amber-500 text-xl">
+                        ⚠
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-amber-700 dark:text-amber-200 tracking-tight">Too Many Items</h4>
+                        <p className="text-xs text-amber-600 dark:text-amber-500/80 mt-1 leading-relaxed">
+                          This folder contains too many items to display fully. Showing first 20,000 items. Use search to find specific files.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setTruncationDismissed(true)}
+                        className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 transition-colors text-lg font-bold leading-none"
+                        aria-label="Dismiss warning"
+                      >
+                        ✕
+                      </button>
                     </div>
                   )}
+                  <div className={cn("space-y-2 transition-opacity duration-200", isRefreshing && "opacity-50 pointer-events-none")}>
+                    {files.length === 0 && isRefreshing && (
+                      <div className="flex flex-col items-center justify-center p-12 text-center bg-muted/10 rounded-xl border border-dashed border-border">
+                        <RefreshCw className="h-8 w-8 animate-spin text-primary/40 mb-3" />
+                        <p className="text-sm text-muted-foreground animate-pulse">Syncing files...</p>
+                      </div>
+                    )}
                   {files.map((file) => (
                   <Card key={file.id} className="p-4">
                     <div className="flex items-center justify-between">
@@ -1024,6 +1103,35 @@ export default function FilesPage() {
                   </Card>
             ))}
           </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between px-2 py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalFiles)} of {totalFiles} files
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => prev - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          ← Previous
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => prev + 1)}
+                          disabled={!hasMore}
+                        >
+                          Next →
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
         )}
       </main>
 
