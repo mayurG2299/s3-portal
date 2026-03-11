@@ -1,3 +1,14 @@
+# =============================================================================
+# S3 Portal — Production Docker Compose
+# =============================================================================
+# Setup:
+#   1. cp .env.example .env          (fill in all values)
+#   2. export DOCKER_USER=yourname   (your Docker Hub username)
+#   3. docker compose -f docker-compose.production.yml up -d
+#   4. First time only:
+#      docker compose -f docker-compose.production.yml run --rm app npx prisma db seed
+# =============================================================================
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -20,10 +31,7 @@ services:
       - s3portal
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: ${DOCKER_USER}/s3-portal:latest
     container_name: s3portal-app
     restart: unless-stopped
     depends_on:
