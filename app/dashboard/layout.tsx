@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await requireUser()
+  const session = await requireUser('dashboard/layout')
   const cookieStore = await cookies()
 
   const isOwner = session.user.roleId === 'role_owner'

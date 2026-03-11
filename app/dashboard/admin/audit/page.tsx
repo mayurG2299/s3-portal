@@ -7,7 +7,7 @@ import { Clock, User, Activity, Shield, CheckCircle2, XCircle } from 'lucide-rea
 import { cn } from '@/lib/utils'
 
 export default async function AuditLogPage() {
-  const session = await requireUser()
+  const session = await requireUser('admin/audit')
   const teamId = session.user.teamId
 
   if (!teamId) {

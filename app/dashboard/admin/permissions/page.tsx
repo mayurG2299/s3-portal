@@ -5,7 +5,7 @@ import { canManageTeam } from '@/lib/permissions'
 import { PermissionManagement } from '@/components/admin/permission-management'
 
 export default async function PermissionsPage() {
-  const session = await requireUser()
+  const session = await requireUser('admin/permissions')
 
   // Only admins and owners can access this page
   const hasAccess = await canManageTeam(session.user.id!, session.user.teamId!)
