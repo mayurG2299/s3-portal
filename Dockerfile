@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for development and production
 # Use --target=development for dev, --target=production for prod
 
-FROM node:18-alpine AS base
+FROM --platform=$BUILDPLATFORM node:18-alpine AS base
 
 # Install dependencies
 RUN apk add --no-cache libc6-compat openssl
@@ -57,6 +57,9 @@ COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
+
+# Ensure public dir exists (Next.js requires it for standalone output)
+RUN mkdir -p public
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1

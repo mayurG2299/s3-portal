@@ -1,371 +1,255 @@
-# S3 Portal - Self-Hosted File Portal for Teams
+<div align="center">
 
-Production-grade Next.js application that acts as a self-hosted S3 file portal with zero-trust security. Users bring their own AWS credentials, and all access is mediated through encrypted, scoped, expiring tokens.
+# S3 Portal
 
-## Features
+**A self-hosted file portal for teams — built on AWS S3, designed for security.**
 
-### Core Functionality
-- ✅ Direct S3 uploads via presigned URLs (no server file handling)
-- ✅ AWS credential encryption (AES-256) at rest
-- ✅ Shareable links with expiry, passwords, and download limits
-- ✅ CloudFront signed URL support for CDN delivery
-- ✅ Team collaboration with role-based permissions
-- ✅ File browser with drag-drop uploads
-- ✅ Access logging and audit trails
+[![Docker Hub](https://img.shields.io/docker/v/may99/s3-portal?label=Docker%20Hub&logo=docker&color=0db7ed)](https://hub.docker.com/r/may99/s3-portal)
+[![Docker Pulls](https://img.shields.io/docker/pulls/may99/s3-portal?logo=docker&color=0db7ed)](https://hub.docker.com/r/may99/s3-portal)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
 
-### Security
-- ✅ Zero-trust architecture
-- ✅ Encrypted credentials (never stored in plaintext)
-- ✅ Randomized share link hashes
-- ✅ Session-based authentication with NextAuth
-- ✅ CSRF protection built-in
-- ✅ No vendor lock-in
+[Docker Hub](https://hub.docker.com/r/may99/s3-portal) · [Quick Start](#-quick-start) · [Configuration](#-configuration) · [Self-Hosting](#-self-hosting-with-docker) · [Docs](docs/)
 
-### Architecture
-- Next.js 14 App Router
-- TypeScript
-- Tailwind CSS
-- Prisma ORM
-- PostgreSQL (SQLite compatible)
-- AWS SDK v3
-- Docker ready
+</div>
 
-## Quick Start
+---
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL or SQLite
-- AWS account with S3 bucket
+S3 Portal is a production-grade, self-hosted file management portal for teams. You bring your own AWS credentials — the portal handles uploads, sharing, access control, and audit trails. Files go directly from the browser to S3; nothing ever touches your server.
 
-### Installation
+## ✨ Features
 
-1. **Clone and install dependencies:**
+| Category | Feature |
+|---|---|
+| **File Management** | Browser, drag-and-drop upload, search, folders |
+| **Direct Uploads** | Presigned URLs — files never touch the server |
+| **Sharing** | Expiring links, password protection, download limits |
+| **CDN** | CloudFront signed URL support |
+| **Teams** | Invite members, role-based permissions (Owner / Admin / Viewer / custom) |
+| **Security** | AES-256-GCM encrypted credentials, zero plaintext storage |
+| **Audit** | Full access log with IP, user agent, success/failure |
+| **Themes** | Nebula, Catppuccin, Tokyo Night, Dracula, Nord, Rosé Pine |
+
+## 🐳 Self-Hosting with Docker
+
+The fastest way to get running. Requires Docker and a PostgreSQL database.
+
+**1. Generate secrets**
+
 ```bash
-cd s3-portal
+export NEXTAUTH_SECRET=$(openssl rand -base64 32)
+export ENCRYPTION_KEY=$(openssl rand -base64 32 | cut -c1-32)
+echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET"
+echo "ENCRYPTION_KEY=$ENCRYPTION_KEY"
+```
+
+**2. Create your `.env` file**
+
+```env
+# Database (bundled Postgres via Docker Compose)
+DB_PASSWORD=change-me-to-a-strong-password
+
+# Auth
+NEXTAUTH_SECRET=<generated above>
+NEXTAUTH_URL=http://localhost:3000
+
+# Encryption
+ENCRYPTION_KEY=<generated above>
+
+# App URL (used in share links)
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Docker Hub username
+DOCKER_USER=may99
+```
+
+**3. Pull and start**
+
+```bash
+curl -O https://raw.githubusercontent.com/mayurG2299/s3-portal/main/docker-compose.production.yml
+docker compose -f docker-compose.production.yml up -d
+```
+
+**4. First-time seed (system roles)**
+
+```bash
+docker compose -f docker-compose.production.yml run --rm app npx prisma db seed
+```
+
+**5. Open the app**
+
+Visit [http://localhost:3000](http://localhost:3000) → Register your account → Add AWS credentials → Start uploading.
+
+> Updating to a new release:
+> ```bash
+> docker compose -f docker-compose.production.yml pull
+> docker compose -f docker-compose.production.yml up -d
+> ```
+
+---
+
+## 🚀 Quick Start (Local Development)
+
+**Prerequisites**
+
+| Requirement | Version |
+|---|---|
+| Node.js | 18+ |
+| PostgreSQL | 14+ (or SQLite for dev) |
+| npm | 9+ |
+
+```bash
+# 1. Install dependencies
 npm install
-```
 
-2. **Set up environment variables:**
-```bash
+# 2. Set up environment
 cp .env.example .env
-```
+# Edit .env — set DATABASE_URL, NEXTAUTH_SECRET, ENCRYPTION_KEY
 
-Edit `.env` and set:
-- `DATABASE_URL` - Your PostgreSQL connection string
-- `NEXTAUTH_SECRET` - Random 32+ character string
-- `ENCRYPTION_KEY` - Random 32 character string
-- `NEXTAUTH_URL` - Your app URL (http://localhost:3000 for dev)
-
-3. **Initialize database:**
-```bash
+# 3. Set up the database
 npm run db:push
-```
+npm run db:seed
 
-4. **Run development server:**
-```bash
+# 4. Start
 npm run dev
 ```
 
-Visit http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000)
 
-## Docker Deployment
+---
 
-### Development Mode
+## ⚙️ Configuration
 
-```bash
-# Set required environment variables
-export NEXTAUTH_SECRET="your-secret-min-32-chars"
-export ENCRYPTION_KEY="your-32-character-key-here!"
-export DB_PASSWORD="your-db-password"
-export NODE_ENV="development"
-export BUILD_TARGET="development"
+### Required Environment Variables
 
-# Start with Docker Compose
-docker-compose up -d
-```
+| Variable | Description | Example |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/s3portal` |
+| `NEXTAUTH_SECRET` | Min 32-char random secret | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | Your app's public URL | `https://s3.mycompany.com` |
+| `ENCRYPTION_KEY` | Exactly 32-char key for AWS credential encryption | `openssl rand -base64 32 \| cut -c1-32` |
+| `NEXT_PUBLIC_APP_URL` | Same as `NEXTAUTH_URL` — used in share links | `https://s3.mycompany.com` |
 
-### Production Mode
+### Optional
 
-```bash
-# Set required environment variables
-export NEXTAUTH_SECRET="your-secret-min-32-chars"
-export ENCRYPTION_KEY="your-32-character-key-here!"
-export DB_PASSWORD="your-db-password"
-export NODE_ENV="production"
-export BUILD_TARGET="production"
+| Variable | Default | Description |
+|---|---|---|
+| `DB_PASSWORD` | — | Postgres password (Docker only) |
+| `LOG_LEVEL` | `INFO` | `DEBUG / INFO / WARN / ERROR` |
 
-# Start with Docker Compose
-docker-compose up -d
-```
+### S3 Bucket CORS (Required for uploads)
 
-The app will be available at http://localhost:3000
+Before uploading, configure CORS on your S3 bucket:
 
-### Environment Variables for Docker
-
-Create a `.env` file:
-
-```env
-# Required
-NEXTAUTH_SECRET=generate-a-random-secret-key-here-min-32-chars
-ENCRYPTION_KEY=generate-a-32-char-encryption-key
-DB_PASSWORD=secure-database-password
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXTAUTH_URL=http://localhost:3000
-
-# Optional
-NODE_ENV=production
-BUILD_TARGET=production
-LOG_LEVEL=INFO
-```
-
-#### Railway
-```bash
-railway up
-```
-
-#### Fly.io
-```bash
-fly launch
-fly deploy
-```
-
-#### Vercel
-```bash
-vercel --prod
-```
-*Note: On Vercel, you must use a hosted PostgreSQL instance (not local)*
-
-## Usage Guide
-
-### 1. Create Account
-- Register at `/register`
-- Sign in at `/login`
-
-### 2. Add AWS Credentials
-- Go to Dashboard → AWS Credentials
-- Click "Add Credential"
-- Enter your AWS details:
-  - Access Key ID
-  - Secret Access Key
-  - Region
-  - Bucket name
-- Optional: Add CloudFront configuration
-
-**Your credentials are encrypted** before storage using AES-256.
-
-### 3. Configure S3 Bucket CORS (Required)
-
-⚠️ **Important**: Before uploading files, you must configure CORS on your S3 bucket.
-
-#### Quick Setup:
-1. Open your S3 bucket in AWS Console
-2. Go to **Permissions** → **CORS**
-3. Click **Edit** and paste this configuration:
+1. Open your bucket in the AWS Console → **Permissions** → **CORS**
+2. Paste and save:
 
 ```json
 [
   {
     "AllowedHeaders": ["*"],
     "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
-    "AllowedOrigins": [
-      "http://localhost:3000",
-      "https://yourdomain.com"
-    ],
+    "AllowedOrigins": ["https://your-s3-portal-domain.com"],
     "ExposeHeaders": ["ETag"],
     "MaxAgeSeconds": 3000
   }
 ]
 ```
 
-4. Replace `https://yourdomain.com` with your actual domain
-5. Save changes
-
-**Why is this needed?** The S3 Portal uploads files directly from your browser to S3. Without CORS, browsers block these cross-origin requests.
-
-📖 **Detailed guide**: See [docs/S3-CORS-SETUP.md](docs/S3-CORS-SETUP.md) for complete instructions, CloudFront setup, and troubleshooting.
-
-### 4. Upload Files
-- Navigate to Files
-- Select your credential
-- Click Upload or drag & drop files
-- Files upload **directly to S3** (not through server)
-
-### 5. Share Files
-- Click share icon on any file
-- Choose expiry time (1 hour to 30 days)
-- Copy the generated link
-- Optional: Add password protection
-
-### 6. Team Collaboration
-- Create a team
-- Invite members
-- Set roles (Owner, Admin, Viewer)
-- Team members can access shared files without seeing AWS keys
-
-## Security Model
-
-### Credential Encryption
-```typescript
-// Credentials are encrypted before storage
-const encrypted = encrypt(accessKey) // AES-256-GCM
-// Server never logs or exposes raw keys
-```
-
-### Upload Flow
-```
-Browser → Server (presigned URL request)
-Browser → S3 (direct upload)
-Server → Database (metadata only)
-```
-
-### Zero Data Leakage
-- Files never touch the server
-- Only metadata stored in database
-- AWS keys encrypted at rest
-- Presigned URLs expire automatically
-
-## API Routes
-
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/[...nextauth]` - NextAuth handlers
-- `GET/POST/DELETE /api/credentials` - Manage AWS credentials
-- `POST/DELETE/PATCH /api/files` - File operations
-- `GET/POST/DELETE /api/links` - Share link management
-- `GET /api/share/[hash]` - Public share access
-
-## Database Schema
-
-### Users
-- Email/password authentication
-- Owns credentials, files, links
-
-### Teams
-- Multi-user collaboration
-- Role-based access (Owner/Admin/Viewer)
-
-### AWSCredentials
-- Encrypted AWS keys
-- Region, bucket config
-- Optional CloudFront settings
-
-### Files
-- S3 object metadata
-- Path hierarchy
-- Associated credential
-
-### Links
-- Public/presigned/CloudFront URLs
-- Expiry timestamps
-- Password protection
-- Download limits
-
-### AccessLogs
-- Audit trail for shares
-- IP address, user agent
-- Success/failure tracking
-
-## Tech Stack
-
-### Frontend
-- Next.js 14 (App Router)
-- React 18
-- TypeScript
-- Tailwind CSS
-- Radix UI components
-- React Dropzone
-
-### Backend
-- Next.js API Routes
-- Server Actions
-- Prisma ORM
-- AWS SDK v3
-- NextAuth v4.24.6 (JWT sessions)
-
-### Database
-- PostgreSQL (recommended)
-- SQLite (supported)
-
-### Security
-- AES-256-GCM encryption
-- Randomized share link hashes
-- Scrypt password hashing
-- PBKDF2 key derivation
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run dev server
-npm run dev
-
-# Database commands
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema changes
-npm run db:migrate   # Create migration
-npm run db:studio    # Open Prisma Studio
-
-# Build for production
-npm run build
-npm start
-```
-
-## Project Structure
-
-```
-s3-portal/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   ├── dashboard/         # Dashboard pages
-│   ├── login/             # Auth pages
-│   └── share/             # Public share pages
-├── components/            # React components
-│   └── ui/               # UI primitives
-├── lib/                   # Core utilities
-│   ├── auth.ts           # NextAuth config
-│   ├── aws.ts            # AWS SDK integration
-│   ├── crypto.ts         # Encryption utilities
-│   ├── db.ts             # Prisma client
-│   └── utils.ts          # Helper functions
-├── prisma/
-│   └── schema.prisma     # Database schema
-├── Dockerfile            # Container image
-├── docker-compose.yml    # Local deployment
-└── package.json
-```
-
-## Contributing
-
-This is a production-ready template. Feel free to:
-- Add new features
-- Improve security
-- Optimize performance
-- Add tests
-- Improve documentation
-
-## License
-
-MIT License - Free to use, modify, and distribute.
-
-## Support
-
-For issues, questions, or contributions:
-- Open an issue on GitHub
-- Submit a pull request
-- Check existing documentation
-
-## Roadmap
-
-- [ ] File versioning
-- [ ] Bulk operations
-- [ ] Advanced search
-- [ ] Activity dashboard
-- [ ] Email notifications
-- [ ] Multi-region support
-- [ ] Backup/restore
-- [ ] Mobile app
+> See [docs/S3-CORS-SETUP.md](docs/S3-CORS-SETUP.md) for full CORS guide including CloudFront.
 
 ---
 
-**Built with ❤️ for teams who value security and self-hosting.**
+## 🔐 Security Model
+
+```
+Browser ──► Server:  "Give me a presigned URL for this file"
+Browser ──► S3:      Direct upload (server never sees file bytes)
+Server  ──► DB:      Stores metadata only (filename, size, S3 key)
+```
+
+- **AWS credentials** are encrypted with AES-256-GCM before being written to the database
+- **Share links** use cryptographically random hashes
+- **Passwords** are hashed with scrypt
+- **Sessions** are JWT-based (HttpOnly cookies)
+- **Files never touch the server** — only presigned URL metadata does
+
+---
+
+## 🏗 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS + Radix UI |
+| ORM | Prisma 5 |
+| Database | PostgreSQL (recommended) / SQLite |
+| Auth | NextAuth v4 (JWT sessions) |
+| Storage | AWS S3 + optional CloudFront CDN |
+| Encryption | AES-256-GCM (Node.js `crypto`) |
+| Container | Docker (multi-arch: `amd64` + `arm64`) |
+
+---
+
+## 🗂 Project Structure
+
+```
+s3-portal/
+├── app/
+│   ├── api/                  # API routes
+│   ├── dashboard/            # Dashboard pages
+│   │   ├── admin/            # Admin — permissions, audit log
+│   │   ├── files/            # File browser
+│   │   ├── settings/         # Bucket & team settings
+│   │   └── ...
+│   ├── login/ register/      # Auth pages
+│   └── share/[hash]/         # Public share page
+├── components/
+│   └── ui/                   # Radix-based UI primitives
+├── lib/
+│   ├── auth.ts               # NextAuth config + JWT callbacks
+│   ├── aws.ts                # S3 / CloudFront SDK
+│   ├── crypto.ts             # AES-256-GCM encryption
+│   ├── db.ts                 # Prisma client
+│   └── permissions.ts        # RBAC helpers
+├── prisma/
+│   ├── schema.prisma
+│   ├── seed.ts               # System role seeding
+│   └── migrations/
+├── docs/                     # Extended documentation
+├── Dockerfile                # Multi-stage, multi-arch
+├── docker-compose.yml        # Local dev
+├── docker-compose.production.yml
+└── publish.sh                # Docker Hub publish script
+```
+
+---
+
+## 🛠 Development
+
+```bash
+npm run dev              # Start dev server
+npm run build            # Production build
+npm run lint             # ESLint
+npm test                 # Jest tests
+
+npm run db:generate      # Regenerate Prisma client
+npm run db:push          # Sync schema → DB (dev)
+npm run db:migrate       # Create a migration
+npm run db:seed          # Seed system roles
+npm run db:studio        # Open Prisma Studio UI
+```
+
+---
+
+## 📄 License
+
+MIT — free to use, modify, and self-host.
+
+---
+
+<div align="center">
+Built for teams who value security and data ownership.
+</div>
