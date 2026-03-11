@@ -197,13 +197,28 @@
 /* ── NEBULA (default purple) ── */
 [data-theme="nebula"].dark,
 .dark[data-theme="nebula"] {
-  --brand:            270 85% 60%;
-  --brand-light:      270 100% 72%;
-  --brand-dark:       263 75% 42%;
-  --background:       240 10% 4%;
-  --card:             240 10% 7%;
-  --border:           240 10% 14%;
-  --primary:          270 85% 60%;
+  --brand:                270 85% 60%;
+  --brand-light:          270 100% 72%;
+  --brand-dark:           263 75% 42%;
+  --background:           240 10% 4%;
+  --foreground:           0 0% 95%;
+  --card:                 240 10% 7%;
+  --card-foreground:      0 0% 95%;
+  --popover:              240 10% 7%;
+  --popover-foreground:   0 0% 95%;
+  --primary:              270 85% 60%;
+  --primary-foreground:   0 0% 100%;
+  --secondary:            240 10% 12%;
+  --secondary-foreground: 0 0% 75%;
+  --muted:                240 10% 12%;
+  --muted-foreground:     240 5% 55%;
+  --accent:               240 10% 12%;
+  --accent-foreground:    0 0% 95%;
+  --destructive:          0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border:               240 10% 14%;
+  --input:                240 10% 10%;
+  --ring:                 270 85% 60%;
 }
 [data-theme="nebula"],
 [data-theme="nebula"].light,

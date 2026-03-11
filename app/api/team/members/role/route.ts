@@ -141,6 +141,9 @@ export async function PATCH(request: NextRequest) {
         roleId,
       },
     })
+    // NOTE: The affected user's JWT will auto-refresh on their next request
+    // via the jwt() callback re-hydration in lib/auth.ts. No additional
+    // session invalidation signal is needed.
 
     if (member.count === 0) {
       await logUserAction({

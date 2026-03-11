@@ -107,6 +107,27 @@ export const authOptions: NextAuthOptions = {
         token.teamId = (user as any).teamId
       }
 
+      // Re-hydrate stale tokens missing roleLevel or teamId.
+      // This runs on every request where these fields are absent,
+      // healing old JWTs transparently without requiring re-login.
+      if (!token.roleLevel || !token.teamId) {
+        try {
+          const teamMember = await prisma.teamMember.findFirst({
+            where: { userId: token.id as string },
+            include: { role: true, team: true },
+            orderBy: { createdAt: 'asc' },
+          })
+          if (teamMember) {
+            token.roleId = teamMember.roleId
+            token.roleLevel = teamMember.role?.level ?? 1
+            token.teamId = teamMember.teamId
+          }
+        } catch (e) {
+          // If DB is unavailable, keep token as-is — middleware will pass it through
+          console.error('[jwt] Failed to re-hydrate token:', e)
+        }
+      }
+
       // Handle active session updates (e.g., from team switcher)
       if (trigger === 'update' && session) {
         if (session.teamId) token.teamId = session.teamId
@@ -130,8 +151,9 @@ export const authOptions: NextAuthOptions = {
 
 /**
  * Server component helper: require an authenticated user or redirect to login.
+ * The optional `page` argument is accepted for call-site documentation purposes.
  */
-export async function requireUser() {
+export async function requireUser(_page?: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     redirect('/login')
