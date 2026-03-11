@@ -8,23 +8,22 @@ export default async function HomePage() {
   const session = await getServerSession(authOptions)
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-200 selection:bg-[#8c2bee]/30 overflow-hidden">
+    <div className="min-h-screen bg-background text-slate-200 selection:bg-brand/30 overflow-hidden">
       {/* Background Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[500px] bg-[#8c2bee]/10 blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[500px] bg-brand/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-violet-600/10 blur-[120px] pointer-events-none" />
 
       {/* Navigation */}
       <nav className="glass-navbar border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 group pointer-events-none">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/20">
+            <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-xl flex items-center justify-center shadow-lg shadow-brand/20">
               <span className="text-white font-black text-lg tracking-tighter">S3</span>
             </div>
             <h1 className="text-xl font-black text-white tracking-tight">S3 Portal</h1>
           </div>
 
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="text-sm font-semibold text-slate-400 hover:text-[#b673ff] hover:drop-shadow-[0_0_8px_rgba(182,115,255,0.8)] transition-all duration-300">Documentation</Link>
             {session ? (
               <Link href="/dashboard">
                 <Button className="btn-primary-gradient rounded-full px-6 text-sm font-bold h-10">
@@ -47,11 +46,11 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-5xl sm:text-7xl font-black text-white leading-[1.05] tracking-tight mb-8 animate-slide-up">
             Your S3 Storage, <br />
-            <span className="gradient-text">Beautifully Reimagined.</span>
+            <span className="gradient-text">Finally Under Control.</span>
           </h2>
 
           <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 animate-slide-up leading-relaxed" style={{ animationDelay: '100ms' }}>
-            The enterprise-grade portal for AWS S3. Securely manage, share, and collaborate on your files with a high-performance, glassmorphic interface.
+            A clean, self-hostable UI for AWS S3. Manage buckets, share files, control access — without touching the AWS console.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
@@ -81,15 +80,15 @@ export default async function HomePage() {
           <div className="mt-16 flex flex-wrap justify-center gap-8 text-slate-500 animate-fade-in" style={{ animationDelay: '400ms' }}>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">No credit card required</span>
+              <span className="text-sm font-medium">Self-hostable</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">SSL Encryption</span>
+              <span className="text-sm font-medium">Docker ready</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">GDPR Compliant</span>
+              <span className="text-sm font-medium">Open source</span>
             </div>
           </div>
         </div>
@@ -103,22 +102,22 @@ export default async function HomePage() {
               {
                 icon: Cloud,
                 title: "Cloud Native",
-                desc: "Full integration with AWS S3, Wasabi, DigitalOcean Spaces, and more."
+                desc: "Works with AWS S3 and any S3-compatible storage. Connect multiple buckets across different providers."
               },
               {
                 icon: Shield,
-                title: "Zero-Trust",
-                desc: "State-of-the-art security with granular role-based access and full audit logs."
+                title: "Zero-Trust Security",
+                desc: "Role-based access control, team permissions, and full audit logs. Know exactly who did what."
               },
               {
                 icon: Zap,
-                title: "Ultra Fast",
-                desc: "Optimized multipart uploads and lightning-quick file indexing for massive buckets."
+                title: "Built for Teams",
+                desc: "Invite team members, assign roles, share files with expiring links. No AWS IAM required."
               }
             ].map((feature, i) => (
               <div key={i} className="glass-card group animate-slide-up" style={{ animationDelay: `${300 + i * 100}ms` }}>
-                <div className="w-12 h-12 rounded-2xl bg-[#8c2bee]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <feature.icon size={24} className="text-[#b673ff]" />
+                <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon size={24} className="text-brand-light" />
                 </div>
                 <h4 className="text-xl font-bold text-white mb-3 tracking-tight">{feature.title}</h4>
                 <p className="text-slate-400 leading-relaxed text-sm">
@@ -140,20 +139,8 @@ export default async function HomePage() {
             <h1 className="text-lg font-bold text-slate-500">S3 Portal</h1>
           </div>
 
-          <div className="flex gap-10">
-            <div className="flex flex-col gap-4">
-              <p className="text-[#b673ff] font-medium tracking-widest text-xs uppercase">v2.0</p>
-              <Link href="#" className="text-sm hover:text-white transition-colors">Features</Link>
-              <Link href="#" className="text-sm hover:text-white transition-colors">Security</Link>
-            </div>
-            <div className="flex flex-col gap-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Company</p>
-              <Link href="#" className="text-sm hover:text-white transition-colors">About</Link>
-              <Link href="#" className="text-sm hover:text-white transition-colors">Contact</Link>
-            </div>
-          </div>
+          <p className="text-xs font-medium text-slate-700">© 2026 S3 Portal. All rights reserved.</p>
         </div>
-        <p className="text-center mt-20 text-xs font-medium text-slate-700">© 2026 S3 Portal. All rights reserved.</p>
       </footer>
     </div>
   )

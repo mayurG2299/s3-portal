@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette } from 'lucide-react'
+import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
+import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 
 type Credential = {
   id: string
@@ -39,8 +41,25 @@ export default function SettingsPage() {
   const [isAddCredentialOpen, setIsAddCredentialOpen] = useState(false)
   const [isUpdatingCredential, setIsUpdatingCredential] = useState(false)
   const [editBuckets, setEditBuckets] = useState<BucketInput[]>([])
+  const [activeTheme, setActiveTheme] = useState<ThemeId>('nebula')
+  const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
   const { data: session } = useSession()
+
+  useEffect(() => {
+    setActiveTheme(getSavedTheme())
+    setActiveMode(getSavedMode())
+  }, [])
+
+  const handleThemeChange = useCallback((id: ThemeId) => {
+    setActiveTheme(id)
+    applyThemeAndMode(id, activeMode)
+  }, [activeMode])
+
+  const handleModeChange = useCallback((mode: ThemeMode) => {
+    setActiveMode(mode)
+    applyThemeAndMode(activeTheme, mode)
+  }, [activeTheme])
   const activeTeamId = session?.user?.teamId
 
   useEffect(() => {
@@ -184,6 +203,83 @@ export default function SettingsPage() {
         <p className="text-muted-foreground font-medium">
           Connect and manage your cloud infrastructure integrations.
         </p>
+      </div>
+
+      {/* Appearance Section */}
+      <div className="glass-card mb-10 animate-slide-up">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="h-12 w-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand border border-brand/20">
+            <Palette size={24} strokeWidth={2} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-foreground tracking-tight">Appearance</h3>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Customize your portal theme and color mode</p>
+          </div>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="mb-8">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Color Mode</p>
+          <div className="flex p-1 bg-muted/50 border border-border rounded-2xl w-fit">
+            <button
+              onClick={() => handleModeChange('dark')}
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                activeMode === 'dark'
+                  ? 'bg-brand text-white shadow-lg'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Moon size={14} />
+              Dark
+            </button>
+            <button
+              onClick={() => handleModeChange('light')}
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                activeMode === 'light'
+                  ? 'bg-brand text-white shadow-lg'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Sun size={14} />
+              Light
+            </button>
+          </div>
+        </div>
+
+        {/* Theme Grid */}
+        <div>
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3">Theme</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {THEMES.map((t) => {
+              const isActive = activeTheme === t.id
+              const bg = activeMode === 'dark' ? t.darkBg : t.lightBg
+              const accent = activeMode === 'dark' ? t.darkAccent : t.lightAccent
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleThemeChange(t.id)}
+                  className={`relative rounded-2xl p-3 border-2 transition-all duration-300 text-left ${
+                    isActive
+                      ? 'border-brand shadow-lg shadow-brand/20 scale-[1.02]'
+                      : 'border-border hover:border-brand/40'
+                  }`}
+                >
+                  <div
+                    className="h-12 w-full rounded-xl mb-2 relative overflow-hidden"
+                    style={{ backgroundColor: bg }}
+                  >
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-1.5"
+                      style={{ backgroundColor: accent }}
+                    />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-foreground truncate">{t.label}</p>
+                  <p className="text-[8px] text-muted-foreground truncate">{t.description}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {credentials.length === 0 ? (
@@ -515,7 +611,7 @@ export default function SettingsPage() {
                   <Button
                     type="submit"
                     disabled={isUpdatingCredential}
-                    className="h-11 px-8 rounded-xl bg-[#8c2bee] hover:bg-[#8c2bee] text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-[#8c2bee]/20"
+                    className="h-11 px-8 rounded-xl bg-brand hover:bg-brand text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand/20"
                   >
                     {isUpdatingCredential ? 'Applying Changes...' : 'Save Configuration'}
                   </Button>

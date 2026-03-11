@@ -26,7 +26,7 @@ export function StorageOverviewChart({ monthlyDataGB, yearlyDataGB }: StorageOve
     <div className="glass-card flex flex-col justify-between h-full w-full min-h-[300px]">
       <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
         <h4 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-[#8c2bee] shadow-[0_0_10px_rgba(140,43,238,0.8)]" />
+          <div className="w-2 h-2 rounded-full bg-brand shadow-[0_0_10px_hsl(var(--brand)/0.8)]" />
           Storage Overview
         </h4>
         <div className="flex gap-2">
@@ -50,7 +50,7 @@ export function StorageOverviewChart({ monthlyDataGB, yearlyDataGB }: StorageOve
           <div key={i} className="flex-1 min-w-[28px] sm:min-w-0 flex flex-col items-center gap-2 group">
             <div className="w-full relative flex items-end justify-center h-[100px]">
               <div
-                className="w-full rounded-t-xl bg-gradient-to-t from-[#8c2bee]/20 to-[#8c2bee] group-hover:from-[#8c2bee]/40 group-hover:to-[#b673ff] transition-all duration-500 relative"
+                className="w-full rounded-t-xl bg-gradient-to-t from-brand/20 to-brand group-hover:from-brand/40 group-hover:to-brand-light transition-all duration-500 relative"
                 style={{ height: `${getDynamicHeight(gb)}px` }}
               >
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground backdrop-blur-md border border-border rounded-lg px-2 py-1 text-[8px] font-bold whitespace-nowrap z-10 pointer-events-none">

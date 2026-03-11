@@ -160,13 +160,13 @@ export default async function DashboardPage() {
         ].map((stat, i) => (
           <div key={i} className="glass-card group animate-slide-up relative overflow-hidden" style={{ animationDelay: `${i * 100}ms` }}>
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <stat.icon size={80} strokeWidth={1} className="text-[#8c2bee]/50 dark:text-white" />
+              <stat.icon size={80} strokeWidth={1} className="text-brand/50 dark:text-white" />
             </div>
 
             <div className="flex items-center justify-between mb-8 relative z-10">
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 shadow-lg",
-                stat.color === 'indigo' && "bg-[#8c2bee]/20 text-[#8c2bee] dark:text-white shadow-[#8c2bee]/20",
+                stat.color === 'indigo' && "bg-brand/20 text-brand dark:text-white shadow-brand/20",
                 stat.color === 'emerald' && "bg-emerald-500/20 text-emerald-600 dark:text-white shadow-emerald-500/20",
                 stat.color === 'violet' && "bg-violet-500/20 text-violet-600 dark:text-white shadow-violet-500/20",
                 stat.color === 'amber' && "bg-amber-500/20 text-amber-600 dark:text-white shadow-amber-500/20",
@@ -196,7 +196,7 @@ export default async function DashboardPage() {
                 <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                 Transmission Feed
               </h4>
-              <Link href="/dashboard/files" className="text-[10px] font-black text-[#8c2bee] hover:text-[#b673ff] transition-colors uppercase tracking-[0.2em]">Live Stream</Link>
+              <Link href="/dashboard/files" className="text-[10px] font-black text-brand hover:text-brand-light transition-colors uppercase tracking-[0.2em]">Live Stream</Link>
             </div>
 
             {recentFiles.length === 0 ? (

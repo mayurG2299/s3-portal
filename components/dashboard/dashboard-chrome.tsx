@@ -141,7 +141,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                         <SelectValue placeholder={isLoading ? "..." : "AWS Credentials"} />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                    <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
                       <SelectItem value="all" className="text-xs">All Identities</SelectItem>
                       {identities.map((id) => (
                         <SelectItem key={id.id} value={id.id} className="text-xs">
@@ -167,7 +167,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                         <SelectValue placeholder={isLoading ? "..." : "Storage Bucket"} />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                    <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
                       <SelectItem value="all" className="text-xs">All Buckets</SelectItem>
                       {availableBuckets.map((bucket) => (
                         <SelectItem key={bucket.id} value={bucket.id} className="text-xs">
@@ -205,7 +205,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                     <SelectValue placeholder={isLoading ? "..." : "Select Team"} />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900/95 border-white/10 backdrop-blur-xl">
+                <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
                   {teams.map((t) => (
                     <SelectItem key={t.id} value={t.id} className="text-xs font-semibold">
                       {t.name}
@@ -221,14 +221,14 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
             )}>
               <ThemeToggle />
 
-              <div className="h-8 w-px bg-slate-200 dark:bg-white/5 hidden sm:block" />
+              <div className="h-8 w-px bg-border hidden sm:block" />
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
                   <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
-                  <p className="text-[8px] font-bold text-[#8c2bee] uppercase tracking-widest">{roleTitle}</p>
+                  <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
                 </div>
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] p-[1px] shrink-0">
-                  <div className="h-full w-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-[10px] font-black text-[#8c2bee] dark:text-white">
+                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand to-brand-dark p-[1px] shrink-0">
+                  <div className="h-full w-full rounded-[10px] bg-card flex items-center justify-center text-[10px] font-black text-brand">
                     {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
                   </div>
                 </div>

@@ -138,7 +138,7 @@ export function Sidebar({
           {sidebarExpanded ? (
             <div className="flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleNavClick}>
-                <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/20 group-hover:scale-110 transition-transform duration-500">
+                <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20 group-hover:scale-110 transition-transform duration-500">
                   <span className="text-white font-black text-sm tracking-tighter">S3</span>
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -152,7 +152,7 @@ export function Sidebar({
           ) : (
               <div className="flex justify-center">
                 <Link href="/dashboard" onClick={handleNavClick}>
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#8c2bee] to-[#6a1bbf] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8c2bee]/20">
+                  <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                     <span className="text-white font-black text-sm tracking-tighter">S3</span>
                   </div>
                 </Link>
@@ -249,21 +249,21 @@ export function Sidebar({
                 className={cn(
                   'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
                   isActive
-                    ? 'bg-slate-100 text-[#8c2bee] shadow-xl dark:bg-white/[0.05] dark:text-white'
+                    ? 'bg-slate-100 text-brand shadow-xl dark:bg-white/[0.05] dark:text-white'
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
                   sidebarExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
                 )}
                 aria-label={label}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#8c2bee] rounded-full shadow-[0_0_15px_rgba(140,43,238,1)]" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full shadow-[0_0_15px_hsl(var(--brand))]" />
                 )}
 
                 <div className="relative flex-shrink-0">
                   <Icon
                     className={cn(
                       'h-5 w-5 transition-all duration-500',
-                      isActive ? 'text-[#8c2bee] scale-110' : 'text-slate-600 group-hover:text-slate-400'
+                      isActive ? 'text-brand scale-110' : 'text-slate-600 group-hover:text-slate-400'
                     )}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
@@ -299,7 +299,7 @@ export function Sidebar({
             </div>
             <div className="h-2 w-full bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden mb-3 p-[1px]">
               <div
-                className="h-full bg-gradient-to-r from-[#8c2bee] via-[#b673ff] to-[#8c2bee] transition-all duration-1000 shadow-[0_0_15px_rgba(140,43,238,0.4)] rounded-full animate-pulse-slow"
+                className="h-full bg-gradient-to-r from-brand via-brand-light to-brand transition-all duration-1000 shadow-[0_0_15px_hsl(var(--brand)/0.4)] rounded-full animate-pulse-slow"
                 style={{ width: `${Math.min(100, Math.max(0, (storageUsedBytes / storageLimitBytes) * 100))}%` }}
               />
             </div>

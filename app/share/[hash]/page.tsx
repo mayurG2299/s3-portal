@@ -142,11 +142,11 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   // ─── LOADING ───
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0a1a] p-4 transition-colors">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-background p-4 transition-colors">
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-black/20 p-12">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#8c2bee] to-[#6d28d9] flex items-center justify-center animate-pulse">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center animate-pulse">
                 <Shield className="h-7 w-7 text-white" />
               </div>
               <div className="space-y-2 text-center">
@@ -154,9 +154,9 @@ export default function SharePage({ params }: { params: { hash: string } }) {
                   Verifying Access
                 </p>
                 <div className="flex items-center justify-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#8c2bee] animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   // ─── PASSWORD REQUIRED ───
   if (requiresPassword && !file) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0a1a] p-4 transition-colors">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-background p-4 transition-colors">
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-black/20 p-8">
             <div className="flex flex-col items-center gap-6">
@@ -192,11 +192,11 @@ export default function SharePage({ params }: { params: { hash: string } }) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   required
-                  className="w-full h-12 px-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee] transition-all text-sm"
+                  className="w-full h-12 px-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all text-sm"
                 />
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-gradient-to-r from-[#8c2bee] to-[#6d28d9] text-white font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity shadow-lg shadow-[#8c2bee]/20"
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-brand to-brand-dark text-white font-bold text-sm uppercase tracking-widest hover:opacity-90 transition-opacity shadow-lg shadow-brand/20"
                 >
                   Unlock File
                 </button>
@@ -214,7 +214,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   // ─── ERROR / NOT FOUND ───
   if (error || !file) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0a1a] p-4 transition-colors">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-background p-4 transition-colors">
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-black/20 p-12">
             <div className="flex flex-col items-center gap-4">
@@ -253,12 +253,12 @@ export default function SharePage({ params }: { params: { hash: string } }) {
   const language = getLanguageFromFilename(file.file.name)
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a1a] py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-background py-12 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-[#8c2bee] to-[#6d28d9] rounded-2xl shadow-lg shadow-[#8c2bee]/20">
+            <div className="p-3 bg-gradient-to-br from-brand to-brand-dark rounded-2xl shadow-lg shadow-brand/20">
               <Shield className="h-8 w-8 text-white" />
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
           <div className="p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-[#8c2bee] dark:text-[#b673ff]">
+                <div className="p-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-brand dark:text-brand-light">
                   {getFileIcon()}
                 </div>
                 <div>
@@ -386,7 +386,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
                     e.preventDefault()
                     handleDownload()
                   }}
-                  className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-2xl text-white bg-gradient-to-r from-[#8c2bee] to-[#6d28d9] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8c2bee] shadow-lg shadow-[#8c2bee]/20 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                  className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-2xl text-white bg-gradient-to-r from-brand to-brand-dark hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand shadow-lg shadow-brand/20 transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                 >
                   <Download className="mr-2 h-5 w-5" />
                   Download
@@ -416,7 +416,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
                 </div>
               )}
               {isDownloadMode && (
-                <div className="flex items-center gap-2 text-xs text-[#8c2bee] dark:text-[#b673ff]">
+                <div className="flex items-center gap-2 text-xs text-brand dark:text-brand-light">
                   <Download className="h-3.5 w-3.5" />
                   <span className="font-semibold uppercase tracking-wider">Auto Download</span>
                 </div>

@@ -340,7 +340,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
         {/* Stage 3 & 12: Loader & Icon with ARIA */}
         <div className={cn(
           "absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none transition-all duration-500",
-          isSearchActive ? "text-[#8c2bee]" : "text-slate-500"
+          isSearchActive ? "text-brand" : "text-slate-500"
         )}>
           {isLoading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" role="status" aria-label="Loading results" />
@@ -356,6 +356,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
           role="combobox"
           aria-label="Search"
           aria-expanded={isOpen}
+          aria-controls="search-listbox"
           aria-haspopup="listbox"
           aria-activedescendant={
             isOpen && highlightedIndex >= 0 && results[highlightedIndex]
@@ -371,7 +372,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
           onBlur={handleBlur}
           className={cn(
             "block w-full pl-8 pr-10 py-1.5 md:py-2 bg-slate-100 border-none dark:bg-white/[0.03] dark:border dark:border-white/5 rounded-2xl text-[10px] md:text-xs font-medium text-slate-900 dark:text-slate-300 placeholder-slate-500",
-            "focus:outline-none focus:ring-1 focus:ring-[#8c2bee]/50 focus:border-[#8c2bee]/50 focus:bg-white dark:focus:bg-white/[0.05]",
+            "focus:outline-none focus:ring-1 focus:ring-brand/50 focus:border-brand/50 focus:bg-white dark:focus:bg-white/[0.05]",
             "transition-all duration-500 ease-out shadow-sm dark:shadow-none",
             isSearchActive && "dark:bg-white/[0.08] dark:border-white/10 shadow-lg shadow-purple-500/30"
           )}
@@ -393,6 +394,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
       {/* Dropdown Results */}
       {isOpen && (
         <div
+          id="search-listbox"
           role="listbox"
           className="fixed md:absolute top-16 md:top-full left-4 right-4 md:left-0 md:right-0 mt-2 bg-popover border border-border shadow-2xl rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 z-50 max-h-[350px] overflow-y-auto no-scrollbar md:w-full"
         >
@@ -427,7 +429,7 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
                   // Stage 4: Results List
             <div className="py-2">
                     <div className="px-3 pb-2 pt-1 flex items-center justify-between">
-                      <p className="text-[10px] font-black tracking-widest text-[#8c2bee] uppercase">Results</p>
+                      <p className="text-[10px] font-black tracking-widest text-brand uppercase">Results</p>
               </div>
                     {results.slice(0, 8).map((res, i) => {
                       const isHighlighted = highlightedIndex === i

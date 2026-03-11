@@ -52,7 +52,7 @@ const getRoleIcon = (roleName: string, level: number) => {
     )
   } else if (level >= 50 || roleName === 'ADMIN') {
     return (
-      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(140,43,238,0.1)]">
+      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_hsl(var(--brand)/0.1)]">
         <Shield size={14} strokeWidth={3} />
       </div>
     )
@@ -181,7 +181,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
               className={cn(
                 "group flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border transition-all duration-500 animate-fade-in",
                 isOwner ? "bg-amber-500/5 border-amber-500/20 dark:border-amber-500/10" : "bg-muted/30 border-border hover:border-primary/50 hover:bg-muted/50",
-                isHighlighted && "ring-2 ring-[#8c2bee] border-[#8c2bee] shadow-[0_0_20px_rgba(140,43,238,0.2)] dark:shadow-[0_0_40px_rgba(140,43,238,0.1)] bg-primary/[0.03] scale-[1.02] z-10"
+                isHighlighted && "ring-2 ring-brand border-brand shadow-[0_0_20px_hsl(var(--brand)/0.2)] dark:shadow-[0_0_40px_hsl(var(--brand)/0.1)] bg-primary/[0.03] scale-[1.02] z-10"
               )}
               style={{ animationDelay: `${idx * 20}ms` }}
             >

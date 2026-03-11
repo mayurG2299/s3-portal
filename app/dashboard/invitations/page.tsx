@@ -87,7 +87,7 @@ export default function InvitationsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 border-2 border-[#8c2bee]/30 border-t-[#8c2bee] rounded-full animate-spin" />
+        <div className="h-8 w-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
       </div>
     )
   }

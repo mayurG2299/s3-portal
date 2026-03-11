@@ -61,7 +61,7 @@ export default async function TeamsPage() {
           <div className="glass-card !p-0 overflow-hidden animate-slide-up" style={{ animationDelay: '100ms' }}>
             <div className="p-6 border-b border-border flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#8c2bee]/10 flex items-center justify-center text-[#b673ff]">
+                <div className="h-10 w-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand-light">
                   <Users size={20} strokeWidth={2.5} />
                 </div>
                 <div>

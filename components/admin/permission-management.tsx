@@ -52,7 +52,7 @@ export function PermissionManagement({ teamMembers, currentUserId, teamId }: Pro
           className={cn(
             "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
             activeTab === 'users'
-              ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(140,43,238,0.4)]"
+              ? "bg-primary text-primary-foreground shadow-[0_0_15px_hsl(var(--brand)/0.4)]"
               : "text-muted-foreground hover:text-foreground hover:bg-muted"
           )}
         >
@@ -64,7 +64,7 @@ export function PermissionManagement({ teamMembers, currentUserId, teamId }: Pro
           className={cn(
             "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
             activeTab === 'roles'
-              ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(140,43,238,0.4)]"
+              ? "bg-primary text-primary-foreground shadow-[0_0_15px_hsl(var(--brand)/0.4)]"
               : "text-muted-foreground hover:text-foreground hover:bg-muted"
           )}
         >

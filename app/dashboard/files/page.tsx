@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { FileUpload } from '@/components/file-upload'
 import {
   Dialog,
   DialogContent,
@@ -25,10 +25,12 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
-import FilePreviewModal from '@/components/file-preview-modal'
-import DirectLinkModal from '@/components/DirectLinkModal'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+
+const FilePreviewModal = dynamic(() => import('@/components/file-preview-modal'), { ssr: false })
+const DirectLinkModal = dynamic(() => import('@/components/DirectLinkModal'), { ssr: false })
+const FileUpload = dynamic(() => import('@/components/file-upload').then(mod => ({ default: mod.FileUpload })), { ssr: false })
 
 interface Bucket {
   id: string
@@ -962,7 +964,7 @@ export default function FilesPage() {
                       </div>
                     )}
                   {files.map((file) => (
-                  <Card key={file.id} className="p-4">
+                  <Card key={file.id} className="p-4 hover:bg-accent/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1">
                         <Checkbox

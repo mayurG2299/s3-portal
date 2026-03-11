@@ -174,7 +174,7 @@ export function RoleManagement({ teamId }: Props) {
       </div>
     )
     if (level >= 50) return (
-      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(140,43,238,0.1)]">
+      <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_hsl(var(--brand)/0.1)]">
         <Shield size={14} strokeWidth={3} />
       </div>
     )
@@ -189,7 +189,7 @@ export function RoleManagement({ teamId }: Props) {
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-muted/30 border border-border rounded-2xl p-4">
         <div className="flex items-center gap-3">
-          <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(140,43,238,0.5)]" />
+          <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--brand)/0.5)]" />
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Authority Definitions</h3>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>

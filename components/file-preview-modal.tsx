@@ -134,7 +134,7 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
               </DialogTitle>
               {fileSizeStr && (
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                  Payload Weight: <span className="text-[#b673ff]">{fileSizeStr}</span>
+                  Payload Weight: <span className="text-brand-light">{fileSizeStr}</span>
                 </p>
               )}
             </div>
@@ -167,10 +167,10 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
           {loading && (
             <div className="absolute inset-0 z-50 flex flex-col items-center justify-center space-y-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full blur-2xl bg-[#8c2bee]/20 animate-pulse" />
+                <div className="absolute inset-0 rounded-full blur-2xl bg-brand/20 animate-pulse" />
                 <div className="h-12 w-12 border-2 border-white/5 border-t-indigo-500 rounded-full animate-spin relative z-10 shadow-[0_0_20px_rgba(99,102,241,0.2)]" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#b673ff] animate-pulse">Synchronizing Data</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-light animate-pulse">Synchronizing Data</p>
             </div>
           )}
 
@@ -277,7 +277,7 @@ export default function FilePreviewModal({ file, open, onClose }: { file: FileRe
                   <thead className="sticky top-0 z-10 backdrop-blur-md bg-slate-900/80 shadow-lg border-b border-white/5">
                     <tr>
                       {csvRows[0]?.map((cell, j) => (
-                        <th key={j} className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#b673ff]">
+                        <th key={j} className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-brand-light">
                           {cell}
                         </th>
                       ))}

@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 0 0% 97%;
       --foreground: 221 39% 11%;
 
-    --card: 210 20% 98%;
+    --card: 0 0% 100%;
       --card-foreground: 221 39% 11%;
 
-    --popover: 210 20% 98%;
+    --popover: 0 0% 100%;
       --popover-foreground: 221 39% 11%;
 
     --primary: 258 90% 66%;
@@ -28,11 +28,17 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
+    --border: 220 13% 88%;
     --input: 0 0% 100%;
       --ring: 258 90% 66%;
 
     --radius: 0.75rem;
+
+    /* Brand tokens */
+    --brand:            270 85% 48%;
+    --brand-light:      270 100% 65%;
+    --brand-dark:       263 75% 38%;
+    --brand-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -63,6 +69,12 @@
     --border: 240 25% 15%;
       --input: 240 25% 15%;
       --ring: 258 90% 66%;
+
+    /* Brand tokens */
+    --brand:            270 85% 60%;
+    --brand-light:      270 100% 72%;
+    --brand-dark:       263 75% 42%;
+    --brand-foreground: 0 0% 100%;
   }
 }
 
@@ -77,7 +89,7 @@
 
 @layer utilities {
   .glass-morphic {
-    @apply bg-white/80 backdrop-blur-xl border border-border shadow-md dark:bg-[#161625]/70 dark:backdrop-blur-xl;
+    @apply bg-white/80 backdrop-blur-xl border border-border shadow-md dark:bg-card/70 dark:backdrop-blur-xl;
     }
     
     .dark .glass-morphic {
@@ -85,7 +97,7 @@
   }
 
     .glass-navbar {
-    @apply sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border dark:bg-[#0F0F1A]/80;
+    @apply sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border dark:bg-background/80;
   }
 
     .glow-accent {
@@ -93,19 +105,19 @@
   }
 
     .btn-primary-gradient {
-    @apply bg-gradient-to-r from-[#8B5CF6] to-[#6366F1] shadow-lg border-none text-white transition-all duration-500 hover:brightness-110 active:scale-95;
+    @apply bg-gradient-to-r from-brand to-brand-dark shadow-lg border-none text-brand-foreground transition-all duration-500 hover:brightness-110 active:scale-95;
     }
       
     .btn-primary-gradient:hover {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 20px hsl(var(--brand) / 0.4);
     }
       
     .dark .btn-primary-gradient:hover {
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 20px hsl(var(--brand) / 0.6);
     }
     
     .glass-card {
-    @apply bg-white/80 backdrop-blur-xl border border-border rounded-3xl p-8 transition-all duration-500 hover:border-border ring-1 ring-inset ring-white/50 shadow-md dark:bg-[#161625]/70 dark:ring-0;
+    @apply bg-white/80 backdrop-blur-xl border border-border rounded-3xl p-8 transition-all duration-500 hover:border-border ring-1 ring-inset ring-white/50 shadow-md dark:bg-card/70 dark:ring-0;
     }
       
     .dark .glass-card:hover {
@@ -113,11 +125,11 @@
     }
     
     .glass-panel {
-    @apply bg-white/80 backdrop-blur-xl border border-border rounded-3xl p-6 shadow-md dark:bg-[#161625]/70;
+    @apply bg-white/80 backdrop-blur-xl border border-border rounded-3xl p-6 shadow-md dark:bg-card/70;
     }
     
     .gradient-text {
-    @apply bg-gradient-to-r from-[#8B5CF6] via-[#A78BFA] to-[#6366F1] bg-clip-text text-transparent font-black tracking-tight;
+    @apply bg-gradient-to-r from-brand via-brand-light to-brand-dark bg-clip-text text-transparent font-black tracking-tight;
   }
 
   .animate-fade-in {
@@ -167,11 +179,256 @@
   0%, 100% {
     opacity: 1;
     filter: brightness(1);
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 0 15px hsl(var(--brand) / 0.4);
   }
   50% {
     opacity: 0.8;
     filter: brightness(1.2);
-    box-shadow: 0 0 25px rgba(139, 92, 246, 0.6);
+    box-shadow: 0 0 25px hsl(var(--brand) / 0.6);
   }
+}
+
+/* ================================================
+   THEME SYSTEM
+   Applied via: data-theme="[id]" on <html>
+   Works with: .dark class (next-themes)
+   ================================================ */
+
+/* ── NEBULA (default purple) ── */
+[data-theme="nebula"].dark,
+.dark[data-theme="nebula"] {
+  --brand:            270 85% 60%;
+  --brand-light:      270 100% 72%;
+  --brand-dark:       263 75% 42%;
+  --background:       240 10% 4%;
+  --card:             240 10% 7%;
+  --border:           240 10% 14%;
+  --primary:          270 85% 60%;
+}
+[data-theme="nebula"],
+[data-theme="nebula"].light,
+.light[data-theme="nebula"] {
+  --brand:            270 85% 48%;
+  --brand-light:      270 85% 62%;
+  --brand-dark:       270 85% 35%;
+  --background:       0 0% 97%;
+  --card:             0 0% 100%;
+  --popover:          0 0% 100%;
+  --border:           220 13% 88%;
+  --primary:          270 85% 48%;
+}
+
+/* ── CATPPUCCIN ── */
+[data-theme="catppuccin"].dark,
+.dark[data-theme="catppuccin"] {
+  --brand:            267 84% 81%;
+  --brand-light:      316 72% 86%;
+  --brand-dark:       232 97% 85%;
+  --background:       240 21% 15%;
+  --card:             240 21% 12%;
+  --popover:          240 21% 12%;
+  --border:           237 16% 23%;
+  --input:            237 16% 23%;
+  --primary:          267 84% 81%;
+  --primary-foreground: 240 21% 15%;
+  --secondary:        237 16% 23%;
+  --muted:            237 16% 23%;
+  --muted-foreground: 228 24% 72%;
+  --foreground:       227 70% 87%;
+  --card-foreground:  227 70% 87%;
+  --accent:           237 16% 23%;
+  --accent-foreground:227 70% 87%;
+}
+[data-theme="catppuccin"],
+[data-theme="catppuccin"].light,
+.light[data-theme="catppuccin"] {
+  --brand:            266 85% 58%;
+  --brand-light:      316 73% 69%;
+  --brand-dark:       231 97% 72%;
+  --background:       220 23% 93%;
+  --card:             220 23% 98%;
+  --popover:          220 23% 98%;
+  --border:           223 16% 80%;
+  --input:            223 16% 83%;
+  --primary:          266 85% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        223 16% 83%;
+  --muted:            223 16% 83%;
+  --muted-foreground: 233 10% 47%;
+  --foreground:       234 16% 35%;
+  --card-foreground:  234 16% 35%;
+  --accent:           223 16% 83%;
+  --accent-foreground:234 16% 35%;
+}
+
+/* ── TOKYO NIGHT ── */
+[data-theme="tokyonight"].dark,
+.dark[data-theme="tokyonight"] {
+  --brand:            267 83% 78%;
+  --brand-light:      197 100% 74%;
+  --brand-dark:       351 80% 72%;
+  --background:       235 22% 13%;
+  --card:             240 20% 11%;
+  --popover:          240 20% 11%;
+  --border:           228 22% 22%;
+  --input:            228 22% 22%;
+  --primary:          267 83% 78%;
+  --primary-foreground: 235 22% 13%;
+  --secondary:        228 26% 17%;
+  --muted:            228 26% 17%;
+  --muted-foreground: 228 23% 44%;
+  --foreground:       229 79% 86%;
+  --card-foreground:  229 79% 86%;
+  --accent:           228 26% 17%;
+  --accent-foreground:229 79% 86%;
+}
+[data-theme="tokyonight"],
+[data-theme="tokyonight"].light,
+.light[data-theme="tokyonight"] {
+  --brand:            270 41% 47%;
+  --brand-light:      205 100% 32%;
+  --brand-dark:       351 35% 40%;
+  --background:       231 12% 88%;
+  --card:             231 12% 94%;
+  --popover:          231 12% 94%;
+  --border:           225 5% 70%;
+  --input:            225 5% 72%;
+  --primary:          270 41% 47%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        228 8% 83%;
+  --muted:            228 8% 83%;
+  --muted-foreground: 229 22% 61%;
+  --foreground:       222 54% 48%;
+  --card-foreground:  222 54% 48%;
+  --accent:           228 8% 83%;
+  --accent-foreground:222 54% 48%;
+}
+
+/* ── DRACULA ── */
+[data-theme="dracula"].dark,
+.dark[data-theme="dracula"] {
+  --brand:            265 89% 78%;
+  --brand-light:      326 100% 74%;
+  --brand-dark:       225 27% 51%;
+  --background:       231 15% 18%;
+  --card:             232 16% 15%;
+  --popover:          232 16% 15%;
+  --border:           232 14% 31%;
+  --input:            232 14% 31%;
+  --primary:          265 89% 78%;
+  --primary-foreground: 231 15% 18%;
+  --secondary:        232 14% 31%;
+  --muted:            232 14% 31%;
+  --muted-foreground: 225 27% 51%;
+  --foreground:       60 30% 96%;
+  --card-foreground:  60 30% 96%;
+  --accent:           232 14% 31%;
+  --accent-foreground:60 30% 96%;
+}
+[data-theme="dracula"],
+[data-theme="dracula"].light,
+.light[data-theme="dracula"] {
+  --brand:            270 55% 51%;
+  --brand-light:      326 60% 55%;
+  --brand-dark:       228 37% 39%;
+  --background:       60 20% 93%;
+  --card:             60 20% 98%;
+  --popover:          60 20% 98%;
+  --border:           60 8% 78%;
+  --input:            60 8% 81%;
+  --primary:          270 55% 51%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        60 17% 90%;
+  --muted:            60 17% 90%;
+  --muted-foreground: 225 27% 51%;
+  --foreground:       231 15% 18%;
+  --card-foreground:  231 15% 18%;
+  --accent:           60 17% 90%;
+  --accent-foreground:231 15% 18%;
+}
+
+/* ── NORD ── */
+[data-theme="nord"].dark,
+.dark[data-theme="nord"] {
+  --brand:            193 43% 67%;
+  --brand-light:      179 25% 65%;
+  --brand-dark:       210 34% 52%;
+  --background:       220 16% 22%;
+  --card:             222 16% 28%;
+  --popover:          222 16% 28%;
+  --border:           220 17% 36%;
+  --input:            220 17% 36%;
+  --primary:          193 43% 67%;
+  --primary-foreground: 220 16% 22%;
+  --secondary:        222 17% 32%;
+  --muted:            222 17% 32%;
+  --muted-foreground: 218 27% 65%;
+  --foreground:       218 27% 88%;
+  --card-foreground:  218 27% 88%;
+  --accent:           222 17% 32%;
+  --accent-foreground:218 27% 88%;
+}
+[data-theme="nord"],
+[data-theme="nord"].light,
+.light[data-theme="nord"] {
+  --brand:            210 34% 52%;
+  --brand-light:      210 31% 63%;
+  --brand-dark:       211 34% 44%;
+  --background:       218 33% 90%;
+  --card:             218 33% 96%;
+  --popover:          218 33% 96%;
+  --border:           218 24% 80%;
+  --input:            218 24% 83%;
+  --primary:          210 34% 52%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        218 27% 88%;
+  --muted:            218 27% 88%;
+  --muted-foreground: 220 17% 36%;
+  --foreground:       220 16% 22%;
+  --card-foreground:  220 16% 22%;
+  --accent:           218 27% 88%;
+  --accent-foreground:220 16% 22%;
+}
+
+/* ── ROSÉ PINE ── */
+[data-theme="rosepine"].dark,
+.dark[data-theme="rosepine"] {
+  --brand:            278 52% 78%;
+  --brand-light:      2 55% 83%;
+  --brand-dark:       189 35% 73%;
+  --background:       249 22% 12%;
+  --card:             246 23% 15%;
+  --popover:          246 23% 15%;
+  --border:           248 14% 28%;
+  --input:            248 14% 28%;
+  --primary:          278 52% 78%;
+  --primary-foreground: 249 22% 12%;
+  --secondary:        248 22% 19%;
+  --muted:            248 22% 19%;
+  --muted-foreground: 249 14% 60%;
+  --foreground:       245 50% 91%;
+  --card-foreground:  245 50% 91%;
+  --accent:           248 22% 19%;
+  --accent-foreground:245 50% 91%;
+}
+[data-theme="rosepine"],
+[data-theme="rosepine"].light,
+.light[data-theme="rosepine"] {
+  --brand:            275 19% 56%;
+  --brand-light:      4 51% 65%;
+  --brand-dark:       188 32% 47%;
+  --background:       32 57% 92%;
+  --card:             32 57% 98%;
+  --popover:          32 57% 98%;
+  --border:           291 11% 84%;
+  --input:            291 11% 88%;
+  --primary:          275 19% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        29 45% 92%;
+  --muted:            29 45% 92%;
+  --muted-foreground: 259 9% 61%;
+  --foreground:       246 21% 40%;
+  --card-foreground:  246 21% 40%;
+  --accent:           29 45% 92%;
+  --accent-foreground:246 21% 40%;
 }
