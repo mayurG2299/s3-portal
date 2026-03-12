@@ -6,7 +6,6 @@
 
 [![Docker Hub](https://img.shields.io/docker/v/may99/s3-portal?label=Docker%20Hub&logo=docker&color=0db7ed)](https://hub.docker.com/r/may99/s3-portal)
 [![Docker Pulls](https://img.shields.io/docker/pulls/may99/s3-portal?logo=docker&color=0db7ed)](https://hub.docker.com/r/may99/s3-portal)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://typescriptlang.org)
 
@@ -241,12 +240,6 @@ npm run db:migrate       # Create a migration
 npm run db:seed          # Seed system roles
 npm run db:studio        # Open Prisma Studio UI
 ```
-
----
-
-## 📄 License
-
-MIT — free to use, modify, and self-host.
 
 ---
 
