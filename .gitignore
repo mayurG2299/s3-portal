@@ -55,6 +55,7 @@ prisma/dev.db-journal
 # additional common ignores
 # logs
 *.log
+cookies.txt
 
 # parcel/cache/build/tooling
 .parcel-cache/
