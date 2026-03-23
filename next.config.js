@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const isProduction = process.env.NODE_ENV === 'production'
+const docsBase = (process.env.NEXT_PUBLIC_DOCS_URL || '/documentation').replace(/\/$/, '')
 
 const nextConfig = {
   experimental: {
@@ -18,6 +19,37 @@ const nextConfig = {
         hostname: '**.cloudfront.net',
       },
     ],
+  },
+  async rewrites() {
+    return [
+      { source: '/documentation', destination: '/documentation/index.html' },
+      { source: '/documentation/aws-setup', destination: '/documentation/aws-setup.html' },
+      { source: '/documentation/self-hosting', destination: '/documentation/self-hosting.html' },
+    ]
+  },
+  async redirects() {
+    return [
+      {
+        source: '/setup',
+        destination: `${docsBase}/self-hosting`,
+        permanent: true,
+      },
+      {
+        source: '/help/aws-setup',
+        destination: `${docsBase}/aws-setup`,
+        permanent: true,
+      },
+      {
+        source: '/help',
+        destination: docsBase,
+        permanent: true,
+      },
+      {
+        source: '/help/:path*',
+        destination: docsBase,
+        permanent: true,
+      },
+    ]
   },
   output: 'standalone',
   

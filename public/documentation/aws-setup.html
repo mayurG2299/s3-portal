@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AWS Setup - S3 Portal Documentation</title>
+  <meta name="description" content="AWS S3 setup guide for S3 Portal." />
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/assets/logo.svg" alt="S3 Portal logo" />
+        <span>S3 Portal</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a class="active" href="/documentation">Documentation</a>
+        <a href="https://github.com/may99/s3-portal" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container layout-doc">
+    <aside class="sidebar">
+      <h4>Getting Started</h4>
+      <a href="/documentation">Home</a>
+      <a href="/documentation/self-hosting">Self Hosting</a>
+      <a class="active" href="/documentation/aws-setup">AWS S3 Setup</a>
+
+      <h4>On this page</h4>
+      <a href="#step1">Create IAM user</a>
+      <a href="#step2">Generate access keys</a>
+      <a href="#step3">Create S3 bucket</a>
+      <a href="#step4">Connect to portal</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+    </aside>
+
+    <article class="doc-main">
+      <h1>Connect Your AWS S3 Storage</h1>
+      <p class="lead">Follow these steps to create IAM credentials, connect your bucket, and complete onboarding in S3 Portal.</p>
+
+      <section id="step1" class="step">
+        <h2>Step 1 - Create an IAM User</h2>
+        <ol>
+          <li>Go to AWS Console, search IAM, then open it.</li>
+          <li>Click Users, then Create user.</li>
+          <li>Use a name like <code>s3-portal-user</code>.</li>
+          <li>Select Attach policies directly.</li>
+          <li>Attach <code>AmazonS3FullAccess</code>.</li>
+          <li>Click Create user.</li>
+        </ol>
+        <p class="callout tip"><strong>Tip:</strong> For production, create a restricted custom IAM policy scoped to your exact bucket.</p>
+      </section>
+
+      <section id="step2" class="step">
+        <h2>Step 2 - Generate Access Keys</h2>
+        <ol>
+          <li>Open the IAM user and go to the Security credentials tab.</li>
+          <li>In Access keys, click Create access key.</li>
+          <li>Select Application running outside AWS.</li>
+          <li>Create key and copy both values immediately.</li>
+        </ol>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Key</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>Access Key ID</code></td><td>Starts with <code>AKIA...</code></td></tr>
+              <tr><td><code>Secret Access Key</code></td><td>Long secret value shown only once</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="callout warn"><strong>Warning:</strong> Secret Access Key is only shown once. Save it immediately.</p>
+      </section>
+
+      <section id="step3" class="step">
+        <h2>Step 3 - Create an S3 Bucket</h2>
+        <ol>
+          <li>Go to S3 Console and click Create bucket.</li>
+          <li>Enter a unique bucket name, for example <code>mycompany-s3-portal</code>.</li>
+          <li>Select AWS Region closest to your users.</li>
+          <li>Leave Block all public access ON.</li>
+          <li>Click Create bucket.</li>
+        </ol>
+        <p class="callout tip"><strong>Tip:</strong> Bucket names must be globally unique.</p>
+      </section>
+
+      <section id="step4" class="step">
+        <h2>Step 4 - Connect to S3 Portal</h2>
+        <ol>
+          <li>Open S3 Portal and click Get Started.</li>
+          <li>Fill in credentials in the wizard.</li>
+          <li>Click Next, select bucket, then Finish.</li>
+        </ol>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Field</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Credential Name</td><td>Any label</td></tr>
+              <tr><td>AWS Access Key ID</td><td>From Step 2</td></tr>
+              <tr><td>AWS Secret Access Key</td><td>From Step 2</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="troubleshoot" class="section">
+        <h2>Troubleshooting</h2>
+        <ul>
+          <li><strong>Invalid credentials:</strong> check keys and verify <code>AmazonS3FullAccess</code> is attached.</li>
+          <li><strong>Bucket not showing:</strong> check region and verify IAM access.</li>
+          <li><strong>Access Denied on upload:</strong> verify <code>AmazonS3FullAccess</code> policy.</li>
+          <li><strong>Lost Secret Access Key:</strong> delete old key in IAM and create a new one.</li>
+        </ul>
+      </section>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container inner">
+      <p>S3 Portal is free and open source software</p>
+      <a href="https://github.com/may99/s3-portal" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>

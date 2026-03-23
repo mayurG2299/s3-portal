@@ -271,7 +271,7 @@ export function FirstTimeWizard({
 
                 <p className="text-xs text-muted-foreground">
                   Need help?{' '}
-                  <a href="/docs/aws-setup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  <a href="/documentation/aws-setup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                     View setup guide
                   </a>
                 </p>

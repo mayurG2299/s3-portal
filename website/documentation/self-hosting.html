@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Self Hosting - S3 Portal Documentation</title>
+  <meta name="description" content="Self-hosting guide for S3 Portal." />
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container inner">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/assets/logo.svg" alt="S3 Portal logo" />
+        <span>S3 Portal</span>
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a class="active" href="/documentation">Documentation</a>
+        <a href="https://github.com/may99/s3-portal" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container layout-doc">
+    <aside class="sidebar">
+      <h4>Getting Started</h4>
+      <a href="/documentation">Home</a>
+      <a class="active" href="/documentation/self-hosting">Self Hosting</a>
+      <a href="/documentation/aws-setup">AWS S3 Setup</a>
+
+      <h4>On this page</h4>
+      <a href="#prerequisites">Prerequisites</a>
+      <a href="#step1">Step 1 - Download</a>
+      <a href="#step2">Step 2 - Configure</a>
+      <a href="#step3">Step 3 - Start</a>
+      <a href="#step4">Step 4 - Run migrations</a>
+      <a href="#step5">Step 5 - Connect AWS</a>
+      <a href="#commands">Useful commands</a>
+      <a href="#updating">Updating</a>
+    </aside>
+
+    <article class="doc-main">
+      <h1>Self Hosting</h1>
+      <p class="lead">Deploy S3 Portal with Docker and configure the required environment variables.</p>
+
+      <section id="prerequisites" class="section">
+        <h2>Prerequisites</h2>
+        <ul>
+          <li>Docker installed on your machine. <a href="https://docs.docker.com/get-docker/" target="_blank" rel="noreferrer">Install Docker</a></li>
+          <li>A domain or server (optional, for production).</li>
+        </ul>
+      </section>
+
+      <section id="step1" class="step">
+        <h2>Step 1 - Download</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Download compose file</p>
+            <button class="copy-btn" data-copy-target="download">Copy</button>
+          </div>
+          <pre id="download"><code>curl -LO https://github.com/may99/s3-portal/raw/main/docker-compose.yml</code></pre>
+        </section>
+      </section>
+
+      <section id="step2" class="step">
+        <h2>Step 2 - Configure</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Prepare env file</p>
+            <button class="copy-btn" data-copy-target="configure">Copy</button>
+          </div>
+          <pre id="configure"><code>cp .env.example .env
+nano .env</code></pre>
+        </section>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Variable</th><th>Required</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>DB_PASSWORD</code></td><td>required</td><td>Strong PostgreSQL password</td></tr>
+              <tr><td><code>NEXTAUTH_SECRET</code></td><td>required</td><td><code>openssl rand -base64 32</code></td></tr>
+              <tr><td><code>ENCRYPTION_KEY</code></td><td>required</td><td><code>openssl rand -base64 32</code></td></tr>
+              <tr><td><code>NEXTAUTH_URL</code></td><td>required</td><td>e.g. <code>http://localhost:3000</code></td></tr>
+              <tr><td><code>NEXT_PUBLIC_APP_URL</code></td><td>required</td><td>Same as <code>NEXTAUTH_URL</code></td></tr>
+              <tr><td><code>PORT</code></td><td>optional</td><td>Default: 3000</td></tr>
+              <tr><td><code>LOG_LEVEL</code></td><td>optional</td><td>Default: INFO</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="step3" class="step">
+        <h2>Step 3 - Start</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Start services</p>
+            <button class="copy-btn" data-copy-target="start">Copy</button>
+          </div>
+          <pre id="start"><code>docker compose up -d</code></pre>
+        </section>
+      </section>
+
+      <section id="step4" class="step">
+        <h2>Step 4 - Run migrations (first time only)</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Run migrations</p>
+            <button class="copy-btn" data-copy-target="migrate">Copy</button>
+          </div>
+          <pre id="migrate"><code>docker compose run --rm app npx prisma migrate deploy</code></pre>
+        </section>
+      </section>
+
+      <section id="step5" class="step">
+        <h2>Step 5 - Connect AWS</h2>
+        <ul>
+          <li>Visit <code>http://localhost:3000</code>.</li>
+          <li>Follow the onboarding wizard.</li>
+          <li><a href="/documentation/aws-setup">AWS credentials setup guide -&gt;</a></li>
+        </ul>
+      </section>
+
+      <section id="commands" class="section">
+        <h2>Useful commands</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Operations</p>
+            <button class="copy-btn" data-copy-target="useful">Copy</button>
+          </div>
+          <pre id="useful"><code># View logs
+docker compose logs -f
+
+# Stop
+docker compose down
+
+# Update to latest
+docker compose pull && docker compose up -d</code></pre>
+        </section>
+      </section>
+
+      <section id="updating" class="section">
+        <h2>Updating</h2>
+        <section class="code-card">
+          <div class="code-header">
+            <p class="code-title">Update</p>
+            <button class="copy-btn" data-copy-target="updating-code">Copy</button>
+          </div>
+          <pre id="updating-code"><code>docker compose pull
+docker compose up -d</code></pre>
+        </section>
+      </section>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container inner">
+      <p>S3 Portal is free and open source software</p>
+      <a href="https://github.com/may99/s3-portal" target="_blank" rel="noreferrer">GitHub</a>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.copy-btn').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var targetId = button.getAttribute('data-copy-target');
+        var target = document.getElementById(targetId);
+        if (!target) return;
+        navigator.clipboard.writeText(target.innerText).then(function () {
+          var original = button.textContent;
+          button.textContent = 'Copied';
+          setTimeout(function () { button.textContent = original; }, 1400);
+        });
+      });
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (event) {
+        var id = anchor.getAttribute('href');
+        if (!id || id.length < 2) return;
+        var element = document.querySelector(id);
+        if (!element) return;
+        event.preventDefault();
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', id);
+      });
+    });
+  </script>
+</body>
+</html>

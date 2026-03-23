@@ -6,6 +6,8 @@ import { Cloud, Shield, Zap, Users, ArrowRight, Play, CheckCircle2 } from 'lucid
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
+  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || '/documentation'
+  const isExternalDocs = docsUrl.startsWith('http://') || docsUrl.startsWith('https://')
 
   return (
     <div className="min-h-screen bg-background text-slate-200 selection:bg-brand/30 overflow-hidden">
@@ -24,6 +26,15 @@ export default async function HomePage() {
           </div>
 
           <div className="flex items-center gap-6">
+            {isExternalDocs ? (
+              <a href={docsUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-slate-400 transition hover:text-white">
+                Setup Documentation
+              </a>
+            ) : (
+              <Link href={docsUrl} className="text-sm font-semibold text-slate-400 transition hover:text-white">
+                Setup Documentation
+              </Link>
+            )}
             {session ? (
               <Link href="/dashboard">
                 <Button className="btn-primary-gradient rounded-full px-6 text-sm font-bold h-10">

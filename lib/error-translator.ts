@@ -32,7 +32,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'Connection failed. Please verify your AWS credentials and try again.',
       suggestion: 'Double-check your Access Key ID and Secret Access Key',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -43,7 +43,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'Your AWS credentials are incorrect.',
       suggestion: 'Please check your Access Key ID and Secret Access Key. Make sure there are no extra spaces.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -54,7 +54,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'This Access Key ID doesn\'t exist in AWS.',
       suggestion: 'Create a new AWS Access Key in the IAM console or use an existing one.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -64,7 +64,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'Your AWS Secret Access Key is incorrect.',
       suggestion: 'The Secret Access Key you provided doesn\'t match your Access Key ID. Check the IAM console.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -75,7 +75,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'These AWS credentials don\'t have permission to access this bucket.',
       suggestion: 'Ask your AWS administrator to add S3 permissions to this IAM user. Check your IAM policy.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -85,7 +85,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'This S3 bucket doesn\'t exist or you don\'t have access to it.',
       suggestion: 'Check that the bucket name is correct and exists in the same AWS region.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -96,7 +96,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
     return {
       message: 'Your AWS session has expired.',
       suggestion: 'Disconnect and reconnect your AWS credentials to refresh the session.',
-      learnMoreLink: '/docs/aws-setup'
+      learnMoreLink: '/documentation/aws-setup'
     }
   }
 
@@ -133,7 +133,7 @@ export function translateAWSError(errorMessage: string): TranslatedError {
   return {
     message: 'AWS connection failed. Please verify your credentials and try again.',
     suggestion: 'Check that your Access Key ID and Secret Access Key are correct and have S3 permissions.',
-    learnMoreLink: '/docs/aws-setup'
+    learnMoreLink: '/documentation/aws-setup'
   }
 }
 
