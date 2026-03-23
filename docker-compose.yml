@@ -57,12 +57,7 @@ services:
       - s3portal
     # Run migrations before starting app
     command: >
-      sh -c "npx prisma migrate deploy --skip-generate && 
-             if [ \"$NODE_ENV\" = \"production\" ]; then 
-               exec node server.js; 
-             else 
-               exec npm run dev; 
-             fi"
+      sh -c "npx prisma migrate deploy && node prisma/seed.js && exec node server.js"
 
 networks:
   s3portal:

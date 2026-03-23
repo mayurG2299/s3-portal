@@ -56,7 +56,7 @@ services:
     networks:
       - s3portal
     command: >
-      sh -c "npx prisma migrate deploy --skip-generate && exec node server.js"
+      sh -c "npx prisma migrate deploy && node prisma/seed.js && exec node server.js"
 
 networks:
   s3portal:

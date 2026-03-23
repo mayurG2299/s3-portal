@@ -64,6 +64,7 @@ RUN mkdir -p public
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
+RUN npx tsc --project tsconfig.seed.json
 
 # ============================================================================
 # PRODUCTION STAGE
@@ -88,6 +89,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma/seed.js ./prisma/seed.js
 
 # Set ownership to nextjs user
 RUN chown -R nextjs:nodejs /app
