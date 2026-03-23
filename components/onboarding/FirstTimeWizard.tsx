@@ -7,7 +7,7 @@ import { OnboardingStep } from './OnboardingStep'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/hooks/use-toast'
-import { Zap, Database, Upload, ChevronRight, ChevronLeft, X } from 'lucide-react'
+import { Zap, Database, Upload, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWindowSize } from '@/hooks/use-window-size'
 import { useRBAC } from '@/components/rbac-provider'
@@ -146,10 +146,6 @@ export function FirstTimeWizard({
     })
   }
 
-  const handleClose = () => {
-    setOpen(false)
-  }
-
   // Calculate step progress (adjust for skipped credentials step)
   const totalSteps = canCreateCredentials ? 3 : 2
   const stepIndex = canCreateCredentials
@@ -165,18 +161,9 @@ export function FirstTimeWizard({
           ? 'w-[95vw] max-w-none rounded-t-2xl rounded-b-none'
           : 'sm:max-w-2xl rounded-2xl'
       )}>
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
-          aria-label="Close onboarding wizard"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
         {/* Progress bar */}
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center pr-12">
             <div className="flex gap-2">
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
