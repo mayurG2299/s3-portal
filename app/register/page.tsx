@@ -146,21 +146,13 @@ export default function RegisterPage() {
                   <item.icon className="h-6 w-6 text-brand-light group-hover:text-purple-300" />
                 </div>
                 <div>
-                  <p className="font-bold text-lg text-white group-hover:text-brand-light transition-colors uppercase tracking-tight text-sm">{item.title}</p>
+                  <p className="font-bold text-white group-hover:text-brand-light transition-colors uppercase tracking-tight text-sm">{item.title}</p>
                   <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-20 pt-10 border-t border-white/5 flex items-center gap-8 animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="w-9 h-9 rounded-full border-2 border-slate-900 bg-slate-800" />
-              ))}
-            </div>
-            <p className="text-sm text-slate-500 font-medium italic">Trusted by world class engineering teams.</p>
-          </div>
         </div>
       </div>
 

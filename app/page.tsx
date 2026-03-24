@@ -2,157 +2,154 @@ import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
-import { Cloud, Shield, Zap, Users, ArrowRight, Play, CheckCircle2 } from 'lucide-react'
+import { SetupStepCard } from '@/components/landing/SetupStepCard'
+import { GitHubStarBadge } from '@/components/landing/GitHubStarBadge'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
+
+const REPO = 'mayurG2299/s3-portal'
+
+async function getGitHubStars(): Promise<number> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}`, {
+      next: { revalidate: 3600 }, // cache for 1 hour
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
+      },
+    })
+    if (!res.ok) return 0
+    const data = await res.json() as { stargazers_count: number }
+    return data.stargazers_count ?? 0
+  } catch {
+    return 0
+  }
+}
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions)
-  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || '/documentation'
-  const isExternalDocs = docsUrl.startsWith('http://') || docsUrl.startsWith('https://')
+  const [session, stars] = await Promise.all([getServerSession(authOptions), getGitHubStars()])
 
   return (
     <div className="min-h-screen bg-background text-slate-200 selection:bg-brand/30 overflow-hidden">
-      {/* Background Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[500px] bg-brand/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-violet-600/10 blur-[120px] pointer-events-none" />
 
-      {/* Navigation */}
-      <nav className="glass-navbar border-white/5 py-4">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 group pointer-events-none">
-            <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-xl flex items-center justify-center shadow-lg shadow-brand/20">
-              <span className="text-white font-black text-lg tracking-tighter">S3</span>
-            </div>
-            <h1 className="text-xl font-black text-white tracking-tight">S3 Portal</h1>
-          </div>
+      <nav className="border-b border-white/5 py-4">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
+          <h1 className="text-xl font-black tracking-tight text-white">S3 Portal</h1>
 
           <div className="flex items-center gap-6">
-            {isExternalDocs ? (
-              <a href={docsUrl} target="_blank" rel="noreferrer" className="text-sm font-semibold text-slate-400 transition hover:text-white">
-                Setup Documentation
-              </a>
-            ) : (
-              <Link href={docsUrl} className="text-sm font-semibold text-slate-400 transition hover:text-white">
-                Setup Documentation
-              </Link>
-            )}
+            <GitHubStarBadge count={stars} repo={REPO} />
             {session ? (
               <Link href="/dashboard">
-                <Button className="btn-primary-gradient rounded-full px-6 text-sm font-bold h-10">
-                  Dashboard
-                </Button>
+                <Button className="h-10 rounded-full px-5 btn-primary-gradient text-sm font-bold">Dashboard</Button>
               </Link>
             ) : (
               <Link href="/login">
-                <Button className="btn-primary-gradient rounded-full px-6 text-sm font-bold h-10">
-                  Sign In
-                </Button>
+                <Button className="h-10 rounded-full px-5 btn-primary-gradient text-sm font-bold">Sign in</Button>
               </Link>
             )}
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-20 sm:pt-32 sm:pb-32 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-5xl sm:text-7xl font-black text-white leading-[1.05] tracking-tight mb-8 animate-slide-up">
-            Your S3 Storage, <br />
-            <span className="gradient-text">Finally Under Control.</span>
-          </h2>
+      <main className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-500 font-semibold mb-6">Open source self-hosted S3 portal</p>
 
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 animate-slide-up leading-relaxed" style={{ animationDelay: '100ms' }}>
-            A clean, self-hostable UI for AWS S3. Manage buckets, share files, control access — without touching the AWS console.
-          </p>
+        <h2 className="text-4xl sm:text-6xl font-black leading-[1.05] tracking-tight text-white max-w-4xl">
+          Manage files in S3 with a flow your team can actually use.
+        </h2>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: '200ms' }}>
-            {session ? (
-              <Link href="/dashboard">
-                <Button className="h-14 px-10 rounded-2xl btn-primary-gradient text-lg font-bold gap-2 group">
-                  Continue to Dashboard
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+        <p className="text-lg text-slate-400 max-w-2xl mt-6 leading-relaxed">
+          Connect your S3 credentials, upload and share files, and manage team access from one clean UI.
+        </p>
+
+        <div className="flex flex-wrap gap-3 mt-10">
+          {session ? (
+            <Link href="/dashboard">
+              <Button className="h-12 px-8 rounded-xl btn-primary-gradient text-base font-bold gap-2 group">
+                Open dashboard
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button className="h-12 px-8 rounded-xl btn-primary-gradient text-base font-bold gap-2 group">
+                  Get started
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button className="h-14 px-10 rounded-2xl btn-primary-gradient text-lg font-bold gap-2 group">
-                    Get Started Free
-                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-                <Button variant="ghost" className="h-14 px-8 rounded-2xl border border-white/5 text-slate-300 hover:text-white hover:bg-white/5 text-lg font-bold gap-2">
-                  <Play size={20} className="fill-current" />
-                  Watch Demo
-                </Button>
-              </>
-            )}
-          </div>
-
-          <div className="mt-16 flex flex-wrap justify-center gap-8 text-slate-500 animate-fade-in" style={{ animationDelay: '400ms' }}>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">Self-hostable</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">Docker ready</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 size={16} className="text-emerald-500/60" />
-              <span className="text-sm font-medium">Open source</span>
-            </div>
-          </div>
+            </>
+          )}
         </div>
-      </section>
 
-      {/* Feature Grid */}
-      <section className="py-20 px-6 bg-slate-950/50 relative">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="mt-16 rounded-2xl border border-white/10 bg-slate-900/40 p-6 sm:p-8">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500 font-semibold">Quick setup</p>
+          <h3 className="text-2xl font-black text-white tracking-tight mt-2">Self-hosting steps</h3>
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               {
-                icon: Cloud,
-                title: "Cloud Native",
-                desc: "Works with AWS S3 and any S3-compatible storage. Connect multiple buckets across different providers."
+                step: '1',
+                title: 'Download',
+                desc: 'Fetch the compose file.',
+                command: 'curl -LO https://github.com/mayurG2299/s3-portal/raw/main/docker-compose.yml',
               },
               {
-                icon: Shield,
-                title: "Zero-Trust Security",
-                desc: "Role-based access control, team permissions, and full audit logs. Know exactly who did what."
+                step: '2',
+                title: 'Configure',
+                desc: 'Prepare .env and set required variables.',
+                command: 'cp .env.example .env\nnano .env',
               },
               {
-                icon: Zap,
-                title: "Built for Teams",
-                desc: "Invite team members, assign roles, share files with expiring links. No AWS IAM required."
-              }
-            ].map((feature, i) => (
-              <div key={i} className="glass-card group animate-slide-up" style={{ animationDelay: `${300 + i * 100}ms` }}>
-                <div className="w-12 h-12 rounded-2xl bg-brand/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <feature.icon size={24} className="text-brand-light" />
-                </div>
-                <h4 className="text-xl font-bold text-white mb-3 tracking-tight">{feature.title}</h4>
-                <p className="text-slate-400 leading-relaxed text-sm">
-                  {feature.desc}
-                </p>
-              </div>
+                step: '3',
+                title: 'Start',
+                desc: 'Start all services with Docker Compose.',
+                command: 'docker compose up -d',
+              },
+              {
+                step: '4',
+                title: 'Run migrations',
+                desc: 'Run Prisma migrations on first boot.',
+                command: 'docker compose run --rm app npx prisma migrate deploy',
+              },
+              {
+                step: '5',
+                title: 'Connect AWS',
+                desc: 'Open the app and complete onboarding with AWS credentials.',
+                command: '# Open http://localhost:3000 in your browser',
+              },
+            ].map((item) => (
+              <SetupStepCard
+                key={item.step}
+                step={item.step}
+                title={item.title}
+                description={item.desc}
+                command={item.command}
+              />
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Footer Branding */}
-      <footer className="py-20 px-6 border-t border-white/5 opacity-50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="flex items-center gap-3 grayscale cursor-not-allowed">
-            <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
-              <span className="text-slate-500 font-bold text-xs">S3</span>
-            </div>
-            <h1 className="text-lg font-bold text-slate-500">S3 Portal</h1>
+          <p className="mt-4 text-sm text-slate-400">
+            Required env vars: <span className="text-slate-200">DATABASE_URL</span>, <span className="text-slate-200">NEXTAUTH_SECRET</span>, <span className="text-slate-200">ENCRYPTION_KEY</span>, <span className="text-slate-200">NEXTAUTH_URL</span>, <span className="text-slate-200">NEXT_PUBLIC_APP_URL</span>.
+          </p>
+        </section>
+
+        <div className="mt-12 flex flex-wrap gap-6 text-slate-500">
+          <div className="inline-flex items-center gap-2 text-sm">
+            <CheckCircle2 size={16} className="text-emerald-500/70" />
+            S3-compatible providers
           </div>
-
-          <p className="text-xs font-medium text-slate-700">© 2026 S3 Portal. All rights reserved.</p>
+          <div className="inline-flex items-center gap-2 text-sm">
+            <CheckCircle2 size={16} className="text-emerald-500/70" />
+            Encrypted credentials at rest
+          </div>
+          <div className="inline-flex items-center gap-2 text-sm">
+            <CheckCircle2 size={16} className="text-emerald-500/70" />
+            Team RBAC and audit logs
+          </div>
         </div>
-      </footer>
+
+      </main>
     </div>
   )
 }
