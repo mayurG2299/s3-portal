@@ -2,13 +2,13 @@ import fs from 'fs'
 import path from 'path'
 
 describe('website landing page', () => {
-  it('redirects root to self-hosting documentation using clean URLs', () => {
+  it('redirects root to landing page using clean URL', () => {
     const filePath = path.join(process.cwd(), 'website', 'index.html')
     const html = fs.readFileSync(filePath, 'utf8')
 
-    expect(html).toContain('http-equiv="refresh" content="0; url=/documentation/self-hosting"')
-    expect(html).toContain("window.location.replace('/documentation/self-hosting')")
-    expect(html).toContain('<a href="/documentation/self-hosting">Self Hosting</a>')
+    expect(html).toContain('http-equiv="refresh" content="0; url=/landing"')
+    expect(html).toContain("window.location.replace('/landing')")
+    expect(html).toContain('<a href="/landing">S3 Portal</a>')
   })
 
   it('redirects documentation index to self-hosting documentation using clean URLs', () => {
