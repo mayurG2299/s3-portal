@@ -381,7 +381,7 @@ h1 {
 
 .layout-doc {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 220px minmax(0, 1fr) 240px;
   gap: 1.2rem;
   align-items: start;
   padding-top: 1.2rem;
@@ -414,6 +414,46 @@ h1 {
 
 .sidebar a.active,
 .sidebar a:hover {
+  color: var(--text);
+  text-decoration: none;
+  background: var(--bg-soft);
+}
+
+.mobile-submodules {
+  display: none;
+}
+
+.mobile-submodules summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elev);
+  padding: 0.7rem 0.85rem;
+}
+
+.mobile-submodules summary::-webkit-details-marker {
+  display: none;
+}
+
+.mobile-submodules nav {
+  margin-top: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elev);
+  padding: 0.5rem;
+}
+
+.mobile-submodules nav a {
+  display: block;
+  border-radius: 8px;
+  color: var(--muted);
+  padding: 0.45rem 0.55rem;
+  font-size: 0.92rem;
+}
+
+.mobile-submodules nav a:hover {
   color: var(--text);
   text-decoration: none;
   background: var(--bg-soft);
@@ -523,6 +563,15 @@ tbody tr:last-child td {
 
   .sidebar {
     position: static;
+  }
+
+  .sidebar-submodules {
+    display: none;
+  }
+
+  .mobile-submodules {
+    display: block;
+    margin: 1rem 0;
   }
 }
 

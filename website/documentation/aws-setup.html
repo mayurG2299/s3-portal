@@ -24,23 +24,26 @@
   </nav>
 
   <main class="container layout-doc">
-    <aside class="sidebar">
-      <h4>Getting Started</h4>
-      <a href="/documentation">Home</a>
+    <aside class="sidebar sidebar-main">
+      <h4>Main modules</h4>
       <a href="/documentation/self-hosting">Self Hosting</a>
       <a class="active" href="/documentation/aws-setup">AWS S3 Setup</a>
-
-      <h4>On this page</h4>
-      <a href="#step1">Create IAM user</a>
-      <a href="#step2">Generate access keys</a>
-      <a href="#step3">Create S3 bucket</a>
-      <a href="#step4">Connect to portal</a>
-      <a href="#troubleshoot">Troubleshooting</a>
     </aside>
 
     <article class="doc-main">
       <h1>Connect Your AWS S3 Storage</h1>
       <p class="lead">Follow these steps to create IAM credentials, connect your bucket, and complete onboarding in S3 Portal.</p>
+
+      <details class="mobile-submodules">
+        <summary>On this page</summary>
+        <nav>
+          <a href="#step1">Create IAM user</a>
+          <a href="#step2">Generate access keys</a>
+          <a href="#step3">Create S3 bucket</a>
+          <a href="#step4">Connect to portal</a>
+          <a href="#troubleshoot">Troubleshooting</a>
+        </nav>
+      </details>
 
       <section id="step1" class="step">
         <h2>Step 1 - Create an IAM User</h2>
@@ -120,6 +123,15 @@
         </ul>
       </section>
     </article>
+
+    <aside class="sidebar sidebar-submodules">
+      <h4>Sub modules</h4>
+      <a href="#step1">Create IAM user</a>
+      <a href="#step2">Generate access keys</a>
+      <a href="#step3">Create S3 bucket</a>
+      <a href="#step4">Connect to portal</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+    </aside>
   </main>
 
   <footer class="footer">

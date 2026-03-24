@@ -22,7 +22,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
-      { source: '/documentation', destination: '/documentation/index.html' },
+      { source: '/documentation', destination: '/documentation/self-hosting.html' },
       { source: '/documentation/aws-setup', destination: '/documentation/aws-setup.html' },
       { source: '/documentation/self-hosting', destination: '/documentation/self-hosting.html' },
     ]

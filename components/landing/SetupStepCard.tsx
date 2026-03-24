@@ -3,7 +3,7 @@
 import { useToast } from '@/hooks/use-toast'
 
 interface SetupStepCardProps {
-  step: string
+  step: number
   title: string
   description: string
   command: string

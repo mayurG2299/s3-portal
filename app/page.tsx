@@ -1,29 +1,11 @@
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getGitHubStars, REPO } from '@/lib/github'
 import { Button } from '@/components/ui/button'
 import { SetupStepCard } from '@/components/landing/SetupStepCard'
 import { GitHubStarBadge } from '@/components/landing/GitHubStarBadge'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
-
-const REPO = 'mayurG2299/s3-portal'
-
-async function getGitHubStars(): Promise<number> {
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}`, {
-      next: { revalidate: 3600 }, // cache for 1 hour
-      headers: {
-        Accept: 'application/vnd.github+json',
-        ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
-      },
-    })
-    if (!res.ok) return 0
-    const data = await res.json() as { stargazers_count: number }
-    return data.stargazers_count ?? 0
-  } catch {
-    return 0
-  }
-}
 
 export default async function HomePage() {
   const [session, stars] = await Promise.all([getServerSession(authOptions), getGitHubStars()])
@@ -34,9 +16,12 @@ export default async function HomePage() {
 
       <nav className="border-b border-white/5 py-4">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between">
-          <h1 className="text-xl font-black tracking-tight text-white">S3 Portal</h1>
+          <span className="text-xl font-black tracking-tight text-white">S3 Portal</span>
 
           <div className="flex items-center gap-6">
+            <Link href="/documentation" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
+              Documentation
+            </Link>
             <GitHubStarBadge count={stars} repo={REPO} />
             {session ? (
               <Link href="/dashboard">
@@ -54,9 +39,9 @@ export default async function HomePage() {
       <main className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
         <p className="text-xs uppercase tracking-[0.18em] text-slate-500 font-semibold mb-6">Open source self-hosted S3 portal</p>
 
-        <h2 className="text-4xl sm:text-6xl font-black leading-[1.05] tracking-tight text-white max-w-4xl">
+        <h1 className="text-4xl sm:text-6xl font-black leading-[1.05] tracking-tight text-white max-w-4xl">
           Manage files in S3 with a flow your team can actually use.
-        </h2>
+        </h1>
 
         <p className="text-lg text-slate-400 max-w-2xl mt-6 leading-relaxed">
           Connect your S3 credentials, upload and share files, and manage team access from one clean UI.
@@ -89,31 +74,31 @@ export default async function HomePage() {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
               {
-                step: '1',
+                step: 1,
                 title: 'Download',
                 desc: 'Fetch the compose file.',
                 command: 'curl -LO https://github.com/mayurG2299/s3-portal/raw/main/docker-compose.yml',
               },
               {
-                step: '2',
+                step: 2,
                 title: 'Configure',
                 desc: 'Prepare .env and set required variables.',
                 command: 'cp .env.example .env\nnano .env',
               },
               {
-                step: '3',
+                step: 3,
                 title: 'Start',
                 desc: 'Start all services with Docker Compose.',
                 command: 'docker compose up -d',
               },
               {
-                step: '4',
+                step: 4,
                 title: 'Run migrations',
                 desc: 'Run Prisma migrations on first boot.',
                 command: 'docker compose run --rm app npx prisma migrate deploy',
               },
               {
-                step: '5',
+                step: 5,
                 title: 'Connect AWS',
                 desc: 'Open the app and complete onboarding with AWS credentials.',
                 command: '# Open http://localhost:3000 in your browser',
@@ -150,6 +135,16 @@ export default async function HomePage() {
         </div>
 
       </main>
+
+      <footer className="border-t border-white/5 mt-16 py-8">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between text-sm text-slate-400">
+          <p>S3 Portal - Open source file management</p>
+          <div className="flex items-center gap-6">
+            <a href="https://github.com/mayurG2299/s3-portal" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">GitHub</a>
+            <a href="https://mayur.ghaadi.in" target="_blank" rel="noreferrer" className="hover:text-slate-200 transition-colors">About me</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

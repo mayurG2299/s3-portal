@@ -152,7 +152,7 @@ function LoginPageContent() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
                   <Label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-slate-500">Password</Label>
-                  <Link href="#" className="text-xs font-semibold text-brand-light hover:text-purple-300 transition-colors">Forgot password?</Link>
+                  <span className="text-xs font-semibold text-slate-500">Password reset coming soon</span>
                 </div>
                 <div className="relative">
                   <Input
