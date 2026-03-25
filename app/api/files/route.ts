@@ -115,23 +115,21 @@ const toggleFavoriteSchema = z.object({
 async function getAccessibleBucket(
   bucketId: string,
   userId: string,
-  teamId: string | null | undefined, // NEW: take active team context
-  roleId: string | null | undefined, // NEW: take active role
+  teamId: string | null | undefined,
   requireAdmin: boolean
 ) {
   return prisma.awsBucket.findFirst({
     where: {
       id: bucketId,
       credential: {
-        teamId: teamId || null, // STRICT isolation mapping
+        teamId: teamId || null,
         ...(teamId
           ? {
               team: {
                 members: {
                   some: {
                     userId,
-                    // If team is active and requires admin, verify role is high enough
-                    ...(requireAdmin && roleId !== 'role_owner' && roleId !== 'role_admin'
+                    ...(requireAdmin
                       ? { role: { name: { in: ['OWNER', 'ADMIN'] } } }
                       : {}),
                   },
@@ -162,6 +160,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action } = body
 
+    const bodyTeamId = typeof body?.teamId === 'string' ? body.teamId.trim() : ''
+    const selectedTeamFromCookie = request.cookies.get('selectedTeamId')?.value?.trim()
+    const activeTeamId =
+      bodyTeamId || selectedTeamFromCookie || session.user.teamId || null
+
+    if (activeTeamId) {
+      const membership = await prisma.teamMember.findUnique({
+        where: {
+          teamId_userId: {
+            teamId: activeTeamId,
+            userId: session.user.id,
+          },
+        },
+      })
+
+      if (!membership) {
+        await logUserAction({
+          request,
+          action: 'FILE_ACTION',
+          success: false,
+          userId: session.user.id,
+          teamId: activeTeamId,
+          errorMessage: 'Forbidden: User is not a member of selected team',
+        })
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      }
+    }
+
     if (action === "upload") {
       const validated = uploadSchema.parse(body);
 
@@ -169,8 +195,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         true
       )
 
@@ -323,8 +348,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         true
       )
 
@@ -411,8 +435,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         false
       )
 
@@ -630,8 +653,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         false
       )
 
@@ -652,7 +674,7 @@ export async function POST(request: NextRequest) {
       const normalizedPath =
         rawPath === '/' ? '/' : rawPath.startsWith('/') ? rawPath : `/${rawPath}`
       const ensuredPath = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`
-      const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/, '')
+      const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/,'')
 
       const config = decryptAWSConfig(bucket.credential, bucket)
       const {
@@ -852,16 +874,22 @@ export async function POST(request: NextRequest) {
         isFavorite: favoriteIdSet.has(file!.id),
       }));
 
+      // Combine folders and files, then paginate the combined array
+      const combinedItems = [
+        ...filteredFolders,
+        ...allFilteredFiles
+      ];
+
       const page = validated.page ?? 1;
       const pageSize = validated.pageSize ?? 200;
-      const totalFiles = allFilteredFiles.length;
-      const totalPages = Math.max(1, Math.ceil(totalFiles / pageSize));
+      const totalItems = combinedItems.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
       const start = (page - 1) * pageSize;
-      const pagedFiles = allFilteredFiles.slice(start, start + pageSize);
+      const pagedItems = combinedItems.slice(start, start + pageSize);
 
       return NextResponse.json({
-        objects: [...filteredFolders, ...pagedFiles],
-        totalFiles,
+        objects: pagedItems,
+        totalFiles: totalItems,
         totalPages,
         page,
         pageSize,
@@ -876,8 +904,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         false
       )
 
@@ -944,8 +971,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         false
       )
 
@@ -1133,8 +1159,7 @@ export async function POST(request: NextRequest) {
       const bucket = await getAccessibleBucket(
         validated.bucketId,
         session.user.id,
-        session.user.teamId,
-        session.user.roleId,
+        activeTeamId,
         true
       )
 

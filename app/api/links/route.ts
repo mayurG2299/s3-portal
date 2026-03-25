@@ -10,19 +10,42 @@ import {
 } from '@/lib/aws'
 import { hashPassword } from '@/lib/crypto'
 import { generateLinkHash } from '@/lib/utils'
+
 import { z } from 'zod'
 
-const createLinkSchema = z.object({
-  fileId: z.string(),
-  type: z.enum(['PUBLIC', 'PRESIGNED', 'CLOUDFRONT']).optional(),
-  expiresIn: z.number().optional(), // in seconds
-  password: z.string().optional(),
-  maxDownloads: z.number().optional(),
-  allowDownload: z.boolean().default(true),
-  allowPreview: z.boolean().default(true),
-  useCdn: z.boolean().default(true), // Auto-use CDN if available
-  mode: z.enum(['preview', 'download', 'direct', 'raw']).default('preview'),
-})
+// AWS SDK v3: max presigned URL TTL is 7 days (604800 seconds)
+const S3_MAX_PRESIGNED_TTL_SECONDS = 604800 // 7 days — AWS SDK limit
+
+const createLinkSchema = z
+  .object({
+    fileId: z.string(),
+    type: z.enum(['PUBLIC', 'PRESIGNED', 'CLOUDFRONT']).optional(),
+    expiresIn: z
+      .number()
+      .int()
+      .positive()
+      .optional(), // in seconds
+    password: z.string().optional(),
+    maxDownloads: z.number().optional(),
+    allowDownload: z.boolean().default(true),
+    allowPreview: z.boolean().default(true),
+    useCdn: z.boolean().default(true), // Auto-use CDN if available
+    mode: z.enum(['preview', 'download', 'direct', 'raw']).default('preview'),
+  })
+  .superRefine((value, ctx) => {
+    // AWS signed direct URLs (S3 presigned path) cannot exceed 7 days.
+    if (
+      value.mode === 'direct' &&
+      typeof value.expiresIn === 'number' &&
+      value.expiresIn > S3_MAX_PRESIGNED_TTL_SECONDS
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresIn'],
+        message: 'Presigned links cannot exceed 7 days (604800 seconds).',
+      })
+    }
+  })
 
 export async function POST(request: NextRequest) {
   try {
@@ -221,6 +244,17 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { message: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    // Catch AWS SDK expiration errors as 400 (validation error)
+    if (
+      typeof error?.message === 'string' &&
+      /expiration|Expiry|expire|Expiration/i.test(error.message)
+    ) {
+      return NextResponse.json(
+        { message: 'Presigned links cannot exceed 7 days (604800 seconds).' },
         { status: 400 }
       )
     }

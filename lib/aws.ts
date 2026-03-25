@@ -1,3 +1,22 @@
+/**
+ * Returns a permanent unsigned URL for an S3 object.
+ * If a CloudFront domain is configured on the bucket, returns the CDN URL.
+ * Otherwise returns the direct S3 object URL.
+ */
+export function getPermanentObjectUrl(
+  bucket: string,
+  region: string,
+  key: string,
+  cloudfrontDomain?: string | null
+): string {
+  if (cloudfrontDomain) {
+    // CDN URL: https://cdn.example.com/key
+    const domain = cloudfrontDomain.startsWith('https://') ? cloudfrontDomain : `https://${cloudfrontDomain}`
+    return `${domain.replace(/\/$/, '')}/${key}`
+  }
+  // Standard S3 URL format: https://bucket.s3.region.amazonaws.com/key
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`
+}
 import {
   S3Client,
   PutObjectCommand,
