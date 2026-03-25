@@ -40,7 +40,21 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
 
   // 4. Permission check (screen-based RBAC)
   if (file.teamId) {
-    await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+    try {
+      await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+    } catch {
+      await logUserAction({
+        request,
+        action: 'FILE_DIRECT_LINK',
+        success: false,
+        userId: session.user.id,
+        teamId: file.teamId,
+        resourceType: 'file',
+        resourceId: file.id,
+        errorMessage: 'Forbidden by screen permission',
+      })
+      return ApiResponse.forbidden()
+    }
   }
 
   // 5. Generate permanent URL

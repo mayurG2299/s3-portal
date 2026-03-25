@@ -16,25 +16,36 @@ import { z } from 'zod'
 // AWS SDK v3: max presigned URL TTL is 7 days (604800 seconds)
 const S3_MAX_PRESIGNED_TTL_SECONDS = 604800 // 7 days — AWS SDK limit
 
-const createLinkSchema = z.object({
-  fileId: z.string(),
-  type: z.enum(['PUBLIC', 'PRESIGNED', 'CLOUDFRONT']).optional(),
-  expiresIn: z
-    .number()
-    .int()
-    .positive()
-    .max(
-      S3_MAX_PRESIGNED_TTL_SECONDS,
-      'Presigned links cannot exceed 7 days (604800 seconds).'
-    )
-    .optional(), // in seconds
-  password: z.string().optional(),
-  maxDownloads: z.number().optional(),
-  allowDownload: z.boolean().default(true),
-  allowPreview: z.boolean().default(true),
-  useCdn: z.boolean().default(true), // Auto-use CDN if available
-  mode: z.enum(['preview', 'download', 'direct', 'raw']).default('preview'),
-})
+const createLinkSchema = z
+  .object({
+    fileId: z.string(),
+    type: z.enum(['PUBLIC', 'PRESIGNED', 'CLOUDFRONT']).optional(),
+    expiresIn: z
+      .number()
+      .int()
+      .positive()
+      .optional(), // in seconds
+    password: z.string().optional(),
+    maxDownloads: z.number().optional(),
+    allowDownload: z.boolean().default(true),
+    allowPreview: z.boolean().default(true),
+    useCdn: z.boolean().default(true), // Auto-use CDN if available
+    mode: z.enum(['preview', 'download', 'direct', 'raw']).default('preview'),
+  })
+  .superRefine((value, ctx) => {
+    // AWS signed direct URLs (S3 presigned path) cannot exceed 7 days.
+    if (
+      value.mode === 'direct' &&
+      typeof value.expiresIn === 'number' &&
+      value.expiresIn > S3_MAX_PRESIGNED_TTL_SECONDS
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['expiresIn'],
+        message: 'Presigned links cannot exceed 7 days (604800 seconds).',
+      })
+    }
+  })
 
 export async function POST(request: NextRequest) {
   try {
