@@ -1,37 +1,52 @@
-import { NextRequest, NextResponse } from 'next/server'
+
+import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { decryptAWSConfig, generatePresignedDownloadUrl, generateCloudfrontSignedUrl } from '@/lib/aws'
+import { decryptAWSConfig, getPermanentObjectUrl } from '@/lib/aws'
+import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
+import { logUserAction } from '@/lib/audit'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { fileId: string } }
-) {
-  try {
-    const { fileId } = params
-    if (!fileId) {
-      return NextResponse.json({ message: 'fileId is required' }, { status: 400 })
-    }
+export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
+  // 1. Authenticate
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) return ApiResponse.unauthorized()
 
-    const file = await prisma.file.findUnique({
-      where: { id: fileId },
-      include: { credential: true, bucket: true },
-    })
-    if (!file) {
-      return NextResponse.json({ message: 'File not found' }, { status: 404 })
-    }
+  // 2. Validate input
+  const { fileId } = params
+  if (!fileId) return ApiResponse.validationError('fileId is required')
 
-    const config = decryptAWSConfig(file.credential as any, file.bucket as any)
-    const ttlSeconds = 60 * 15 // 15 minutes
-    let url: string
-    if (file.bucket.cloudfrontDomain && file.bucket.cloudfrontKeyPairId) {
-      url = generateCloudfrontSignedUrl(config, file.key, ttlSeconds)
-    } else {
-      url = await generatePresignedDownloadUrl(config, file.key, ttlSeconds)
-    }
+  // 3. Load file and check ownership
+  const file = await prisma.file.findUnique({
+    where: { id: fileId },
+    include: { credential: true, bucket: true },
+  })
+  if (!file) return ApiResponse.notFound()
+  if (file.teamId !== session.user.teamId) return ApiResponse.forbidden()
 
-    return NextResponse.json({ url })
-  } catch (error: any) {
-    console.error('Error generating direct link:', error)
-    return NextResponse.json({ message: error?.message || 'Internal server error' }, { status: 500 })
-  }
+  // 4. Permission check (screen-based RBAC)
+  await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+
+  // 5. Generate permanent URL
+  const url = getPermanentObjectUrl(
+    file.bucket.bucket,
+    file.credential.region,
+    file.key,
+    file.bucket.cloudfrontDomain
+  )
+
+  // 6. Audit log
+  await logUserAction({
+    request,
+    action: 'FILE_DIRECT_LINK',
+    success: true,
+    userId: session.user.id,
+    teamId: file.teamId,
+    resourceType: 'file',
+    resourceId: file.id,
+    metadata: { key: file.key },
+  })
+
+  // 7. Return
+  return ApiResponse.success({ url })
 }

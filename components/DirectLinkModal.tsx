@@ -40,11 +40,11 @@ export default function DirectLinkModal({ file, open, onClose }: { file: { id: s
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg w-full">
         <DialogHeader>
-          <DialogTitle>Direct S3/CDN Link</DialogTitle>
+          <DialogTitle>Permanant Direct Link (No Expiry)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold mb-1">Permanent Link</label>
+            <label className="block text-xs font-bold mb-1">Permanent Link (S3 or CDN, does not expire)</label>
             <Input
               value={directUrl || ''}
               readOnly
