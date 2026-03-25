@@ -652,7 +652,7 @@ export async function POST(request: NextRequest) {
       const normalizedPath =
         rawPath === '/' ? '/' : rawPath.startsWith('/') ? rawPath : `/${rawPath}`
       const ensuredPath = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`
-      const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/, '')
+      const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/,'')
 
       const config = decryptAWSConfig(bucket.credential, bucket)
       const {
@@ -852,16 +852,22 @@ export async function POST(request: NextRequest) {
         isFavorite: favoriteIdSet.has(file!.id),
       }));
 
+      // Combine folders and files, then paginate the combined array
+      const combinedItems = [
+        ...filteredFolders,
+        ...allFilteredFiles
+      ];
+
       const page = validated.page ?? 1;
       const pageSize = validated.pageSize ?? 200;
-      const totalFiles = allFilteredFiles.length;
-      const totalPages = Math.max(1, Math.ceil(totalFiles / pageSize));
+      const totalItems = combinedItems.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
       const start = (page - 1) * pageSize;
-      const pagedFiles = allFilteredFiles.slice(start, start + pageSize);
+      const pagedItems = combinedItems.slice(start, start + pageSize);
 
       return NextResponse.json({
-        objects: [...filteredFolders, ...pagedFiles],
-        totalFiles,
+        objects: pagedItems,
+        totalFiles: totalItems,
         totalPages,
         page,
         pageSize,
