@@ -52,13 +52,13 @@ export function FirstTimeWizard({
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = controlledOnOpenChange || setInternalOpen
 
-  // Check if wizard should be shown on mount
+  // Re-open onboarding on dashboard visits until at least one credential exists.
+  // This intentionally ignores localStorage completion so users are repeatedly prompted
+  // to add credentials when setup is still incomplete.
   useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem('s3-portal-onboarding-completed')
-    const needsOnboarding = !hasCompletedOnboarding && currentCredentialsCount === 0
-    
-    if (needsOnboarding) {
+    if (currentCredentialsCount === 0) {
       setInternalOpen(true)
+      setCurrentStep('welcome')
     }
   }, [currentCredentialsCount])
 
