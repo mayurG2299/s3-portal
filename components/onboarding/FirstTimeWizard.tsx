@@ -40,6 +40,7 @@ export function FirstTimeWizard({
   const [credentialName, setCredentialName] = useState('')
   const [credentialKey, setCredentialKey] = useState('')
   const [credentialSecret, setCredentialSecret] = useState('')
+  const [region, setRegion] = useState('')
   const [bucketName, setBucketName] = useState('')
   const [internalOpen, setInternalOpen] = useState(false)
   const isMobile = useWindowSize().width < 768
@@ -89,7 +90,7 @@ export function FirstTimeWizard({
   }
 
   const handleAddCredentials = async () => {
-    if (!credentialName.trim() || !credentialKey.trim() || !credentialSecret.trim()) {
+    if (!credentialName.trim() || !credentialKey.trim() || !credentialSecret.trim() || !region.trim() || !bucketName.trim()) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -105,17 +106,22 @@ export function FirstTimeWizard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: credentialName,
-          accessKeyId: credentialKey,
-          secretAccessKey: credentialSecret
+          accessKey: credentialKey,
+          secretKey: credentialSecret,
+          region: region,
+          buckets: [
+            { bucket: bucketName.trim() }
+          ]
         })
       })
 
+      const data = await response.json()
       if (!response.ok) {
-        const error = await response.json()
+        const msg = data?.error || data?.message || 'Failed to save credentials'
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: error.message || 'Failed to add credentials'
+          description: msg
         })
         return
       }
@@ -126,11 +132,11 @@ export function FirstTimeWizard({
       })
 
       handleNext()
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to add credentials. Please try again.'
+        description: (error instanceof Error ? error.message : 'Failed to add credentials. Please try again.')
       })
     } finally {
       setIsLoading(false)
@@ -230,7 +236,7 @@ export function FirstTimeWizard({
 
                 <div>
                   <Label htmlFor="access-key" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    AWS Access Key ID
+                    AWS Access Key
                   </Label>
                   <Input
                     id="access-key"
@@ -244,7 +250,7 @@ export function FirstTimeWizard({
 
                 <div>
                   <Label htmlFor="secret-key" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                    AWS Secret Access Key
+                    AWS Secret Key
                   </Label>
                   <Input
                     id="secret-key"
@@ -252,6 +258,32 @@ export function FirstTimeWizard({
                     placeholder="••••••••••••••••••••"
                     value={credentialSecret}
                     onChange={(e) => setCredentialSecret(e.target.value)}
+                    className="mt-2 h-10"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="region" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    AWS Region
+                  </Label>
+                  <Input
+                    id="region"
+                    placeholder="us-east-1"
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="mt-2 h-10"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="bucket-name" className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    S3 Bucket Name
+                  </Label>
+                  <Input
+                    id="bucket-name"
+                    placeholder="my-bucket-name"
+                    value={bucketName}
+                    onChange={(e) => setBucketName(e.target.value)}
                     className="mt-2 h-10"
                   />
                 </div>
