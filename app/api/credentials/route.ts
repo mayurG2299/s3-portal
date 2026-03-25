@@ -48,11 +48,27 @@ export async function GET(request: NextRequest) {
       return error
     }
 
-    // Get credentials exclusively filtered by active workspace
+    const { searchParams } = new URL(request.url)
+    const requestedTeamId = searchParams.get('teamId') || auth!.teamId
+
+    // If requesting a team other than your primary, check membership
+    if (requestedTeamId && requestedTeamId !== auth!.teamId) {
+      const membership = await prisma.teamMember.findFirst({
+        where: {
+          userId: auth!.userId,
+          teamId: requestedTeamId,
+        },
+      })
+      if (!membership) {
+        return ApiResponse.forbidden()
+      }
+    }
+
+    // Get credentials for the requested team
     const credentials = await prisma.aWSCredential.findMany({
       where: {
-        teamId: auth!.teamId || null,
-        ...(auth!.teamId
+        teamId: requestedTeamId || null,
+        ...(requestedTeamId
           ? {
               team: {
                 members: {

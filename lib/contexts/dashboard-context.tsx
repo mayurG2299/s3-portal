@@ -66,7 +66,7 @@ export function DashboardProvider({
 
     setIsLoading(true)
     try {
-      const response = await fetch('/api/credentials')
+      const response = await fetch(`/api/credentials?teamId=${selectedTeamId || ''}`)
       if (response.ok) {
         const data = await response.json()
         setIdentities(data)
