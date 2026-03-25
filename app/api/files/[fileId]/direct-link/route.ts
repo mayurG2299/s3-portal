@@ -22,10 +22,26 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
     include: { credential: true, bucket: true },
   })
   if (!file) return ApiResponse.notFound()
-  if (file.teamId !== session.user.teamId) return ApiResponse.forbidden()
+
+  if (file.userId !== session.user.id) {
+    if (!file.teamId) return ApiResponse.forbidden()
+
+    const membership = await prisma.teamMember.findUnique({
+      where: {
+        teamId_userId: {
+          teamId: file.teamId,
+          userId: session.user.id,
+        },
+      },
+    })
+
+    if (!membership) return ApiResponse.forbidden()
+  }
 
   // 4. Permission check (screen-based RBAC)
-  await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+  if (file.teamId) {
+    await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+  }
 
   // 5. Generate permanent URL
   const url = getPermanentObjectUrl(
