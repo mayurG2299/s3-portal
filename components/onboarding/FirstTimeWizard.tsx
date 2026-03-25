@@ -53,13 +53,23 @@ export function FirstTimeWizard({
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = controlledOnOpenChange || setInternalOpen
 
+  const trimmedName = credentialName.trim()
+  const trimmedAccessKey = credentialKey.trim()
+  const trimmedSecretKey = credentialSecret.trim()
+  const trimmedRegion = region.trim()
+  const trimmedBucketName = bucketName.trim()
+  const isCredentialsFormValid =
+    trimmedName.length > 0 &&
+    trimmedAccessKey.length > 0 &&
+    trimmedSecretKey.length > 0 &&
+    trimmedRegion.length > 0 &&
+    trimmedBucketName.length > 0
+
   // Check if wizard should be shown on mount
   useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem('s3-portal-onboarding-completed')
-    const needsOnboarding = !hasCompletedOnboarding && currentCredentialsCount === 0
-    
-    if (needsOnboarding) {
+    if (currentCredentialsCount === 0) {
       setInternalOpen(true)
+      setCurrentStep('welcome')
     }
   }, [currentCredentialsCount])
 
@@ -90,7 +100,7 @@ export function FirstTimeWizard({
   }
 
   const handleAddCredentials = async () => {
-    if (!credentialName.trim() || !credentialKey.trim() || !credentialSecret.trim() || !region.trim() || !bucketName.trim()) {
+    if (!isCredentialsFormValid) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -105,12 +115,12 @@ export function FirstTimeWizard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: credentialName,
-          accessKey: credentialKey,
-          secretKey: credentialSecret,
-          region: region,
+          name: trimmedName,
+          accessKey: trimmedAccessKey,
+          secretKey: trimmedSecretKey,
+          region: trimmedRegion,
           buckets: [
-            { bucket: bucketName.trim() }
+            { bucket: trimmedBucketName }
           ]
         })
       })
@@ -307,7 +317,7 @@ export function FirstTimeWizard({
                   <Button
                     onClick={handleAddCredentials}
                     className="flex-1 font-bold"
-                    disabled={isLoading}
+                    disabled={isLoading || !isCredentialsFormValid}
                   >
                     {isLoading ? 'Adding...' : 'Next'} <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>

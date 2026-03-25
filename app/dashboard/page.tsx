@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const bucketId = cookieStore.get('selectedBucketId')?.value || undefined
 
   // Fetch user stats scoped by context
-  const [bucketsCount, filesCount, linksCount, teamsCount] =
+  const [bucketsCount, credentialsCount, filesCount, linksCount, teamsCount] =
     await Promise.all([
       prisma.awsBucket.count({
         where: { 
@@ -28,6 +28,12 @@ export default async function DashboardPage() {
             id: identityId,
             teamId: activeTeamId || null,
           }
+        },
+      }),
+      prisma.aWSCredential.count({
+        where: {
+          id: identityId,
+          teamId: activeTeamId || null,
         },
       }),
       prisma.file.count({
@@ -237,7 +243,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* First-time user onboarding wizard */}
-      <FirstTimeWizard currentCredentialsCount={bucketsCount} />
+      <FirstTimeWizard currentCredentialsCount={credentialsCount} />
     </div>
   )
 }
