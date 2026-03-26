@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
@@ -12,7 +13,9 @@ import { Users, Info, UserPlus, ShieldAlert } from 'lucide-react'
 
 export default async function TeamsPage() {
   const session = await requireUser()
-  const teamId = session.user.teamId
+  const cookieStore = await cookies()
+  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
+  const teamId = selectedTeamId || session.user.teamId
 
   if (!teamId) {
     redirect('/dashboard')

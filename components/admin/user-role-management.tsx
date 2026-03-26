@@ -81,7 +81,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
 
   useEffect(() => {
     // Fetch all available roles
-    fetch('/api/roles')
+    fetch(`/api/roles?teamId=${encodeURIComponent(teamId)}`)
       .then(res => res.json())
       .then(data => {
         setAvailableRoles(data)
@@ -91,7 +91,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
         console.error('Failed to fetch roles:', err)
         setLoadingRoles(false)
       })
-  }, [])
+  }, [teamId])
 
   const updateUserRole = async (userId: string, memberId: string, newRoleId: string) => {
     setUpdating(memberId)

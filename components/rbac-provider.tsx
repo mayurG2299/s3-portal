@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import type { Role, ScreenName } from '@prisma/client'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface RBACContextType {
   userId: string | null
@@ -26,11 +27,12 @@ const RBACContext = createContext<RBACContextType | undefined>(undefined)
 
 export function RBACProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
+  const { selectedTeamId } = useDashboard()
   const loading = status === 'loading'
 
   const roleId = session?.user?.roleId
   const userId = session?.user?.id || null
-  const teamId = session?.user?.teamId || null
+  const teamId = selectedTeamId || session?.user?.teamId || null
 
   const [role, setRole] = useState<Role | null>(null)
   const [loadingRole, setLoadingRole] = useState(false)
@@ -62,35 +64,47 @@ export function RBACProvider({ children }: { children: React.ReactNode }) {
     fetchRole()
   }, [roleId])
 
-  // Fetch screen permissions when user/team changes
+  // RBAC permission fetch abort guard: only latest fetch result updates state
+  const latestFetchToken = React.useRef(0)
   useEffect(() => {
+    let isActive = true
+    latestFetchToken.current += 1
+    const token = latestFetchToken.current
+
     if (!userId || !teamId) {
       setScreenPermissions(null)
       return
     }
 
     const fetchScreenPermissions = async () => {
+      setScreenPermissions(null)
       setLoadingScreenPermissions(true)
       try {
         const response = await fetch(`/api/permissions/screens?teamId=${teamId}`)
+        if (!isActive || latestFetchToken.current !== token) return
         if (response.ok) {
           const data = await response.json()
           const permMap = new Map<ScreenName, 'VIEW' | 'EDIT'>()
-          
           data.forEach((perm: any) => {
             permMap.set(perm.screenName, perm.permissionLevel)
           })
-          
           setScreenPermissions(permMap)
+        } else {
+          setScreenPermissions(null)
         }
       } catch (error) {
-        console.error('Failed to fetch screen permissions:', error)
+        if (!isActive || latestFetchToken.current !== token) return
+        setScreenPermissions(null)
       } finally {
+        if (!isActive || latestFetchToken.current !== token) return
         setLoadingScreenPermissions(false)
       }
     }
 
     fetchScreenPermissions()
+    return () => {
+      isActive = false
+    }
   }, [userId, teamId])
 
   const canViewScreen = (screenName: ScreenName): boolean => {

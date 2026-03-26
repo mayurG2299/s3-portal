@@ -9,27 +9,39 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id || !session.user.teamId) {
+    if (!session?.user?.id) {
       await logUserAction({
         request,
-        action: 'ROLE_PERMISSION_UPDATE',
+        action: "ROLE_PERMISSION_UPDATE",
         success: false,
-        errorMessage: 'Unauthorized',
-      })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        errorMessage: "Unauthorized",
+      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { roleId, screenName, permissionLevel } = await request.json()
+    const body = await request.json();
+    const { roleId, screenName, permissionLevel } = body;
+    const selectedTeamFromCookie = request.cookies
+      .get("selectedTeamId")
+      ?.value?.trim();
+    const targetTeamId =
+      body?.teamId?.toString()?.trim() ||
+      selectedTeamFromCookie ||
+      session.user.teamId;
+
+    if (!targetTeamId) {
+      return NextResponse.json({ error: "Team not selected" }, { status: 400 });
+    }
 
     if (!roleId || !screenName || !permissionLevel) {
       await logUserAction({
         request,
-        action: 'ROLE_PERMISSION_UPDATE',
+        action: "ROLE_PERMISSION_UPDATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Missing required fields',
-      })
+        teamId: targetTeamId,
+        errorMessage: "Missing required fields",
+      });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -37,16 +49,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is admin
-    if (!(await canManageTeam(session.user.id, session.user.teamId))) {
+    if (!(await canManageTeam(session.user.id, targetTeamId))) {
       await logUserAction({
         request,
-        action: 'ROLE_PERMISSION_UPDATE',
+        action: "ROLE_PERMISSION_UPDATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Forbidden',
-      })
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        teamId: targetTeamId,
+        errorMessage: "Forbidden",
+      });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify role exists
@@ -59,14 +71,14 @@ export async function POST(request: NextRequest) {
     if (!role) {
       await logUserAction({
         request,
-        action: 'ROLE_PERMISSION_UPDATE',
+        action: "ROLE_PERMISSION_UPDATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        resourceType: 'role',
+        teamId: targetTeamId,
+        resourceType: "role",
         resourceId: roleId,
-        errorMessage: 'Role not found',
-      })
+        errorMessage: "Role not found",
+      });
       return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
@@ -90,14 +102,14 @@ export async function POST(request: NextRequest) {
 
     await logUserAction({
       request,
-      action: 'ROLE_PERMISSION_UPDATE',
+      action: "ROLE_PERMISSION_UPDATE",
       success: true,
       userId: session.user.id,
-      teamId: session.user.teamId,
-      resourceType: 'role',
+      teamId: targetTeamId,
+      resourceType: "role",
       resourceId: roleId,
       metadata: { screenName, permissionLevel },
-    })
+    });
 
     return NextResponse.json(permission)
   } catch (error) {

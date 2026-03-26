@@ -31,7 +31,7 @@ export function InviteUserForm({ teamId }: Props) {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const res = await fetch('/api/roles')
+        const res = await fetch(`/api/roles?teamId=${encodeURIComponent(teamId)}`)
         if (res.ok) {
           const data = await res.json()
           setRoles(data)
@@ -43,7 +43,7 @@ export function InviteUserForm({ teamId }: Props) {
       }
     }
     fetchRoles()
-  }, [])
+  }, [teamId])
 
   const handleLookup = async () => {
     if (!email) return

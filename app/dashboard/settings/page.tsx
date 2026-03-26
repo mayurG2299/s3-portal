@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,6 +16,7 @@ import { toast } from '@/hooks/use-toast'
 import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette } from 'lucide-react'
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 type Credential = {
   id: string
@@ -44,7 +44,7 @@ export default function SettingsPage() {
   const [activeTheme, setActiveTheme] = useState<ThemeId>('nebula')
   const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
-  const { data: session } = useSession()
+  const { selectedTeamId } = useDashboard()
 
   useEffect(() => {
     setActiveTheme(getSavedTheme())
@@ -60,7 +60,7 @@ export default function SettingsPage() {
     setActiveMode(mode)
     applyThemeAndMode(activeTheme, mode)
   }, [activeTheme])
-  const activeTeamId = session?.user?.teamId
+  const activeTeamId = selectedTeamId
 
   useEffect(() => {
     fetchCredentials()
@@ -82,7 +82,10 @@ export default function SettingsPage() {
 
   async function fetchCredentials() {
     try {
-      const response = await fetch('/api/credentials')
+      const url = activeTeamId
+        ? `/api/credentials?teamId=${encodeURIComponent(activeTeamId)}`
+        : '/api/credentials'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setCredentials(data)

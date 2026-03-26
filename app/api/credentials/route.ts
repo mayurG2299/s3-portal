@@ -49,10 +49,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const requestedTeamId = searchParams.get('teamId') || auth!.teamId
+    const requestedTeamId = searchParams.get('teamId')?.trim() || auth!.teamId
+    let usePersonalScopeFallback = false
+    let teamIdToQuery: string | null = null
 
-    // If requesting a team other than your primary, check membership
-    if (requestedTeamId && requestedTeamId !== auth!.teamId) {
+    if (requestedTeamId) {
       const membership = await prisma.teamMember.findFirst({
         where: {
           userId: auth!.userId,
@@ -60,26 +61,19 @@ export async function GET(request: NextRequest) {
         },
       })
       if (!membership) {
-        return ApiResponse.forbidden()
+        usePersonalScopeFallback = true
+      } else {
+        teamIdToQuery = requestedTeamId
       }
+    } else {
+      usePersonalScopeFallback = true
     }
 
-    // Get credentials for the requested team
+    // If fallback, only show personal-scope credentials
     const credentials = await prisma.aWSCredential.findMany({
-      where: {
-        teamId: requestedTeamId || null,
-        ...(requestedTeamId
-          ? {
-              team: {
-                members: {
-                  some: {
-                    userId: auth!.userId,
-                  },
-                },
-              },
-            }
-          : { userId: auth!.userId }),
-      },
+      where: usePersonalScopeFallback
+        ? { userId: auth!.userId, teamId: null }
+        : { teamId: teamIdToQuery },
       select: {
         id: true,
         name: true,
@@ -111,7 +105,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return ApiResponse.success(credentials)
+    return ApiResponse.success({ credentials, personalScopeFallback: usePersonalScopeFallback })
   } catch (error) {
     console.error('Error fetching credentials:', error)
     return ApiResponse.error('Internal server error')

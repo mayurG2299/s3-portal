@@ -41,27 +41,40 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id || !session?.user?.teamId) {
+    if (!session?.user?.id) {
       await logUserAction({
         request,
-        action: 'ROLE_DELETE',
+        action: "ROLE_DELETE",
         success: false,
-        errorMessage: 'Unauthorized',
-      })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        errorMessage: "Unauthorized",
+      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const selectedTeamFromCookie = request.cookies
+      .get("selectedTeamId")
+      ?.value?.trim();
+    const targetTeamId =
+      searchParams.get("teamId")?.trim() ||
+      selectedTeamFromCookie ||
+      session.user.teamId;
+
+    if (!targetTeamId) {
+      return NextResponse.json({ error: "Team not selected" }, { status: 400 });
     }
 
     // Only admins can delete roles
-    const hasAccess = await canManageTeam(session.user.id, session.user.teamId)
+    const hasAccess = await canManageTeam(session.user.id, targetTeamId);
     if (!hasAccess) {
       await logUserAction({
         request,
-        action: 'ROLE_DELETE',
+        action: "ROLE_DELETE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Forbidden',
-      })
+        teamId: targetTeamId,
+        errorMessage: "Forbidden",
+      });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -72,14 +85,14 @@ export async function DELETE(
     if (!role) {
       await logUserAction({
         request,
-        action: 'ROLE_DELETE',
+        action: "ROLE_DELETE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        resourceType: 'role',
+        teamId: targetTeamId,
+        resourceType: "role",
         resourceId: params.id,
-        errorMessage: 'Role not found',
-      })
+        errorMessage: "Role not found",
+      });
       return NextResponse.json({ error: 'Role not found' }, { status: 404 })
     }
 
@@ -87,14 +100,14 @@ export async function DELETE(
     if (role.isSystem) {
       await logUserAction({
         request,
-        action: 'ROLE_DELETE',
+        action: "ROLE_DELETE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        resourceType: 'role',
+        teamId: targetTeamId,
+        resourceType: "role",
         resourceId: role.id,
-        errorMessage: 'System roles cannot be deleted',
-      })
+        errorMessage: "System roles cannot be deleted",
+      });
       return NextResponse.json(
         { error: 'System roles cannot be deleted' },
         { status: 400 }
@@ -108,13 +121,13 @@ export async function DELETE(
 
     await logUserAction({
       request,
-      action: 'ROLE_DELETE',
+      action: "ROLE_DELETE",
       success: true,
       userId: session.user.id,
-      teamId: session.user.teamId,
-      resourceType: 'role',
+      teamId: targetTeamId,
+      resourceType: "role",
       resourceId: params.id,
-    })
+    });
 
     return NextResponse.json({ success: true })
   } catch (error) {

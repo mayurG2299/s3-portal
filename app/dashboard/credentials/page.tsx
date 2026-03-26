@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface Credential {
   id: string
@@ -20,20 +20,25 @@ interface Credential {
 export default function CredentialsPage() {
   const router = useRouter()
   const [credentials, setCredentials] = useState<Credential[]>([])
+  const [personalScopeFallback, setPersonalScopeFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const { data: session } = useSession()
-  const activeTeamId = session?.user?.teamId
+  const { selectedTeamId } = useDashboard()
+  const activeTeamId = selectedTeamId
 
   useEffect(() => {
     let isActive = true
     const controller = new AbortController()
 
+
     const run = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/credentials', { signal: controller.signal })
+        const url = activeTeamId
+          ? `/api/credentials?teamId=${encodeURIComponent(activeTeamId)}`
+          : '/api/credentials'
+        const response = await fetch(url, { signal: controller.signal })
 
         if (!response.ok) {
           throw new Error('Failed to fetch credentials')
@@ -42,10 +47,19 @@ export default function CredentialsPage() {
         const data = await response.json()
         if (!isActive) return
 
-        setCredentials(data)
-
-        if (data.length === 0) {
-          router.push('/dashboard/settings')
+        // Support both new and old API response shapes
+        if (Array.isArray(data)) {
+          setCredentials(data)
+          setPersonalScopeFallback(false)
+          if (data.length === 0) {
+            router.push('/dashboard/settings')
+          }
+        } else {
+          setCredentials(data.credentials || [])
+          setPersonalScopeFallback(!!data.personalScopeFallback)
+          if ((data.credentials || []).length === 0) {
+            router.push('/dashboard/settings')
+          }
         }
       } catch (error: any) {
         if (controller.signal.aborted) return
@@ -106,13 +120,18 @@ export default function CredentialsPage() {
         </div>
       ) : (
         <>
-            <header className="bg-white/80 dark:bg-slate-950/50 backdrop-blur-md border-b">
+          <header className="bg-white/80 dark:bg-slate-950/50 backdrop-blur-md border-b">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <h1 className="text-2xl font-bold">AWS Credentials</h1>
             </div>
           </header>
 
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {personalScopeFallback && (
+              <div className="mb-6 p-4 rounded bg-yellow-100 text-yellow-900 border border-yellow-300 text-center">
+                You are viewing your personal resources. Select or join a team for more.
+              </div>
+            )}
             <div className="grid gap-4">
               {credentials.length === 0 ? (
                 <Card>

@@ -46,11 +46,11 @@ export function RoleManagement({ teamId }: Props) {
 
   useEffect(() => {
     fetchRoles()
-  }, [])
+  }, [teamId])
 
   const fetchRoles = async () => {
     try {
-      const res = await fetch('/api/roles')
+      const res = await fetch(`/api/roles?teamId=${encodeURIComponent(teamId)}`)
       if (res.ok) {
         const data = await res.json()
         setRoles(data)
@@ -90,7 +90,7 @@ export function RoleManagement({ teamId }: Props) {
       const res = await fetch('/api/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, level }),
+        body: JSON.stringify({ name, description, level, teamId }),
       })
 
       if (!res.ok) {
@@ -110,6 +110,7 @@ export function RoleManagement({ teamId }: Props) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 roleId: newRole.id,
+                teamId,
                 screenName: sp.screen,
                 permissionLevel: sp.level,
               }),
@@ -146,7 +147,7 @@ export function RoleManagement({ teamId }: Props) {
     }
 
     try {
-      const res = await fetch(`/api/roles/${roleId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/roles/${roleId}?teamId=${encodeURIComponent(teamId)}`, { method: 'DELETE' })
 
       if (!res.ok) {
         const error = await res.json()

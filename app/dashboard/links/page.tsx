@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff, Ban, Eye, HardDriveDownload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { formatRelativeTime, formatFileSize } from '@/lib/utils'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface Link {
   id: string
@@ -28,21 +28,33 @@ interface Link {
 
 export default function LinksPage() {
   const [links, setLinks] = useState<Link[]>([])
+  const [personalScopeFallback, setPersonalScopeFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  const { data: session } = useSession()
-  const activeTeamId = session?.user?.teamId
+  const { selectedTeamId } = useDashboard()
+  const activeTeamId = selectedTeamId
 
   useEffect(() => {
     fetchLinks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId])
 
   async function fetchLinks() {
     try {
-      const response = await fetch('/api/links')
+      const url = activeTeamId
+        ? `/api/links?teamId=${encodeURIComponent(activeTeamId)}`
+        : '/api/links'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
-        setLinks(data)
+        // Support both new and old API response shapes
+        if (Array.isArray(data)) {
+          setLinks(data)
+          setPersonalScopeFallback(false)
+        } else {
+          setLinks(data.links || [])
+          setPersonalScopeFallback(!!data.personalScopeFallback)
+        }
       }
     } catch (error) {
       toast({
@@ -112,6 +124,11 @@ export default function LinksPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {personalScopeFallback && (
+        <div className="mb-6 p-4 rounded bg-yellow-100 text-yellow-900 border border-yellow-300 text-center">
+          You are viewing your personal resources. Select or join a team for more.
+        </div>
+      )}
       {/* Header */}
       <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
         <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">

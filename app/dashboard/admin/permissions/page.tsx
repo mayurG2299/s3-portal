@@ -1,14 +1,22 @@
 import { requireUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
 import { PermissionManagement } from '@/components/admin/permission-management'
 
 export default async function PermissionsPage() {
   const session = await requireUser('admin/permissions')
+  const cookieStore = await cookies()
+  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
+  const teamId = selectedTeamId || session.user.teamId
+
+  if (!teamId) {
+    redirect('/dashboard')
+  }
 
   // Only admins and owners can access this page
-  const hasAccess = await canManageTeam(session.user.id!, session.user.teamId!)
+  const hasAccess = await canManageTeam(session.user.id!, teamId)
   if (!hasAccess) {
     redirect('/dashboard')
   }
@@ -16,7 +24,7 @@ export default async function PermissionsPage() {
   // Fetch team members with their permissions
   const teamMembers = await prisma.teamMember.findMany({
     where: {
-      teamId: session.user.teamId!,
+      teamId,
     },
     include: {
       user: {
@@ -50,7 +58,7 @@ export default async function PermissionsPage() {
         <PermissionManagement
           teamMembers={teamMembers}
           currentUserId={session.user.id!}
-          teamId={session.user.teamId!}
+          teamId={teamId}
         />
       </div>
     </div>

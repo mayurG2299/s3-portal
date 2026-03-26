@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
@@ -8,7 +9,9 @@ import { cn } from '@/lib/utils'
 
 export default async function AuditLogPage() {
   const session = await requireUser('admin/audit')
-  const teamId = session.user.teamId
+  const cookieStore = await cookies()
+  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
+  const teamId = selectedTeamId || session.user.teamId
 
   if (!teamId) {
     redirect('/dashboard')

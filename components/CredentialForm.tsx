@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Plus, Trash2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { translateAWSError } from '@/lib/error-translator'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 export interface BucketInput {
   id?: string
@@ -28,7 +29,8 @@ export default function CredentialForm({ onSuccess, onCancel }: CredentialFormPr
     { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
   ])
   const { data: session } = useSession()
-  const activeTeamId = session?.user?.teamId
+  const { selectedTeamId } = useDashboard()
+  const activeTeamId = selectedTeamId || session?.user?.teamId
 
   async function handleCredentialSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()

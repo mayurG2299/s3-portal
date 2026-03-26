@@ -13,6 +13,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url);
+    const requestedTeamId = searchParams.get("teamId")?.trim();
+
+    if (requestedTeamId) {
+      const membership = await prisma.teamMember.findFirst({
+        where: {
+          teamId: requestedTeamId,
+          userId: session.user.id,
+        },
+      });
+
+      if (!membership) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     // Fetch all roles ordered by level descending
     const roles = await prisma.role.findMany({
       orderBy: { level: 'desc' },
@@ -32,42 +48,54 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.id || !session?.user?.teamId) {
+    if (!session?.user?.id) {
       await logUserAction({
         request,
-        action: 'ROLE_CREATE',
+        action: "ROLE_CREATE",
         success: false,
-        errorMessage: 'Unauthorized',
-      })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        errorMessage: "Unauthorized",
+      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const selectedTeamFromCookie = request.cookies
+      .get("selectedTeamId")
+      ?.value?.trim();
+    const targetTeamId =
+      body?.teamId?.toString()?.trim() ||
+      selectedTeamFromCookie ||
+      session.user.teamId;
+
+    if (!targetTeamId) {
+      return NextResponse.json({ error: "Team not selected" }, { status: 400 });
     }
 
     // Only admins can create roles
-    const hasAccess = await canManageTeam(session.user.id, session.user.teamId)
+    const hasAccess = await canManageTeam(session.user.id, targetTeamId);
     if (!hasAccess) {
       await logUserAction({
         request,
-        action: 'ROLE_CREATE',
+        action: "ROLE_CREATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Forbidden',
-      })
+        teamId: targetTeamId,
+        errorMessage: "Forbidden",
+      });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = await request.json()
     const { name, description, level } = body
 
     if (!name || !description || level === undefined) {
       await logUserAction({
         request,
-        action: 'ROLE_CREATE',
+        action: "ROLE_CREATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Missing required fields: name, description, level',
-      })
+        teamId: targetTeamId,
+        errorMessage: "Missing required fields: name, description, level",
+      });
       return NextResponse.json(
         { error: 'Missing required fields: name, description, level' },
         { status: 400 }
@@ -78,12 +106,12 @@ export async function POST(request: NextRequest) {
     if (level < 10 || level > 90) {
       await logUserAction({
         request,
-        action: 'ROLE_CREATE',
+        action: "ROLE_CREATE",
         success: false,
         userId: session.user.id,
-        teamId: session.user.teamId,
-        errorMessage: 'Custom role level must be between 10 and 90',
-      })
+        teamId: targetTeamId,
+        errorMessage: "Custom role level must be between 10 and 90",
+      });
       return NextResponse.json(
         { error: 'Custom role level must be between 10 and 90' },
         { status: 400 }
@@ -102,14 +130,14 @@ export async function POST(request: NextRequest) {
 
     await logUserAction({
       request,
-      action: 'ROLE_CREATE',
+      action: "ROLE_CREATE",
       success: true,
       userId: session.user.id,
-      teamId: session.user.teamId,
-      resourceType: 'role',
+      teamId: targetTeamId,
+      resourceType: "role",
       resourceId: role.id,
       metadata: { name, level },
-    })
+    });
 
     return NextResponse.json(role, { status: 201 })
   } catch (error) {

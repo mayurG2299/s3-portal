@@ -66,13 +66,18 @@ export function DashboardProvider({
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/credentials?teamId=${selectedTeamId || ''}`)
+      const response = await fetch(`/api/credentials?teamId=${encodeURIComponent(selectedTeamId)}`, {
+        cache: 'no-store',
+      })
       if (response.ok) {
         const data = await response.json()
-        setIdentities(data)
+        setIdentities(Array.isArray(data) ? data : [])
+      } else {
+        setIdentities([])
       }
     } catch (error) {
       console.error('Failed to fetch identities:', error)
+      setIdentities([])
     } finally {
       setIsLoading(false)
     }
@@ -81,6 +86,31 @@ export function DashboardProvider({
   useEffect(() => {
     refreshIdentities()
   }, [refreshIdentities])
+
+  // Reset stale identity/bucket selections when switching teams or when data changes.
+  useEffect(() => {
+    if (!selectedIdentityId) return
+
+    const identityExists = identities.some((identity) => identity.id === selectedIdentityId)
+    if (!identityExists) {
+      setSelectedIdentityId(null)
+      setSelectedBucketId(null)
+      Cookies.remove('selectedIdentityId')
+      Cookies.remove('selectedBucketId')
+    }
+  }, [identities, selectedIdentityId])
+
+  useEffect(() => {
+    if (!selectedBucketId || !selectedIdentityId) return
+
+    const identity = identities.find((item) => item.id === selectedIdentityId)
+    const bucketExists = identity?.buckets.some((bucket) => bucket.id === selectedBucketId)
+
+    if (!bucketExists) {
+      setSelectedBucketId(null)
+      Cookies.remove('selectedBucketId')
+    }
+  }, [identities, selectedIdentityId, selectedBucketId])
 
   const setTeam = (id: string) => {
     setSelectedTeamId(id)
