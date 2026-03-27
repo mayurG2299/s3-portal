@@ -57,6 +57,21 @@ export function DashboardProvider({
   const [identities, setIdentities] = useState<CloudIdentity[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  // Effect: If selectedTeamId is no longer in teams, clear selection and redirect
+  useEffect(() => {
+    if (!selectedTeamId) return;
+    const stillMember = initialTeams.some((team) => team.id === selectedTeamId);
+    if (!stillMember) {
+      setSelectedTeamId(null);
+      Cookies.remove('selectedTeamId');
+      setSelectedIdentityId(null);
+      setSelectedBucketId(null);
+      Cookies.remove('selectedIdentityId');
+      Cookies.remove('selectedBucketId');
+      router.push('/dashboard');
+    }
+  }, [selectedTeamId, initialTeams, router]);
+
   // Fetch identities for the current team
   const refreshIdentities = useCallback(async () => {
     if (!selectedTeamId) {
