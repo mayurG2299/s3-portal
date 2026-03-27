@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const requestedTeamId = searchParams.get("teamId")?.trim();
+    const requestedTeamId =
+      searchParams.get("teamId")?.trim() ||
+      request.cookies.get("selectedTeamId")?.value?.trim() ||
+      session.user.teamId;
 
     if (requestedTeamId) {
       const membership = await prisma.teamMember.findFirst({

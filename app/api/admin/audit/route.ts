@@ -7,12 +7,18 @@ import { getUserRoleInTeam, isOwner } from '@/lib/permissions'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !session.user.teamId) {
+    const { searchParams } = new URL(request.url)
+    const requestedTeamId =
+      searchParams.get('teamId') ||
+      request.cookies.get('selectedTeamId')?.value?.trim() ||
+      session?.user?.teamId ||
+      null
+
+    if (!session?.user?.id || !requestedTeamId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const teamId = session.user.teamId
+    const teamId = requestedTeamId
     const limitParam = searchParams.get('limit')
     const cursor = searchParams.get('cursor')
     const action = searchParams.get('action')

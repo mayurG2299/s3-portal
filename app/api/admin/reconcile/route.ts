@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
+import { prisma } from '@/lib/db'
 import { reconcileTeam, reconcileBucket } from '@/lib/s3-sync'
 
 export async function POST(request: NextRequest) {
@@ -12,7 +13,10 @@ export async function POST(request: NextRequest) {
   const { teamId, bucketId } = body as { teamId?: string; bucketId?: string }
 
   // Require admin settings permission for the target team (body.teamId if provided)
-  const targetTeamId = teamId || session.user.teamId!
+  const targetTeamId =
+    teamId ||
+    request.cookies.get('selectedTeamId')?.value?.trim() ||
+    session.user.teamId!
   try {
     await requireScreenPermission(session, targetTeamId, 'ADMIN_SETTINGS', 'EDIT')
   } catch (err) {
@@ -20,6 +24,19 @@ export async function POST(request: NextRequest) {
   }
 
   if (bucketId) {
+    const bucket = await prisma.awsBucket.findUnique({
+      where: { id: bucketId },
+      select: {
+        credential: {
+          select: { teamId: true },
+        },
+      },
+    })
+
+    if (!bucket || bucket.credential.teamId !== targetTeamId) {
+      return ApiResponse.forbidden()
+    }
+
     const res = await reconcileBucket(bucketId)
     return NextResponse.json({ ok: true, bucketId, result: res })
   }

@@ -9,14 +9,17 @@ export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
+  const { searchParams } = new URL(request.url)
+  const teamId =
+    searchParams.get('teamId') ||
+    request.cookies.get('selectedTeamId')?.value?.trim() ||
+    session.user.teamId!
+
   try {
-    await requireScreenPermission(session, session.user.teamId!, 'ADMIN_SETTINGS', 'VIEW')
+    await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'VIEW')
   } catch (err) {
     return ApiResponse.forbidden()
   }
-
-  const { searchParams } = new URL(request.url)
-  const teamId = searchParams.get('teamId') || session.user.teamId!
 
   const quota = await prisma.storageQuota.findUnique({ where: { teamId } })
   if (quota) return NextResponse.json({ quota })
@@ -29,14 +32,17 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
+  const body = await request.json()
+  const teamId =
+    body.teamId ||
+    request.cookies.get('selectedTeamId')?.value?.trim() ||
+    session.user.teamId!
+
   try {
-    await requireScreenPermission(session, session.user.teamId!, 'ADMIN_SETTINGS', 'EDIT')
+    await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'EDIT')
   } catch (err) {
     return ApiResponse.forbidden()
   }
-
-  const body = await request.json()
-  const teamId = body.teamId || session.user.teamId!
   const limitBytes = body.limitBytes === null ? null : body.limitBytes
 
   if (limitBytes !== null && typeof limitBytes !== 'number' && typeof limitBytes !== 'bigint') {

@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
-    const teamId = searchParams.get('teamId') || session.user.teamId
+    const teamId =
+      searchParams.get('teamId') ||
+      request.cookies.get('selectedTeamId')?.value?.trim() ||
+      session.user.teamId
     const identityId = searchParams.get('identityId') || undefined
     const bucketId = searchParams.get('bucketId') || undefined
 
@@ -50,14 +53,24 @@ export async function GET(request: NextRequest) {
 
 
     const userId = session.user.id
-    const dbQuery = { contains: query, mode: 'insensitive' as const }
+    const isTeamScoped = Boolean(teamId)
 
-    // Fetch data concurrently with database-side filtering
-    const [files, links, buckets, teams, members] = await Promise.all([
-      // 1. Files - scoped and searched by name, tags, or description
-      prisma.file.findMany({
+    if (isTeamScoped) {
+      const membership = await prisma.teamMember.findFirst({
         where: {
-          // File must either match the teamId exactly, or have no teamId but belong to a bucket/credential that does
+          teamId: teamId!,
+          userId,
+        },
+      })
+
+      if (!membership) {
+        return NextResponse.json({ results: [] })
+      }
+    }
+
+    const dbQuery = { contains: query, mode: 'insensitive' as const }
+    const fileScopeWhere = isTeamScoped
+      ? {
           OR: [
             { teamId: teamId || null },
             {
@@ -69,6 +82,57 @@ export async function GET(request: NextRequest) {
               },
             },
           ],
+        }
+      : {
+          teamId: null,
+          userId,
+        }
+
+    const linkFileWhere = isTeamScoped
+      ? {
+          OR: [
+            {
+              teamId: teamId || null,
+              name: dbQuery,
+            },
+            {
+              teamId: teamId || null,
+              tags: { has: query.toLowerCase().trim() },
+            },
+            {
+              teamId: null,
+              bucket: {
+                credential: {
+                  teamId: teamId || null,
+                },
+              },
+              name: dbQuery,
+            },
+            {
+              teamId: null,
+              bucket: {
+                credential: {
+                  teamId: teamId || null,
+                },
+              },
+              tags: { has: query.toLowerCase().trim() },
+            },
+          ],
+        }
+      : {
+          teamId: null,
+          OR: [
+            { name: dbQuery },
+            { tags: { has: query.toLowerCase().trim() } },
+          ],
+        }
+
+    // Fetch data concurrently with database-side filtering
+    const [files, links, buckets, teams, members] = await Promise.all([
+      // 1. Files - scoped and searched by name, tags, or description
+      prisma.file.findMany({
+        where: {
+          ...fileScopeWhere,
           ...(bucketId ? { bucketId } : {}),
           ...(identityId ? { credentialId: identityId } : {}),
           AND: [
@@ -98,37 +162,11 @@ export async function GET(request: NextRequest) {
       // 2. Shared Links - scoped and searched by file name or link properties
       prisma.link.findMany({
         where: {
+          ...(isTeamScoped ? {} : { userId }),
           file: {
+            ...linkFileWhere,
             ...(bucketId ? { bucketId } : {}),
             ...(identityId ? { credentialId: identityId } : {}),
-            OR: [
-              {
-                teamId: teamId || null,
-                name: dbQuery,
-              },
-              {
-                teamId: teamId || null,
-                tags: { has: query.toLowerCase().trim() },
-              },
-              {
-                teamId: null,
-                bucket: {
-                  credential: {
-                    teamId: teamId || null,
-                  },
-                },
-                name: dbQuery,
-              },
-              {
-                teamId: null,
-                bucket: {
-                  credential: {
-                    teamId: teamId || null,
-                  },
-                },
-                tags: { has: query.toLowerCase().trim() },
-              },
-            ],
           },
         },
         select: {

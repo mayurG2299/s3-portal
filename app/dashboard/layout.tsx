@@ -36,7 +36,10 @@ export default async function DashboardLayout({
 
   // Get selections from cookies or defaults
   const cookieTeamId = cookieStore.get('selectedTeamId')?.value
-  const currentTeamId = cookieTeamId || session.user.teamId || teams[0]?.id
+  const validCookieTeamId = teams.some((team) => team.id === cookieTeamId)
+    ? cookieTeamId
+    : null
+  const currentTeamId = validCookieTeamId || session.user.teamId || teams[0]?.id
   const initialIdentityId = cookieStore.get('selectedIdentityId')?.value
   const initialBucketId = cookieStore.get('selectedBucketId')?.value
 

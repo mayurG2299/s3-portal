@@ -281,9 +281,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const fileId = searchParams.get('fileId')
-    const requestedTeamId = searchParams.get("teamId")?.trim() || session.user.teamId || null;
-    let usePersonalScopeFallback = false;
-    let teamIdToQuery: string | null = null;
+    const requestedTeamId =
+      searchParams.get('teamId')?.trim() ||
+      request.cookies.get('selectedTeamId')?.value?.trim() ||
+      session.user.teamId ||
+      null
+    let usePersonalScopeFallback = false
+    let teamIdToQuery: string | null = null
 
     if (requestedTeamId) {
       const membership = await prisma.teamMember.findFirst({
@@ -291,29 +295,27 @@ export async function GET(request: NextRequest) {
           teamId: requestedTeamId,
           userId: session.user.id,
         },
-      });
+      })
       if (!membership) {
-        usePersonalScopeFallback = true;
+        usePersonalScopeFallback = true
       } else {
-        teamIdToQuery = requestedTeamId;
+        teamIdToQuery = requestedTeamId
       }
     } else {
-      usePersonalScopeFallback = true;
+      usePersonalScopeFallback = true
     }
 
-    let where: any;
-    if (usePersonalScopeFallback) {
-      where = {
-        userId: session.user.id,
-        file: { teamId: null },
-      };
-    } else {
-      where = {
-        file: { teamId: teamIdToQuery },
-      };
-    }
+    const where: any = usePersonalScopeFallback
+      ? {
+          userId: session.user.id,
+          file: { teamId: null },
+        }
+      : {
+          file: { teamId: teamIdToQuery },
+        }
+
     if (fileId) {
-      where.fileId = fileId;
+      where.fileId = fileId
     }
 
     const links = await prisma.link.findMany({
@@ -341,7 +343,10 @@ export async function GET(request: NextRequest) {
       },
     }))
 
-    return NextResponse.json({ links: serializedLinks, personalScopeFallback: usePersonalScopeFallback })
+    return NextResponse.json({
+      links: serializedLinks,
+      personalScopeFallback: usePersonalScopeFallback,
+    })
   } catch (error) {
     console.error('Error fetching links:', error)
     return NextResponse.json(
@@ -400,58 +405,25 @@ export async function DELETE(request: NextRequest) {
       request,
       action: 'LINK_DELETE',
       success: true,
-              const { searchParams } = new URL(request.url)
-              const fileId = searchParams.get('fileId')
-              const requestedTeamId = searchParams.get("teamId")?.trim() || session.user.teamId || null;
-              let usePersonalScopeFallback = false;
-              let teamIdToQuery: string | null = null;
-    
-              if (requestedTeamId) {
-                const membership = await prisma.teamMember.findFirst({
-                  where: {
-                    teamId: requestedTeamId,
-                    userId: session.user.id,
-                  },
-                });
-                if (!membership) {
-                  usePersonalScopeFallback = true;
-                } else {
-                  teamIdToQuery = requestedTeamId;
-                }
-              } else {
-                usePersonalScopeFallback = true;
-              }
-    
-              const where: any = usePersonalScopeFallback
-                ? { file: { teamId: null, userId: session.user.id } }
-                : { file: { teamId: teamIdToQuery } };
-              if (fileId) {
-                where.fileId = fileId;
-              }
-    
-              const links = await prisma.link.findMany({
-                where,
-                include: {
-                  file: {
-                    select: {
-                      name: true,
-                      size: true,
-                      contentType: true,
-                    },
-                  },
-                },
-                orderBy: {
-                  createdAt: 'desc',
-                },
-              });
-    
-              // Convert BigInt to string for JSON serialization
-              const serializedLinks = links.map((link) => ({
-                ...link,
-                file: {
-                  ...link.file,
-                  size: link.file.size.toString(),
-                },
-              }));
-    
-              return NextResponse.json({ links: serializedLinks, personalScopeFallback: usePersonalScopeFallback });
+      userId: session.user.id,
+      resourceType: 'link',
+      resourceId: id,
+      teamId: link.file?.teamId,
+      metadata: { fileId: link.file?.id },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Error deleting link:', error)
+    await logUserAction({
+      request,
+      action: 'LINK_DELETE',
+      success: false,
+      errorMessage: error?.message ?? 'Internal server error',
+    })
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

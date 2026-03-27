@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const requestedTeamId = searchParams.get('teamId')?.trim() || auth!.teamId
+    const requestedTeamId =
+      searchParams.get('teamId')?.trim() ||
+      request.cookies.get('selectedTeamId')?.value?.trim() ||
+      auth!.teamId
     let usePersonalScopeFallback = false
     let teamIdToQuery: string | null = null
 

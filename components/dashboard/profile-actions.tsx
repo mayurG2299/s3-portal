@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { LogOut, Trash2, User, KeyRound, ChevronDown } from 'lucide-react'
 
 type Member = {
@@ -38,33 +39,42 @@ type ProfileActionsProps = {
 export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const { selectedTeamId } = useDashboard()
 
   useEffect(() => {
     setOpen(false)
   }, [pathname])
   const [members, setMembers] = useState<Member[]>([])
   const [isOwner, setIsOwner] = useState(false)
+  const [ownedTeamCount, setOwnedTeamCount] = useState(0)
   const [transferToUserId, setTransferToUserId] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    fetch('/api/account/members')
+    const url = selectedTeamId
+      ? `/api/account/members?teamId=${encodeURIComponent(selectedTeamId)}`
+      : '/api/account/members'
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         setMembers(data.members || [])
         setIsOwner(Boolean(data.isOwner))
+        setOwnedTeamCount(Number(data.ownedTeamCount || 0))
       })
       .catch(() => {
         setMembers([])
         setIsOwner(false)
+        setOwnedTeamCount(0)
       })
-  }, [])
+  }, [selectedTeamId])
 
   const canDelete = useMemo(() => {
+    if (ownedTeamCount > 1) return false
     if (!isOwner) return true
     if (members.length === 0) return false
     return Boolean(transferToUserId)
-  }, [isOwner, transferToUserId, members.length])
+  }, [isOwner, transferToUserId, members.length, ownedTeamCount])
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -156,6 +166,11 @@ export function ProfileActions({ isCollapsed = false }: ProfileActionsProps) {
                   <p className="text-sm text-gray-700">
                     You are the owner. Transfer ownership before deleting your account.
                   </p>
+                  {ownedTeamCount > 1 ? (
+                    <p className="text-sm text-red-600">
+                      You own multiple teams. Transfer or delete those teams before deleting your account.
+                    </p>
+                  ) : null}
                   {members.length === 0 ? (
                     <p className="text-sm text-red-600">
                       No other team members available to transfer ownership.

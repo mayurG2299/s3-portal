@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
@@ -9,17 +10,82 @@ import { Button } from '@/components/ui/button'
 import { InviteUserForm } from '@/components/admin/invite-user-form'
 import { UserRoleManagement } from '@/components/admin/user-role-management'
 import { cn } from '@/lib/utils'
-import { Users, Info, UserPlus, ShieldAlert } from 'lucide-react'
+import { Users, Info, UserPlus, PlusCircle, Pencil, Trash2 } from 'lucide-react'
 
-export default async function TeamsPage() {
+async function updateTeamAction(formData: FormData) {
+  'use server'
+
+  const session = await requireUser()
+  const teamId = String(formData.get('teamId') || '')
+  const name = String(formData.get('name') || '').trim()
+
+  if (!teamId || !name) return
+
+  const team = await prisma.team.findUnique({ where: { id: teamId } })
+  if (!team || team.ownerId !== session.user.id) return
+
+  await prisma.team.update({
+    where: { id: teamId },
+    data: { name },
+  })
+
+  revalidatePath('/dashboard/teams')
+}
+
+async function deleteTeamAction(formData: FormData) {
+  'use server'
+
+  const session = await requireUser()
+  const teamId = String(formData.get('teamId') || '')
+
+  if (!teamId) return
+
+  const team = await prisma.team.findUnique({ where: { id: teamId } })
+  if (!team || team.ownerId !== session.user.id) return
+
+  const [memberCount, credentialCount, fileCount] = await Promise.all([
+    prisma.teamMember.count({ where: { teamId } }),
+    prisma.aWSCredential.count({ where: { teamId } }),
+    prisma.file.count({ where: { teamId } }),
+  ])
+
+  // Safety check: avoid destructive cascades when team still has active data.
+  if (memberCount > 1 || credentialCount > 0 || fileCount > 0) {
+    return
+  }
+
+  await prisma.team.delete({ where: { id: teamId } })
+  revalidatePath('/dashboard/teams')
+}
+
+export default async function TeamsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ teamId?: string }>
+}) {
   const session = await requireUser()
   const cookieStore = await cookies()
+  const resolvedSearchParams = (await searchParams) || {}
+  const queryTeamId = resolvedSearchParams.teamId?.trim()
   const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
-  const teamId = selectedTeamId || session.user.teamId
+  const teamId = queryTeamId || selectedTeamId || session.user.teamId
 
   if (!teamId) {
     redirect('/dashboard')
   }
+
+  const userTeams = await prisma.teamMember.findMany({
+    where: { userId: session.user.id },
+    include: {
+      team: {
+        select: { id: true, name: true, slug: true, ownerId: true },
+      },
+      role: {
+        select: { name: true, level: true },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
 
   const hasAccess = await canManageTeam(session.user.id, teamId)
   if (!hasAccess) {
@@ -56,6 +122,14 @@ export default async function TeamsPage() {
         <p className="text-muted-foreground font-medium">
           Organize your workspace, manage roles and collaborate securely.
         </p>
+        <div className="mt-4 flex items-center gap-2 justify-center lg:justify-start">
+          <Button asChild className="h-9 rounded-xl">
+            <Link href="/dashboard/teams/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Team
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -95,16 +169,6 @@ export default async function TeamsPage() {
                   <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Add people to your team</p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                asChild
-                className="h-8 px-3 rounded-lg bg-secondary hover:bg-secondary/80 text-[10px] font-black uppercase tracking-widest text-secondary-foreground hover:text-primary transition-all"
-              >
-                <Link href="/dashboard/admin/permissions">
-                  <ShieldAlert className="mr-2 h-3.5 w-3.5" />
-                  Advanced Permissions
-                </Link>
-              </Button>
             </div>
             <div key={`invite-${team.id}`} className="p-6">
               <InviteUserForm teamId={team.id} />
@@ -153,6 +217,65 @@ export default async function TeamsPage() {
                   <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{team.members.length} member{team.members.length === 1 ? '' : 's'}</span>
                 </div>
               </div>
+
+              <div className="pt-4 border-t border-border space-y-3">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your Teams</h4>
+                <div className="space-y-2">
+                  {userTeams.map((membership) => {
+                    const isActive = membership.team.id === team.id
+                    return (
+                      <div
+                        key={membership.id}
+                        className={cn(
+                          'rounded-lg border px-3 py-2 flex items-center justify-between gap-2',
+                          isActive ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/20'
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{membership.team.name}</p>
+                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{membership.role.name}</p>
+                        </div>
+                        {!isActive && (
+                          <Button variant="outline" size="sm" asChild className="h-7 px-2 text-[10px]">
+                            <Link href={`/dashboard/teams?teamId=${membership.team.id}`}>Manage</Link>
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {team.ownerId === session.user.id && (
+                <div className="pt-4 border-t border-border space-y-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team CRUD</h4>
+                  <form action={updateTeamAction} className="space-y-2">
+                    <input type="hidden" name="teamId" value={team.id} />
+                    <input
+                      name="name"
+                      defaultValue={team.name}
+                      className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold"
+                      maxLength={100}
+                      required
+                    />
+                    <Button type="submit" variant="outline" className="h-8 w-full text-[10px] font-black uppercase tracking-widest">
+                      <Pencil className="mr-2 h-3 w-3" />
+                      Update Team Name
+                    </Button>
+                  </form>
+
+                  <form action={deleteTeamAction}>
+                    <input type="hidden" name="teamId" value={team.id} />
+                    <Button type="submit" variant="destructive" className="h-8 w-full text-[10px] font-black uppercase tracking-widest">
+                      <Trash2 className="mr-2 h-3 w-3" />
+                      Delete Empty Team
+                    </Button>
+                  </form>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Team delete is allowed only when this team has no files, no credentials, and no other members.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

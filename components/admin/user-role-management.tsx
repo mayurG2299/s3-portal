@@ -19,7 +19,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { Shield, Crown, Eye, Lock, ShieldAlert } from 'lucide-react'
+import { Shield, Crown, Eye, Lock, ShieldAlert, UserMinus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import { useSearchParams } from 'next/navigation'
@@ -136,6 +136,35 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
     }
   }
 
+  const removeMember = async (userId: string, memberId: string, email: string) => {
+    if (!confirm(`Remove ${email} from this team?`)) return
+    setUpdating(memberId)
+    try {
+      const response = await fetch(
+        `/api/team/members?teamId=${encodeURIComponent(teamId)}&userId=${encodeURIComponent(userId)}`,
+        { method: 'DELETE' }
+      )
+      const json = await response.json()
+      if (!response.ok) {
+        throw new Error(json.error || json.message || 'Failed to remove member')
+      }
+
+      toast({
+        title: 'Member Removed',
+        description: `${email} was removed from the team.`,
+      })
+      window.location.reload()
+    } catch (error) {
+      toast({
+        title: 'Removal Failed',
+        description: error instanceof Error ? error.message : 'Failed to remove member',
+        variant: 'destructive',
+      })
+    } finally {
+      setUpdating(null)
+    }
+  }
+
   return (
     <>
       {/* Access Denied Beautiful Dialog */}
@@ -173,6 +202,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
 
           // Row is locked if: it's you, it's the owner (and you're not the owner), or your level <= their level
           const isLocked = isCurrentUser || (isOwner && !isCurrentUser) || (callerLevel < 100 && member.role.level >= callerLevel && !isOwner)
+          const canRemove = !isCurrentUser && !isOwner && !isLocked
 
           return (
             <div
@@ -211,7 +241,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8">
                 <div className="hidden lg:block text-right max-w-[240px]">
                   <p className="text-[10px] italic font-medium text-muted-foreground/80 leading-relaxed">
                     {member.role.description || "No security constraints defined."}
@@ -265,6 +295,20 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                     </div>
                   )}
                 </div>
+
+                {canRemove && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="h-10 rounded-xl font-black uppercase tracking-widest text-[10px]"
+                    disabled={updating === member.id}
+                    onClick={() => removeMember(member.userId, member.id, member.user.email)}
+                  >
+                    <UserMinus className="mr-1.5 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                )}
               </div>
             </div>
           )

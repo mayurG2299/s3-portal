@@ -8,7 +8,7 @@ import { logUserAction } from '@/lib/audit'
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !session.user.teamId) {
+    if (!session?.user?.id) {
       await logUserAction({
         request,
         action: 'ACCOUNT_DELETE',
@@ -22,9 +22,23 @@ export async function POST(request: NextRequest) {
       transferToUserId?: string
     }
 
-    const teamId = session.user.teamId
-    const role = await getUserRoleInTeam(session.user.id, teamId)
-    const owner = isOwner(role || undefined)
+    const ownedTeams = await prisma.team.findMany({
+      where: { ownerId: session.user.id },
+      select: { id: true, name: true },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    if (ownedTeams.length > 1) {
+      return NextResponse.json(
+        { error: 'You own multiple teams. Transfer or delete those teams before deleting your account.' },
+        { status: 400 }
+      )
+    }
+
+    const ownedTeamId = ownedTeams[0]?.id || null
+    const teamId = ownedTeamId || request.cookies.get('selectedTeamId')?.value?.trim() || session.user.teamId || null
+    const role = teamId ? await getUserRoleInTeam(session.user.id, teamId) : null
+    const owner = ownedTeams.length === 1 || isOwner(role || undefined)
 
     if (owner && !transferToUserId) {
       return NextResponse.json(
@@ -41,9 +55,18 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      const transferTeamId = ownedTeamId || teamId
+
+      if (!transferTeamId) {
+        return NextResponse.json(
+          { error: 'No team available for ownership transfer.' },
+          { status: 400 }
+        )
+      }
+
       const targetMember = await prisma.teamMember.findFirst({
         where: {
-          teamId,
+          teamId: transferTeamId,
           userId: transferToUserId,
         },
       })
@@ -61,7 +84,7 @@ export async function POST(request: NextRequest) {
 
       await prisma.$transaction([
         prisma.team.update({
-          where: { id: teamId },
+          where: { id: transferTeamId },
           data: { ownerId: transferToUserId },
         }),
         prisma.teamMember.update({
@@ -69,7 +92,7 @@ export async function POST(request: NextRequest) {
           data: { roleId: 'role_owner' },
         }),
         prisma.teamMember.updateMany({
-          where: { teamId, userId: session.user.id },
+          where: { teamId: transferTeamId, userId: session.user.id },
           data: { roleId: 'role_admin' },
         }),
       ])

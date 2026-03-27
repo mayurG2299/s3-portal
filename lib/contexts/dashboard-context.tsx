@@ -71,7 +71,7 @@ export function DashboardProvider({
       })
       if (response.ok) {
         const data = await response.json()
-        setIdentities(Array.isArray(data) ? data : [])
+        setIdentities(Array.isArray(data) ? data : data.credentials || [])
       } else {
         setIdentities([])
       }
