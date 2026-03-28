@@ -57,6 +57,29 @@ export default async function DashboardPage() {
       }),
     ])
 
+  // If user has no teams, show a special UI state
+  if (!activeTeamId || teamsCount === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-4 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="w-24 h-24 mb-8 flex items-center justify-center rounded-3xl bg-muted border-2 border-dashed border-border">
+          <Users className="w-12 h-12 text-muted-foreground" />
+        </div>
+        <h2 className="text-2xl font-black text-foreground mb-2 text-center">No Teams Found</h2>
+        <p className="text-muted-foreground text-center mb-6 max-w-md">
+          You are not a member of any team, or your last team was removed. To get started, join a team or create a new one.
+        </p>
+        <div className="flex gap-4">
+          <Link href="/dashboard/teams/new">
+            <Button className="btn-primary-gradient font-bold px-6 py-3 rounded-xl">Create Team</Button>
+          </Link>
+          <Link href="/dashboard/teams">
+            <Button variant="outline" className="font-bold px-6 py-3 rounded-xl">Join Team</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // Aggregate File Sizes (in Bytes) by Month for the Current Year
   const currentYear = new Date().getFullYear()
 

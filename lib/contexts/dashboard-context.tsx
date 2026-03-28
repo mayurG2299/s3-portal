@@ -1,8 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/navigation'
+
+import { toast } from '@/hooks/use-toast'
 
 export interface Bucket {
   id: string
@@ -51,26 +53,70 @@ export function DashboardProvider({
   initialBucketId?: string | null
 }) {
   const router = useRouter()
+
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(initialTeamId)
   const [selectedIdentityId, setSelectedIdentityId] = useState<string | null>(initialIdentityId || null)
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(initialBucketId || null)
   const [identities, setIdentities] = useState<CloudIdentity[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [teamLost, setTeamLost] = useState(false)
+  const prevTeamIdRef = useRef<string | null>(initialTeamId)
 
-  // Effect: If selectedTeamId is no longer in teams, clear selection and redirect
+  // Effect: Team loss detection, auto-fallback, toast, and multi-tab sync
   useEffect(() => {
-    if (!selectedTeamId) return;
-    const stillMember = initialTeams.some((team) => team.id === selectedTeamId);
-    if (!stillMember) {
-      setSelectedTeamId(null);
-      Cookies.remove('selectedTeamId');
-      setSelectedIdentityId(null);
-      setSelectedBucketId(null);
-      Cookies.remove('selectedIdentityId');
-      Cookies.remove('selectedBucketId');
-      router.push('/dashboard');
+    // Team loss detection
+    if (selectedTeamId && !initialTeams.some((team) => team.id === selectedTeamId)) {
+      setSelectedTeamId(null)
+      Cookies.remove('selectedTeamId')
+      setSelectedIdentityId(null)
+      setSelectedBucketId(null)
+      Cookies.remove('selectedIdentityId')
+      Cookies.remove('selectedBucketId')
+      setTeamLost(true)
+      prevTeamIdRef.current = selectedTeamId
     }
-  }, [selectedTeamId, initialTeams, router]);
+  }, [selectedTeamId, initialTeams])
+
+  // Auto-fallback and toast notification
+  useEffect(() => {
+    if (teamLost) {
+      if (initialTeams.length > 0) {
+        const fallbackTeamId = initialTeams[0].id
+        setSelectedTeamId(fallbackTeamId)
+        Cookies.set('selectedTeamId', fallbackTeamId, { expires: 7 })
+        toast({
+          title: 'Team switched',
+          description: `You lost access to your previous team. Switched to: ${initialTeams[0].name}.`,
+          variant: 'default',
+        })
+      } else {
+        toast({
+          title: 'No teams available',
+          description: 'You lost access to your last team. Please join or create a new team.',
+          variant: 'destructive',
+        })
+        // Optionally, redirect to a "no teams" dashboard page here
+      }
+      setTeamLost(false)
+    }
+  }, [teamLost, initialTeams])
+
+  // Multi-tab/session sync for selectedTeamId, selectedIdentityId, selectedBucketId
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'selectedTeamId') {
+        setSelectedTeamId(event.newValue)
+      }
+      if (event.key === 'selectedIdentityId') {
+        setSelectedIdentityId(event.newValue)
+      }
+      if (event.key === 'selectedBucketId') {
+        setSelectedBucketId(event.newValue)
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   // Fetch identities for the current team
   const refreshIdentities = useCallback(async () => {
@@ -175,6 +221,7 @@ export function DashboardProvider({
       }}
     >
       {children}
+      {/* Optionally, render a No Teams UI here if initialTeams.length === 0 */}
     </DashboardContext.Provider>
   )
 }
