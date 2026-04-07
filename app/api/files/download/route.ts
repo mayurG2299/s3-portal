@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { decryptAWSConfig, generatePresignedDownloadUrl, generateCloudfrontSignedUrl } from '@/lib/aws'
 import { logUserAction } from '@/lib/audit'
 import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
+import { canAccessBucket } from '@/lib/bucket-access'
 import { allowRequest } from '@/lib/rate-limiter'
 
 export async function GET(request: NextRequest) {
@@ -60,6 +61,14 @@ export async function GET(request: NextRequest) {
       if (!member) {
         await logUserAction({ request, action: 'FILE_DOWNLOAD', success: false, userId: session.user.id, resourceType: 'file', resourceId: fileId, errorMessage: 'Forbidden' })
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      }
+    }
+
+    // Personal-scope files (teamId null) bypass bucket restriction intentionally
+    if (file.teamId && file.bucketId) {
+      const allowed = await canAccessBucket(session.user.id, file.teamId, file.bucketId)
+      if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
 

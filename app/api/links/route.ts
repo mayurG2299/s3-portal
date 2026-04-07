@@ -10,6 +10,7 @@ import {
 } from '@/lib/aws'
 import { hashPassword } from '@/lib/crypto'
 import { generateLinkHash } from '@/lib/utils'
+import { canAccessBucket } from '@/lib/bucket-access'
 
 import { z } from 'zod'
 
@@ -103,6 +104,14 @@ export async function POST(request: NextRequest) {
           errorMessage: 'Forbidden',
         })
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+      }
+    }
+
+    // Personal-scope files (teamId null) bypass bucket restriction intentionally
+    if (file.teamId && file.bucketId) {
+      const allowed = await canAccessBucket(session.user.id, file.teamId, file.bucketId)
+      if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
 
@@ -320,9 +329,21 @@ export async function GET(request: NextRequest) {
 
     const links = await prisma.link.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        hash: true,
+        type: true,
+        expiresAt: true,
+        downloadCount: true,
+        maxDownloads: true,
+        allowDownload: true,
+        allowPreview: true,
+        createdAt: true,
+        userId: true,
+        passwordHash: true,
         file: {
           select: {
+            teamId: true,
             name: true,
             size: true,
             contentType: true,
@@ -336,7 +357,17 @@ export async function GET(request: NextRequest) {
 
     // Convert BigInt to string for JSON serialization
     const serializedLinks = links.map((link) => ({
-      ...link,
+      id: link.id,
+      hash: link.hash,
+      type: link.type,
+      expiresAt: link.expiresAt,
+      downloadCount: link.downloadCount,
+      maxDownloads: link.maxDownloads,
+      allowDownload: link.allowDownload,
+      allowPreview: link.allowPreview,
+      createdAt: link.createdAt,
+      userId: link.userId,
+      hasPassword: Boolean(link.passwordHash),
       file: {
         ...link.file,
         size: link.file.size.toString(),

@@ -1,30 +1,35 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { decryptAWSConfig, getPermanentObjectUrl } from "@/lib/aws";
+import { requireScreenPermission, ApiResponse } from "@/lib/api-utils";
+import { logUserAction } from "@/lib/audit";
+import { canAccessBucket } from "@/lib/bucket-access";
 
-import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
-import { decryptAWSConfig, getPermanentObjectUrl } from '@/lib/aws'
-import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
-import { logUserAction } from '@/lib/audit'
+import type { RouteContext } from "@/types/next-route-context";
 
-export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: RouteContext<{ fileId: string }>,
+) {
+  const { fileId } = await context.params;
   // 1. Authenticate
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return ApiResponse.unauthorized()
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return ApiResponse.unauthorized();
 
   // 2. Validate input
-  const { fileId } = params
-  if (!fileId) return ApiResponse.validationError('fileId is required')
+  if (!fileId) return ApiResponse.validationError("fileId is required");
 
   // 3. Load file and check ownership
   const file = await prisma.file.findUnique({
     where: { id: fileId },
     include: { credential: true, bucket: true },
-  })
-  if (!file) return ApiResponse.notFound()
+  });
+  if (!file) return ApiResponse.notFound();
 
   if (file.userId !== session.user.id) {
-    if (!file.teamId) return ApiResponse.forbidden()
+    if (!file.teamId) return ApiResponse.forbidden();
 
     const membership = await prisma.teamMember.findUnique({
       where: {
@@ -33,27 +38,35 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
           userId: session.user.id,
         },
       },
-    })
+    });
 
-    if (!membership) return ApiResponse.forbidden()
+    if (!membership) return ApiResponse.forbidden();
+  }
+
+  // Personal-scope files (teamId null) bypass bucket restriction intentionally
+  if (file.teamId && file.bucketId) {
+    const allowed = await canAccessBucket(session.user.id, file.teamId, file.bucketId)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
   }
 
   // 4. Permission check (screen-based RBAC)
   if (file.teamId) {
     try {
-      await requireScreenPermission(session, file.teamId, 'FILES_LIST', 'VIEW')
+      await requireScreenPermission(session, file.teamId, "FILES_LIST", "VIEW");
     } catch {
       await logUserAction({
         request,
-        action: 'FILE_DIRECT_LINK',
+        action: "FILE_DIRECT_LINK",
         success: false,
         userId: session.user.id,
         teamId: file.teamId,
-        resourceType: 'file',
+        resourceType: "file",
         resourceId: file.id,
-        errorMessage: 'Forbidden by screen permission',
-      })
-      return ApiResponse.forbidden()
+        errorMessage: "Forbidden by screen permission",
+      });
+      return ApiResponse.forbidden();
     }
   }
 
@@ -62,21 +75,21 @@ export async function GET(request: NextRequest, { params }: { params: { fileId: 
     file.bucket.bucket,
     file.credential.region,
     file.key,
-    file.bucket.cloudfrontDomain
-  )
+    file.bucket.cloudfrontDomain,
+  );
 
   // 6. Audit log
   await logUserAction({
     request,
-    action: 'FILE_DIRECT_LINK',
+    action: "FILE_DIRECT_LINK",
     success: true,
     userId: session.user.id,
     teamId: file.teamId,
-    resourceType: 'file',
+    resourceType: "file",
     resourceId: file.id,
     metadata: { key: file.key },
-  })
+  });
 
   // 7. Return
-  return ApiResponse.success({ url })
+  return ApiResponse.success({ url });
 }

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import {
+  type AWSConfig,
   decryptAWSConfig,
   generatePresignedUploadUrl,
   initMultipartUpload,
@@ -13,8 +14,9 @@ import {
   deleteS3Object,
   copyS3Object,
   getS3ObjectMetadata,
-} from '@/lib/aws'
+} from "@/lib/aws";
 import { buildS3Key } from '@/lib/utils'
+import { canAccessBucket } from '@/lib/bucket-access'
 import { z } from 'zod'
 import {
   checkQuotaBeforeUpload,
@@ -41,7 +43,7 @@ const uploadSchema = z.object({
   contentType: z.string().optional(),
   size: z.number().int().min(0).optional(),
   path: z.string().default("/"),
-  teamId: z.string().optional(),
+  teamId: z.string(), // Now required
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   description: z.string().max(1000).optional(),
 });
@@ -50,11 +52,12 @@ const multipartInitSchema = z.object({
   bucketId: z.string(),
   fileName: z.string(),
   contentType: z.string().optional(),
-  path: z.string().default('/'),
-  teamId: z.string().optional(),
+  size: z.number().int().min(0),
+  path: z.string().default("/"),
+  teamId: z.string(), // Now required
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   description: z.string().max(1000).optional(),
-})
+});
 
 const multipartPresignSchema = z.object({
   bucketId: z.string(),
@@ -118,7 +121,7 @@ async function getAccessibleBucket(
   teamId: string | null | undefined,
   requireAdmin: boolean
 ) {
-  return prisma.awsBucket.findFirst({
+  const bucket = await prisma.awsBucket.findFirst({
     where: {
       id: bucketId,
       credential: {
@@ -141,6 +144,108 @@ async function getAccessibleBucket(
     },
     include: { credential: true },
   })
+
+  if (!bucket) return null
+
+  // For team operations on non-admin members, enforce bucket-level access
+  if (teamId && !requireAdmin) {
+    const allowed = await canAccessBucket(userId, teamId, bucketId)
+    if (!allowed) return null
+  }
+
+  return bucket
+}
+
+async function resolveActiveTeamId(params: {
+  requestedTeamId: string | null;
+  sessionTeamId: string | null;
+  userId: string;
+}): Promise<string | null> {
+  const tryTeam = async (teamId: string | null) => {
+    if (!teamId) return null;
+    const membership = await prisma.teamMember.findUnique({
+      where: {
+        teamId_userId: {
+          teamId,
+          userId: params.userId,
+        },
+      },
+      select: { teamId: true },
+    });
+    return membership?.teamId || null;
+  };
+
+  const requested = await tryTeam(params.requestedTeamId);
+  if (requested) return requested;
+
+  const sessionTeam = await tryTeam(params.sessionTeamId);
+  if (sessionTeam) return sessionTeam;
+
+  return null;
+}
+
+async function decryptConfigOrError(params: {
+  request: NextRequest;
+  action: string;
+  userId: string;
+  teamId?: string | null;
+  resourceType: "bucket" | "file";
+  resourceId: string;
+  credential: {
+    encryptedAccessKey: string;
+    encryptedSecretKey: string;
+    region: string;
+  };
+  bucket: {
+    bucket: string;
+    cloudfrontDomain?: string | null;
+    cloudfrontKeyPairId?: string | null;
+    encryptedCloudfrontPrivateKey?: string | null;
+  };
+}): Promise<
+  | { config: AWSConfig; errorResponse: null }
+  | { config: null; errorResponse: NextResponse }
+> {
+  try {
+    return {
+      config: decryptAWSConfig(params.credential, params.bucket),
+      errorResponse: null,
+    };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Failed to decrypt data";
+
+    console.error("Failed to decrypt AWS credential in files API:", {
+      action: params.action,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      userId: params.userId,
+      teamId: params.teamId || null,
+      error: message,
+    });
+
+    await logUserAction({
+      request: params.request,
+      action: params.action,
+      success: false,
+      userId: params.userId,
+      teamId: params.teamId || null,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      errorMessage: `Credential decryption failed: ${message}`,
+    });
+
+    return {
+      config: null,
+      errorResponse: NextResponse.json(
+        {
+          message:
+            "Stored cloud credentials could not be decrypted. Please re-save this credential and retry.",
+        },
+        { status: 500 },
+      ),
+    };
+  }
 }
 
 // Generate presigned upload URL
@@ -161,31 +266,26 @@ export async function POST(request: NextRequest) {
     const { action } = body
 
     const bodyTeamId = typeof body?.teamId === 'string' ? body.teamId.trim() : ''
-    const selectedTeamFromCookie = request.cookies.get('selectedTeamId')?.value?.trim()
-    const activeTeamId =
-      bodyTeamId || selectedTeamFromCookie || session.user.teamId || null
+    const selectedTeamFromCookie =
+      request.cookies.get("selectedTeamId")?.value?.trim() || null;
+    const preferredTeamId = bodyTeamId || selectedTeamFromCookie;
 
-    if (activeTeamId) {
-      const membership = await prisma.teamMember.findUnique({
-        where: {
-          teamId_userId: {
-            teamId: activeTeamId,
-            userId: session.user.id,
-          },
-        },
-      })
+    const activeTeamId = await resolveActiveTeamId({
+      requestedTeamId: preferredTeamId,
+      sessionTeamId: session.user.teamId || null,
+      userId: session.user.id,
+    });
 
-      if (!membership) {
-        await logUserAction({
-          request,
-          action: 'FILE_ACTION',
-          success: false,
-          userId: session.user.id,
-          teamId: activeTeamId,
-          errorMessage: 'Forbidden: User is not a member of selected team',
-        })
-        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
-      }
+    if (preferredTeamId && activeTeamId !== preferredTeamId) {
+      await logUserAction({
+        request,
+        action: "FILE_ACTION",
+        success: false,
+        userId: session.user.id,
+        teamId: preferredTeamId,
+        errorMessage: "Forbidden: User is not a member of selected team",
+      });
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
     if (action === "upload") {
@@ -212,7 +312,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: "Forbidden" }, { status: 403 });
       }
 
-      const config = decryptAWSConfig(bucket.credential, bucket);
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_UPLOAD_INIT",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const key = buildS3Key(validated.path, validated.fileName);
 
       // Check quota before issuing presigned URL (we don't know final size yet).
@@ -236,8 +348,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // If client provided an expected size, enforce quota now and optimistically
-      // reserve usage immediately. This requires the client to send `size`.
+      // If client provided an expected size, enforce quota now before issuing URL.
       const expectedSize =
         validated.size !== undefined ? BigInt(validated.size) : null;
       if (expectedSize !== null) {
@@ -299,7 +410,7 @@ export async function POST(request: NextRequest) {
         create: {
           key,
           name: validated.fileName,
-          size: validated.size ?? 0, // If provided, set initial size
+          size: 0,
           contentType: validated.contentType,
           parentPath: validated.path,
           userId: session.user.id,
@@ -310,18 +421,6 @@ export async function POST(request: NextRequest) {
           description: normalizedDescription,
         },
       });
-
-      // If we reserved quota optimistically, increment usage now
-      if (expectedSize !== null && expectedSize > BigInt(0)) {
-        try {
-          await incrementUsage(
-            validated.teamId || bucket.credential.teamId,
-            expectedSize,
-          );
-        } catch (err) {
-          console.error("Failed to increment usage on upload init:", err);
-        }
-      }
 
       await logUserAction({
         request,
@@ -365,7 +464,40 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
       }
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_MULTIPART_INIT",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
+
+      const quotaCheck = await checkQuotaBeforeUpload(
+        validated.teamId || bucket.credential.teamId,
+        BigInt(validated.size),
+      )
+      if (!quotaCheck.allowed) {
+        await logUserAction({
+          request,
+          action: 'FILE_MULTIPART_INIT',
+          success: false,
+          userId: session.user.id,
+          teamId: validated.teamId,
+          resourceType: 'file',
+          errorMessage: 'Quota exceeded',
+        })
+        return NextResponse.json(
+          { message: 'Storage quota exceeded' },
+          { status: 403 },
+        )
+      }
+
       const key = buildS3Key(validated.path, validated.fileName)
       const { uploadId } = await initMultipartUpload(config, key, validated.contentType)
 
@@ -452,7 +584,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
       }
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_MULTIPART_PRESIGN",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const url = await getPresignedUploadPartUrl(
         config,
         validated.key,
@@ -549,7 +693,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const config = decryptAWSConfig(file.credential, file.bucket);
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_MULTIPART_COMPLETE",
+        userId: session.user.id,
+        teamId: file.teamId,
+        resourceType: "file",
+        resourceId: file.id,
+        credential: file.credential,
+        bucket: file.bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       
       try {
         await completeMultipartUpload(
@@ -676,7 +832,19 @@ export async function POST(request: NextRequest) {
       const ensuredPath = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`
       const normalizedPrefix = ensuredPath === '/' ? '' : ensuredPath.replace(/^\/+/,'')
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_LIST",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const {
         objects: s3Objects,
         prefixes,
@@ -922,7 +1090,19 @@ export async function POST(request: NextRequest) {
       const query = validated.query?.trim().toLowerCase()
       const tagFilter = validated.tag?.trim().toLowerCase()
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_FAVORITES_LIST",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const { objects: s3Objects } = await listS3ObjectsWithPrefixes(
         config,
         normalizedPrefix,
@@ -989,7 +1169,19 @@ export async function POST(request: NextRequest) {
       const query = validated.query?.trim().toLowerCase()
       const tagFilter = validated.tag?.trim().toLowerCase()
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_RECENTS_LIST",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const { objects: s3Objects } = await listS3ObjectsWithPrefixes(
         config,
         normalizedPrefix,
@@ -1176,7 +1368,19 @@ export async function POST(request: NextRequest) {
       )
       const normalizedDescription = validated.description?.trim() || null
 
-      const config = decryptAWSConfig(bucket.credential, bucket)
+      const { config, errorResponse } = await decryptConfigOrError({
+        request,
+        action: "FILE_CREATE_FOLDER",
+        userId: session.user.id,
+        teamId: bucket.credential.teamId,
+        resourceType: "bucket",
+        resourceId: validated.bucketId,
+        credential: bucket.credential,
+        bucket,
+      });
+      if (errorResponse) {
+        return errorResponse;
+      }
       const folderKey = buildS3Key(validated.path, validated.folderName + '/')
 
       const existingFolder = await prisma.file.findUnique({
@@ -1356,7 +1560,19 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    const config = decryptAWSConfig(file.credential, file.bucket);
+    const { config, errorResponse } = await decryptConfigOrError({
+      request,
+      action: "FILE_DELETE",
+      userId: session.user.id,
+      teamId: file.teamId,
+      resourceType: "file",
+      resourceId: file.id,
+      credential: file.credential,
+      bucket: file.bucket,
+    });
+    if (errorResponse) {
+      return errorResponse;
+    }
     await deleteS3Object(config, file.key);
 
     // Decrement quota usage (if any) then delete DB record
@@ -1458,7 +1674,19 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const config = decryptAWSConfig(file.credential, file.bucket)
+    const { config, errorResponse } = await decryptConfigOrError({
+      request,
+      action: "FILE_MOVE",
+      userId: session.user.id,
+      teamId: file.teamId,
+      resourceType: "file",
+      resourceId: file.id,
+      credential: file.credential,
+      bucket: file.bucket,
+    });
+    if (errorResponse) {
+      return errorResponse;
+    }
     const newKey = buildS3Key(validated.newPath, file.name)
 
     await copyS3Object(config, file.key, newKey, true)
