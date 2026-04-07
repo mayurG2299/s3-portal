@@ -14,6 +14,7 @@ async function seedRoles() {
             description: 'Full access to all features and settings',
             level: 100,
             isSystem: true,
+            updatedAt: new Date(),
         },
     });
     const admin = await prisma.role.upsert({
@@ -25,6 +26,7 @@ async function seedRoles() {
             description: 'Can manage team, files, and most settings',
             level: 50,
             isSystem: true,
+            updatedAt: new Date(),
         },
     });
     const viewer = await prisma.role.upsert({
@@ -36,6 +38,7 @@ async function seedRoles() {
             description: 'Read-only access to files and links',
             level: 10,
             isSystem: true,
+            updatedAt: new Date(),
         },
     });
     console.log('✅ Roles created:', { owner: owner.name, admin: admin.name, viewer: viewer.name });
@@ -57,6 +60,7 @@ async function seedRoles() {
             },
             update: {},
             create: {
+                id: `rp_owner_${screen.toLowerCase()}`,
                 roleId: owner.id,
                 screenName: screen,
                 permissionLevel: 'EDIT',
@@ -92,6 +96,7 @@ async function seedRoles() {
             },
             update: {},
             create: {
+                id: `rp_admin_${perm.screen.toLowerCase()}`,
                 roleId: admin.id,
                 screenName: perm.screen,
                 permissionLevel: perm.level,
@@ -111,6 +116,7 @@ async function seedRoles() {
             },
             update: {},
             create: {
+                id: `rp_viewer_${screen.toLowerCase()}`,
                 roleId: viewer.id,
                 screenName: screen,
                 permissionLevel: 'VIEW',
@@ -120,9 +126,47 @@ async function seedRoles() {
     console.log(`✅ Created ${viewerScreens.length} VIEWER permissions`);
     console.log('🎉 Seeding completed successfully!');
 }
-seedRoles()
+async function seedBucketAccessForExistingMembers() {
+    console.log('Seeding bucket access for existing members...');
+    const members = await prisma.teamMember.findMany({
+        include: {
+            role: true,
+            team: {
+                include: {
+                    credentials: {
+                        include: { buckets: true },
+                    },
+                },
+            },
+        },
+    });
+    for (const member of members) {
+        // Skip admins/owners — they're unrestricted by design (no rows needed)
+        if (member.role.level >= 50) {
+            console.log(`  Skipping admin/owner member ${member.id} (unrestricted)`);
+            continue;
+        }
+        const allBuckets = member.team.credentials.flatMap((c) => c.buckets);
+        if (allBuckets.length === 0)
+            continue;
+        await prisma.teamMemberBucketAccess.createMany({
+            data: allBuckets.map((b) => ({
+                teamMemberId: member.id,
+                bucketId: b.id,
+            })),
+            skipDuplicates: true,
+        });
+        console.log(`  Granted ${allBuckets.length} bucket(s) to member ${member.id} in team ${member.teamId}`);
+    }
+    console.log('Done seeding bucket access.');
+}
+async function main() {
+    await seedRoles();
+    await seedBucketAccessForExistingMembers();
+}
+main()
     .catch((error) => {
-    console.error('❌ Error seeding roles:', error);
+    console.error('❌ Error during seeding:', error);
     process.exit(1);
 })
     .finally(async () => {

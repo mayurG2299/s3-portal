@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       await logUserAction({
         request,
-        action: 'CREDENTIAL_CREATE',
+        action: 'CREDENTIAL_LIST',
         success: false,
         errorMessage: 'Unauthorized',
       })

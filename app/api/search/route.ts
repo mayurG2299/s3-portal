@@ -179,6 +179,7 @@ export async function GET(request: NextRequest) {
             ...linkFileWhere,
             ...(bucketId ? { bucketId } : {}),
             ...(identityId ? { credentialId: identityId } : {}),
+            ...(bucketFilter ? { bucketId: bucketFilter } : {}),
           },
         },
         select: {
@@ -206,6 +207,7 @@ export async function GET(request: NextRequest) {
       prisma.awsBucket.findMany({
         where: {
           bucket: dbQuery,
+          ...(bucketFilter ? { id: bucketFilter } : {}),
           credential: {
             ...(identityId ? { id: identityId } : {}),
             teamId: teamId || null,
