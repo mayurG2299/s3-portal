@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     if (!teamId) {
       return NextResponse.json({ error: 'teamId is required' }, { status: 400 })
     }
+    if (teamId.length > 128) {
+      return NextResponse.json({ error: 'Invalid teamId' }, { status: 400 })
+    }
 
     const hasAccess = await canManageTeam(session.user.id, teamId)
     if (!hasAccess) {

@@ -18,6 +18,8 @@ export async function getAccessibleBucketIds(
     },
   })
 
+  // Non-member: deny all access (return empty array, not null).
+  // null is reserved for "unrestricted admin/owner". [] means "restricted with no buckets".
   if (!member) return []
 
   // ADMIN (level >= 50) and OWNER (level >= 100) are unrestricted
@@ -35,9 +37,21 @@ export async function canAccessBucket(
   teamId: string,
   bucketId: string
 ): Promise<boolean> {
-  const allowed = await getAccessibleBucketIds(userId, teamId)
-  if (allowed === null) return true   // unrestricted admin/owner
-  return allowed.includes(bucketId)
+  const member = await prisma.teamMember.findUnique({
+    where: { teamId_userId: { teamId, userId } },
+    select: { role: { select: { level: true } }, id: true },
+  })
+
+  if (!member) return false
+  // Admins/owners are unrestricted
+  if (member.role.level >= 50) return true
+
+  // Point-lookup on the unique index [teamMemberId, bucketId]
+  const access = await prisma.teamMemberBucketAccess.findUnique({
+    where: { teamMemberId_bucketId: { teamMemberId: member.id, bucketId } },
+    select: { id: true },
+  })
+  return access !== null
 }
 
 /**
@@ -61,12 +75,12 @@ export async function setBucketAccess(
   teamMemberId: string,
   bucketIds: string[]
 ): Promise<void> {
+  const uniqueIds = [...new Set(bucketIds)]
   await prisma.$transaction([
     prisma.teamMemberBucketAccess.deleteMany({ where: { teamMemberId } }),
-    ...(bucketIds.length > 0
+    ...(uniqueIds.length > 0
       ? [prisma.teamMemberBucketAccess.createMany({
-          data: bucketIds.map((bucketId) => ({ teamMemberId, bucketId })),
-          skipDuplicates: true,
+          data: uniqueIds.map((bucketId) => ({ teamMemberId, bucketId })),
         })]
       : []),
   ])
