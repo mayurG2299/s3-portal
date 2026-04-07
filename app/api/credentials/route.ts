@@ -7,6 +7,7 @@ import { decrypt, encrypt } from '@/lib/crypto'
 import { validateAWSCredentials, validateBucketAccess } from '@/lib/aws'
 import { canModifyCredential, canAccessCredential } from '@/lib/permissions'
 import { checkAuth, ApiResponse } from '@/lib/api-utils'
+import { getAccessibleBucketIds } from '@/lib/bucket-access'
 import { z } from 'zod'
 
 const bucketSchema = z.object({
@@ -34,6 +35,34 @@ const credentialUpdateSchema = z.object({
   buckets: z.array(bucketSchema).optional(),
 })
 
+async function resolveCredentialScopeTeamId(params: {
+  requestedTeamId: string | null;
+  sessionTeamId: string | null;
+  userId: string;
+}): Promise<string | null> {
+  const checkMembership = async (teamId: string | null) => {
+    if (!teamId) return null;
+    const membership = await prisma.teamMember.findFirst({
+      where: {
+        userId: params.userId,
+        teamId,
+      },
+      select: { teamId: true },
+    });
+    return membership?.teamId || null;
+  };
+
+  if (params.requestedTeamId) {
+    const requested = await checkMembership(params.requestedTeamId);
+    return requested;
+  }
+
+  const sessionTeam = await checkMembership(params.sessionTeamId);
+  if (sessionTeam) return sessionTeam;
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -50,27 +79,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const requestedTeamId =
-      searchParams.get('teamId')?.trim() ||
-      request.cookies.get('selectedTeamId')?.value?.trim() ||
-      auth!.teamId
-    let usePersonalScopeFallback = false
-    let teamIdToQuery: string | null = null
+      searchParams.get("teamId")?.trim() ||
+      request.cookies.get("selectedTeamId")?.value?.trim() ||
+      null;
 
-    if (requestedTeamId) {
-      const membership = await prisma.teamMember.findFirst({
-        where: {
-          userId: auth!.userId,
-          teamId: requestedTeamId,
-        },
-      })
-      if (!membership) {
-        usePersonalScopeFallback = true
-      } else {
-        teamIdToQuery = requestedTeamId
-      }
-    } else {
-      usePersonalScopeFallback = true
-    }
+    const teamIdToQuery = await resolveCredentialScopeTeamId({
+      requestedTeamId,
+      sessionTeamId: auth!.teamId || null,
+      userId: auth!.userId,
+    });
+    const usePersonalScopeFallback = !teamIdToQuery;
 
     // If fallback, only show personal-scope credentials
     const credentials = await prisma.aWSCredential.findMany({
@@ -108,7 +126,21 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return ApiResponse.success({ credentials, personalScopeFallback: usePersonalScopeFallback })
+    let filteredCredentials = credentials
+    if (teamIdToQuery) {
+      const allowedBucketIds = await getAccessibleBucketIds(auth!.userId, teamIdToQuery)
+      if (allowedBucketIds !== null) {
+        // Restrict to allowed buckets, drop credentials with none visible
+        filteredCredentials = credentials
+          .map((cred) => ({
+            ...cred,
+            buckets: cred.buckets.filter((b) => allowedBucketIds.includes(b.id)),
+          }))
+          .filter((cred) => cred.buckets.length > 0)
+      }
+    }
+
+    return ApiResponse.success({ credentials: filteredCredentials, personalScopeFallback: usePersonalScopeFallback })
   } catch (error) {
     console.error('Error fetching credentials:', error)
     return ApiResponse.error('Internal server error')
