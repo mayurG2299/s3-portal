@@ -260,8 +260,8 @@ model TeamInvite {
   updatedAt        DateTime     @updatedAt
   inviteBucketIds  String[]     @default([])
   invitedBy        User         @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
-  role        Role         @relation(fields: [roleId], references: [id])
-  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  role             Role         @relation(fields: [roleId], references: [id])
+  team             Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@index([teamId])
   @@index([email])
