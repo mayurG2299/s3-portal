@@ -100,6 +100,7 @@ model AwsBucket {
   updatedAt                     DateTime      @updatedAt
   credential                    AWSCredential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   files                         File[]
+  memberAccess                  TeamMemberBucketAccess[]
 
   @@unique([credentialId, bucket])
   @@index([credentialId])
@@ -222,6 +223,7 @@ model TeamMember {
   updatedAt         DateTime           @updatedAt
   roleId            String
   screenPermissions ScreenPermission[]
+  bucketAccess      TeamMemberBucketAccess[]
   role              Role               @relation(fields: [roleId], references: [id])
   team              Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -230,6 +232,19 @@ model TeamMember {
   @@index([roleId])
   @@index([teamId])
   @@index([userId])
+}
+
+model TeamMemberBucketAccess {
+  id           String     @id @default(cuid())
+  teamMemberId String
+  bucketId     String
+  createdAt    DateTime   @default(now())
+  teamMember   TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  bucket       AwsBucket  @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+
+  @@unique([teamMemberId, bucketId])
+  @@index([teamMemberId])
+  @@index([bucketId])
 }
 
 model TeamInvite {
@@ -242,8 +257,9 @@ model TeamInvite {
   token       String       @unique
   expiresAt   DateTime
   createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  invitedBy   User         @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  updatedAt        DateTime     @updatedAt
+  inviteBucketIds  String[]     @default([])
+  invitedBy        User         @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
   role        Role         @relation(fields: [roleId], references: [id])
   team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
