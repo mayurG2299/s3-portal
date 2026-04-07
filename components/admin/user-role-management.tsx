@@ -19,10 +19,12 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { Shield, Crown, Eye, Lock, ShieldAlert, UserMinus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 import { useSearchParams } from 'next/navigation'
+import { BucketAccessManager } from '@/components/admin/BucketAccessManager'
 
 type TeamMemberWithUser = {
   id: string
@@ -74,6 +76,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
   const [loadingRoles, setLoadingRoles] = useState(true)
   const [accessDenied, setAccessDenied] = useState<string | null>(null)
   const { toast } = useToast()
+  const { teamRemoved } = useTeamRemoved();
 
   // Caller's own role level – needed for filtering the dropdown and disabling rows
   const callerMember = teamMembers.find(m => m.userId === currentUserId)
@@ -118,19 +121,23 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
         throw new Error(errorMsg)
       }
 
-      toast({
-        title: 'Protocol Modified',
-        description: `Authority level recalibrated successfully.`,
-      })
+      if (!teamRemoved) {
+        toast({
+          title: 'Protocol Modified',
+          description: `Authority level recalibrated successfully.`,
+        })
+      }
 
       // Refresh the page
       window.location.reload()
     } catch (error) {
-      toast({
-        title: 'Sync Interrupted',
-        description: error instanceof Error ? error.message : 'Failed to recalibrate role',
-        variant: 'destructive',
-      })
+      if (!teamRemoved) {
+        toast({
+          title: 'Sync Interrupted',
+          description: error instanceof Error ? error.message : 'Failed to recalibrate role',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setUpdating(null)
     }
@@ -149,17 +156,21 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
         throw new Error(json.error || json.message || 'Failed to remove member')
       }
 
-      toast({
-        title: 'Member Removed',
-        description: `${email} was removed from the team.`,
-      })
+      if (!teamRemoved) {
+        toast({
+          title: 'Member Removed',
+          description: `${email} was removed from the team.`,
+        })
+      }
       window.location.reload()
     } catch (error) {
-      toast({
-        title: 'Removal Failed',
-        description: error instanceof Error ? error.message : 'Failed to remove member',
-        variant: 'destructive',
-      })
+      if (!teamRemoved) {
+        toast({
+          title: 'Removal Failed',
+          description: error instanceof Error ? error.message : 'Failed to remove member',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setUpdating(null)
     }
@@ -238,6 +249,12 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                       {member.user.name}
                     </p>
                   )}
+                  <BucketAccessManager
+                    member={member}
+                    teamId={teamId}
+                    currentUserId={currentUserId}
+                    ownerId={ownerId ?? ''}
+                  />
                 </div>
               </div>
 
