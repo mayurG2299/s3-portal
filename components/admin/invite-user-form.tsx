@@ -147,8 +147,8 @@ export function InviteUserForm({ teamId }: Props) {
     setEmail('')
     setLookupStatus('idle')
     setFoundUser(null)
-    const viewer = roles.find(r => r.name === 'VIEWER')
-    if (viewer) setRoleId(viewer.id)
+    const admin = roles.find(r => r.name === 'ADMIN')
+    if (admin) setRoleId(admin.id)
     const allIds = credentials.flatMap((c) => c.buckets.map((b) => b.id))
     setSelectedBucketIds(allIds)
   }
@@ -282,7 +282,7 @@ export function InviteUserForm({ teamId }: Props) {
         </Select>
       </div>
 
-      {(lookupStatus === 'found' || lookupStatus === 'not-found') && credentials.length > 0 && (
+      {(lookupStatus === 'found' || lookupStatus === 'not-found') && credentials.length > 0 && (!roles.find(r => r.id === roleId) || (roles.find(r => r.id === roleId)?.level ?? 0) < 50) && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="buckets" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1">

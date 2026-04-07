@@ -17,14 +17,23 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const { memberId } = await context.params
+    // Step 1: minimal fetch to get teamId for auth
+    const memberMeta = await prisma.teamMember.findUnique({
+      where: { id: memberId },
+      select: { id: true, teamId: true },
+    })
+    if (!memberMeta) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+
+    // Step 2: authorize
+    const hasAccess = await canManageTeam(session.user.id, memberMeta.teamId)
+    if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    // Step 3: fetch bucket access
     const member = await prisma.teamMember.findUnique({
       where: { id: memberId },
       include: { bucketAccess: { select: { bucketId: true } } },
     })
-    if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-    const hasAccess = await canManageTeam(session.user.id, member.teamId)
-    if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    return NextResponse.json({ bucketIds: member.bucketAccess.map((ba) => ba.bucketId) })
+    return NextResponse.json({ bucketIds: member!.bucketAccess.map((ba) => ba.bucketId) })
   } catch (error) {
     console.error('Get member bucket access error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -42,8 +51,8 @@ export async function PUT(
     }
     const { memberId } = await context.params
     const { bucketIds } = await request.json()
-    if (!Array.isArray(bucketIds)) {
-      return NextResponse.json({ error: 'bucketIds must be an array' }, { status: 400 })
+    if (!Array.isArray(bucketIds) || bucketIds.some((id: unknown) => typeof id !== 'string')) {
+      return NextResponse.json({ error: 'bucketIds must be an array of strings' }, { status: 400 })
     }
     const member = await prisma.teamMember.findUnique({
       where: { id: memberId },

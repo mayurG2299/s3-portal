@@ -27,9 +27,11 @@ export function BucketAccessManager({ member, teamId, currentUserId, ownerId }: 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [fetchError, setFetchError] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
+    setFetchError(false)
     if (!open) return
     const load = async () => {
       setLoading(true)
@@ -38,14 +40,14 @@ export function BucketAccessManager({ member, teamId, currentUserId, ownerId }: 
           fetch(`/api/team/buckets?teamId=${encodeURIComponent(teamId)}`),
           fetch(`/api/team/members/${member.id}/buckets`),
         ])
-        if (credsRes.ok) {
-          const { credentials: creds } = await credsRes.json()
-          setCredentials(creds || [])
+        if (!credsRes.ok || !accessRes.ok) {
+          setFetchError(true)
+          return
         }
-        if (accessRes.ok) {
-          const { bucketIds } = await accessRes.json()
-          setSelectedIds(bucketIds || [])
-        }
+        const { credentials: creds } = await credsRes.json()
+        setCredentials(creds || [])
+        const { bucketIds } = await accessRes.json()
+        setSelectedIds(bucketIds || [])
       } finally {
         setLoading(false)
       }
@@ -94,6 +96,8 @@ export function BucketAccessManager({ member, teamId, currentUserId, ownerId }: 
         <div className="mt-2 rounded-xl border border-border bg-muted/30 p-3 space-y-3 animate-fade-in">
           {loading ? (
             <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          ) : fetchError ? (
+            <p className="text-[11px] text-rose-500">Failed to load bucket access. Please try again.</p>
           ) : credentials.length === 0 ? (
             <p className="text-[11px] text-muted-foreground">No buckets in this team.</p>
           ) : (

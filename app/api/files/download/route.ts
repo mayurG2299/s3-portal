@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
     if (file.teamId && file.bucketId) {
       const allowed = await canAccessBucket(session.user.id, file.teamId, file.bucketId)
       if (!allowed) {
+        await logUserAction({ request, action: 'FILE_DOWNLOAD', success: false, userId: session.user.id, resourceType: 'file', resourceId: fileId, errorMessage: 'Forbidden: bucket access denied' })
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
