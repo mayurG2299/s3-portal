@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { searchAndRank, type SearchItem } from "@/lib/search-utils";
+import { getAccessibleBucketIds } from '@/lib/bucket-access'
+
+export const dynamic = "force-dynamic";
 
 function normalizeFolderPath(path: string): string {
   const trimmed = path.trim()
@@ -65,6 +68,14 @@ export async function GET(request: NextRequest) {
 
       if (!membership) {
         return NextResponse.json({ results: [] })
+      }
+    }
+
+    let bucketFilter: { in: string[] } | undefined = undefined
+    if (teamId) {
+      const allowedIds = await getAccessibleBucketIds(session.user.id, teamId)
+      if (allowedIds !== null) {
+        bucketFilter = { in: allowedIds }
       }
     }
 
@@ -135,6 +146,7 @@ export async function GET(request: NextRequest) {
           ...fileScopeWhere,
           ...(bucketId ? { bucketId } : {}),
           ...(identityId ? { credentialId: identityId } : {}),
+          ...(bucketFilter ? { bucketId: bucketFilter } : {}),
           AND: [
             {
               OR: [
