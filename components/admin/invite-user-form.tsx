@@ -27,6 +27,11 @@ export function InviteUserForm({ teamId }: Props) {
   const [lookupStatus, setLookupStatus] = useState<'idle' | 'checking' | 'found' | 'not-found' | 'member'>('idle')
   const [foundUser, setFoundUser] = useState<{ id: string; email: string; name: string | null } | null>(null)
   const { toast } = useToast()
+  const [credentials, setCredentials] = useState<
+    Array<{ id: string; name: string; region: string; buckets: Array<{ id: string; bucket: string }> }>
+  >([])
+  const [selectedBucketIds, setSelectedBucketIds] = useState<string[]>([])
+  const [bucketsLoading, setBucketsLoading] = useState(false)
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -43,6 +48,28 @@ export function InviteUserForm({ teamId }: Props) {
       }
     }
     fetchRoles()
+  }, [teamId])
+
+  useEffect(() => {
+    const fetchBuckets = async () => {
+      setBucketsLoading(true)
+      try {
+        const res = await fetch(`/api/team/buckets?teamId=${encodeURIComponent(teamId)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setCredentials(data.credentials || [])
+          const allIds = (data.credentials || []).flatMap(
+            (c: { buckets: { id: string }[] }) => c.buckets.map((b) => b.id)
+          )
+          setSelectedBucketIds(allIds)
+        }
+      } catch (err) {
+        console.error('Failed to fetch buckets:', err)
+      } finally {
+        setBucketsLoading(false)
+      }
+    }
+    fetchBuckets()
   }, [teamId])
 
   const handleLookup = async () => {
@@ -92,7 +119,7 @@ export function InviteUserForm({ teamId }: Props) {
       const res = await fetch('/api/team/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamId, email, roleId }),
+        body: JSON.stringify({ teamId, email, roleId, bucketIds: selectedBucketIds }),
       })
 
       const json = await res.json()
@@ -122,6 +149,22 @@ export function InviteUserForm({ teamId }: Props) {
     setFoundUser(null)
     const viewer = roles.find(r => r.name === 'VIEWER')
     if (viewer) setRoleId(viewer.id)
+    const allIds = credentials.flatMap((c) => c.buckets.map((b) => b.id))
+    setSelectedBucketIds(allIds)
+  }
+
+  const toggleBucket = (bucketId: string) => {
+    setSelectedBucketIds((prev) =>
+      prev.includes(bucketId) ? prev.filter((id) => id !== bucketId) : [...prev, bucketId]
+    )
+  }
+
+  const toggleCredential = (credBucketIds: string[], allSelected: boolean) => {
+    if (allSelected) {
+      setSelectedBucketIds((prev) => prev.filter((id) => !credBucketIds.includes(id)))
+    } else {
+      setSelectedBucketIds((prev) => [...new Set([...prev, ...credBucketIds])])
+    }
   }
 
   const getRoleIcon = (level: number) => {
@@ -238,6 +281,92 @@ export function InviteUserForm({ teamId }: Props) {
           </SelectContent>
         </Select>
       </div>
+
+      {(lookupStatus === 'found' || lookupStatus === 'not-found') && credentials.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="buckets" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1">
+              Bucket Access
+            </Label>
+            <button
+              type="button"
+              onClick={() => {
+                const allIds = credentials.flatMap((c) => c.buckets.map((b) => b.id))
+                const allSelected = allIds.every((id) => selectedBucketIds.includes(id))
+                setSelectedBucketIds(allSelected ? [] : allIds)
+              }}
+              className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
+            >
+              {credentials.flatMap((c) => c.buckets).every((b) => selectedBucketIds.includes(b.id))
+                ? 'Deselect All'
+                : 'Select All'}
+            </button>
+          </div>
+
+          {bucketsLoading ? (
+            <div className="h-4 w-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+          ) : (
+            <div className="space-y-3 max-h-64 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3">
+              {credentials.map((cred) => {
+                const credBucketIds = cred.buckets.map((b) => b.id)
+                const allCredSelected = credBucketIds.every((id) => selectedBucketIds.includes(id))
+                const someCredSelected = credBucketIds.some((id) => selectedBucketIds.includes(id))
+
+                return (
+                  <div key={cred.id} className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`cred-${cred.id}`}
+                        checked={allCredSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someCredSelected && !allCredSelected
+                        }}
+                        onChange={() => toggleCredential(credBucketIds, allCredSelected)}
+                        className="h-3.5 w-3.5 rounded border-border accent-primary cursor-pointer"
+                      />
+                      <label
+                        htmlFor={`cred-${cred.id}`}
+                        className="text-[11px] font-black text-foreground uppercase tracking-tight cursor-pointer"
+                      >
+                        {cred.name}
+                        <span className="ml-1.5 text-muted-foreground font-medium normal-case">
+                          ({cred.region})
+                        </span>
+                      </label>
+                    </div>
+                    <div className="ml-5 space-y-1">
+                      {cred.buckets.map((bucket) => (
+                        <div key={bucket.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`bucket-${bucket.id}`}
+                            checked={selectedBucketIds.includes(bucket.id)}
+                            onChange={() => toggleBucket(bucket.id)}
+                            className="h-3 w-3 rounded border-border accent-primary cursor-pointer"
+                          />
+                          <label
+                            htmlFor={`bucket-${bucket.id}`}
+                            className="text-[11px] font-mono text-foreground/80 cursor-pointer"
+                          >
+                            {bucket.bucket}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {selectedBucketIds.length === 0 && (
+            <p className="text-[10px] text-rose-500 ml-1">
+              No buckets selected — this member will have no file access.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-4 pt-4 border-t border-border">
         <Button
