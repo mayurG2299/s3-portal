@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Trash2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 import { translateAWSError } from '@/lib/error-translator'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 
@@ -81,6 +82,8 @@ export default function CredentialForm({ onSuccess, onCancel }: CredentialFormPr
         throw new Error(translated.message)
       }
 
+      const created = await response.json()
+
       toast({
         title: 'Success',
         description: 'AWS credentials added successfully',
@@ -89,6 +92,54 @@ export default function CredentialForm({ onSuccess, onCancel }: CredentialFormPr
       setNewBuckets([
         { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
       ])
+
+      // Notify admin if any restricted team members don't have access to the new buckets
+      if (activeTeamId && Array.isArray(created?.buckets)) {
+        for (const b of created.buckets as { id: string }[]) {
+          try {
+            const res = await fetch(
+              `/api/team/members/restricted?teamId=${encodeURIComponent(activeTeamId)}&bucketId=${encodeURIComponent(b.id)}`
+            )
+            if (!res.ok) continue
+            const { members } = await res.json()
+            if (Array.isArray(members) && members.length > 0) {
+              const bucketId = b.id
+              const teamId = activeTeamId
+              toast({
+                title: 'New bucket added',
+                description: `${members.length} restricted member(s) don't have access to this bucket yet.`,
+                action: (
+                  <ToastAction
+                    altText="Grant access"
+                    onClick={async () => {
+                      await Promise.all(
+                        members.map((m: { id: string; bucketAccess: { bucketId: string }[] }) =>
+                          fetch(`/api/team/members/${m.id}/buckets`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              bucketIds: [
+                                ...m.bucketAccess.map((ba: { bucketId: string }) => ba.bucketId),
+                                bucketId,
+                              ],
+                            }),
+                          })
+                        )
+                      )
+                      toast({ title: 'Access granted to all affected members' })
+                    }}
+                  >
+                    Grant Access
+                  </ToastAction>
+                ),
+              })
+            }
+          } catch {
+            // Non-critical: silently ignore notification errors
+          }
+        }
+      }
+
       onSuccess()
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to add credentials'

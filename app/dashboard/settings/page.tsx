@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette } from 'lucide-react'
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
@@ -44,7 +45,7 @@ export default function SettingsPage() {
   const [activeTheme, setActiveTheme] = useState<ThemeId>('nebula')
   const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
-  const { selectedTeamId } = useDashboard()
+  const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
 
   useEffect(() => {
     setActiveTheme(getSavedTheme())
@@ -62,9 +63,32 @@ export default function SettingsPage() {
   }, [activeTheme])
   const activeTeamId = selectedTeamId
 
+  const fetchCredentials = useCallback(async () => {
+    try {
+      const url = activeTeamId
+        ? `/api/credentials?teamId=${encodeURIComponent(activeTeamId)}`
+        : '/api/credentials'
+      const response = await fetch(url)
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
+      if (response.ok) {
+        const data = await response.json()
+        setCredentials(Array.isArray(data.credentials) ? data.credentials : [])
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to fetch credentials',
+      })
+    }
+  }, [activeTeamId, handleTeamAccessFailure])
+
   useEffect(() => {
     fetchCredentials()
-  }, [activeTeamId])
+  }, [fetchCredentials])
 
   useEffect(() => {
     if (editingCredential) {
@@ -80,25 +104,6 @@ export default function SettingsPage() {
     }
   }, [editingCredential])
 
-  async function fetchCredentials() {
-    try {
-      const url = activeTeamId
-        ? `/api/credentials?teamId=${encodeURIComponent(activeTeamId)}`
-        : '/api/credentials'
-      const response = await fetch(url)
-      if (response.ok) {
-        const data = await response.json()
-        setCredentials(data)
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch credentials',
-      })
-    }
-  }
-
   async function handleDeleteCredential(id: string) {
     if (!confirm('Are you sure you want to delete this credential?')) return
 
@@ -106,6 +111,11 @@ export default function SettingsPage() {
       const response = await fetch(`/api/credentials?id=${id}`, {
         method: 'DELETE',
       })
+
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
 
       if (!response.ok) {
         throw new Error('Failed to delete')
@@ -172,15 +182,75 @@ export default function SettingsPage() {
         body: JSON.stringify(payload),
       })
 
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
+
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.message || 'Failed to update credentials')
       }
 
+      const updated = await response.json()
+
       toast({
         title: 'Success',
         description: 'Credential updated successfully',
       })
+
+      // Notify admin if any restricted team members don't have access to newly added buckets
+      const teamId = editingCredential.teamId
+      if (teamId && Array.isArray(updated?.buckets)) {
+        const existingBucketIds = new Set(
+          (editingCredential.buckets || []).map((b: BucketInput) => b.id).filter(Boolean)
+        )
+        const newBuckets = (updated.buckets as { id: string }[]).filter(
+          (b) => !existingBucketIds.has(b.id)
+        )
+        for (const b of newBuckets) {
+          try {
+            const res = await fetch(
+              `/api/team/members/restricted?teamId=${encodeURIComponent(teamId)}&bucketId=${encodeURIComponent(b.id)}`
+            )
+            if (!res.ok) continue
+            const { members } = await res.json()
+            if (Array.isArray(members) && members.length > 0) {
+              const bucketId = b.id
+              toast({
+                title: 'New bucket added',
+                description: `${members.length} restricted member(s) don't have access to this bucket yet.`,
+                action: (
+                  <ToastAction
+                    altText="Grant access"
+                    onClick={async () => {
+                      await Promise.all(
+                        members.map((m: { id: string; bucketAccess: { bucketId: string }[] }) =>
+                          fetch(`/api/team/members/${m.id}/buckets`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              bucketIds: [
+                                ...m.bucketAccess.map((ba: { bucketId: string }) => ba.bucketId),
+                                bucketId,
+                              ],
+                            }),
+                          })
+                        )
+                      )
+                      toast({ title: 'Access granted to all affected members' })
+                    }}
+                  >
+                    Grant Access
+                  </ToastAction>
+                ),
+              })
+            }
+          } catch {
+            // Non-critical: silently ignore notification errors
+          }
+        }
+      }
 
       setEditingCredential(null)
       setEditBuckets([])
