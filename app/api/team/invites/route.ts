@@ -77,7 +77,20 @@ export async function POST(request: NextRequest) {
       roleId = adminRole.id;
     }
 
-    const normalizedBucketIds: string[] = Array.isArray(bucketIds) ? bucketIds : []
+    const hasAccess = await canManageTeam(session.user.id, teamId)
+    if (!hasAccess) {
+      await logUserAction({
+        request,
+        action: 'TEAM_INVITE_SEND',
+        success: false,
+        userId: session.user.id,
+        teamId,
+        errorMessage: 'Only admins can invite users',
+      })
+      return NextResponse.json({ error: 'Only admins can invite users' }, { status: 403 })
+    }
+
+    const normalizedBucketIds: string[] = [...new Set(Array.isArray(bucketIds) ? bucketIds : [])]
     if (normalizedBucketIds.length > 0) {
       const validCount = await prisma.awsBucket.count({
         where: {
@@ -91,19 +104,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-    }
-
-    const hasAccess = await canManageTeam(session.user.id, teamId)
-    if (!hasAccess) {
-      await logUserAction({
-        request,
-        action: 'TEAM_INVITE_SEND',
-        success: false,
-        userId: session.user.id,
-        teamId,
-        errorMessage: 'Only admins can invite users',
-      })
-      return NextResponse.json({ error: 'Only admins can invite users' }, { status: 403 })
     }
 
     const normalizedEmail = String(email).toLowerCase()

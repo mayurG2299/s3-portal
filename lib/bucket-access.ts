@@ -79,7 +79,8 @@ export async function setBucketAccess(
   await prisma.$transaction([
     prisma.teamMemberBucketAccess.deleteMany({ where: { teamMemberId } }),
     ...(uniqueIds.length > 0
-      ? [prisma.teamMemberBucketAccess.createMany({
+      ? [// No skipDuplicates needed — deleteMany above ensures a clean slate
+         prisma.teamMemberBucketAccess.createMany({
           data: uniqueIds.map((bucketId) => ({ teamMemberId, bucketId })),
         })]
       : []),

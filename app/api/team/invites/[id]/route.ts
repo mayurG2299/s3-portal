@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { publishMembershipChanged } from "@/lib/events/membership"
-import { grantBucketAccess } from '@/lib/bucket-access'
+import { grantBucketAccess, setBucketAccess } from '@/lib/bucket-access'
 
 export async function PATCH(
   request: NextRequest,
@@ -90,7 +90,13 @@ export async function PATCH(
       // IMPORTANT: for non-admin roles, empty inviteBucketIds = no access (not unrestricted).
       // Admins (role.level >= 50) bypass the bucket check entirely in getAccessibleBucketIds.
       if (invite.inviteBucketIds.length > 0) {
-        await grantBucketAccess(teamMemberId, invite.inviteBucketIds)
+        if (alreadyMember) {
+          // Re-invite: replace existing bucket access with the new set
+          await setBucketAccess(teamMemberId, invite.inviteBucketIds)
+        } else {
+          // New member: grant the invited buckets
+          await grantBucketAccess(teamMemberId, invite.inviteBucketIds)
+        }
       }
 
       await prisma.teamInvite.update({
