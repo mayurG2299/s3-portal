@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
 import { logUserAction } from '@/lib/audit'
+import { publishMembershipChanged } from "@/lib/events/membership";
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    const { teamId, email, roleId: inputRoleId } = await request.json();
+    const { teamId, email, roleId: inputRoleId, bucketIds } = await request.json();
     if (!teamId || !email) {
       return NextResponse.json(
         { error: "Team and email are required" },
@@ -74,6 +75,22 @@ export async function POST(request: NextRequest) {
         );
       }
       roleId = adminRole.id;
+    }
+
+    const normalizedBucketIds: string[] = Array.isArray(bucketIds) ? bucketIds : []
+    if (normalizedBucketIds.length > 0) {
+      const validCount = await prisma.awsBucket.count({
+        where: {
+          id: { in: normalizedBucketIds },
+          credential: { teamId },
+        },
+      })
+      if (validCount !== normalizedBucketIds.length) {
+        return NextResponse.json(
+          { error: 'One or more bucket IDs are invalid for this team' },
+          { status: 400 }
+        )
+      }
     }
 
     const hasAccess = await canManageTeam(session.user.id, teamId)
@@ -132,8 +149,18 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
         token: randomUUID(),
         expiresAt,
+        inviteBucketIds: normalizedBucketIds,
       },
     })
+
+    const invitedUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
+
+    if (invitedUser?.id) {
+      publishMembershipChanged(invitedUser.id);
+    }
 
     await logUserAction({
       request,
@@ -143,7 +170,7 @@ export async function POST(request: NextRequest) {
       teamId,
       resourceType: 'teamInvite',
       resourceId: invite.id,
-      metadata: { email: normalizedEmail, roleId },
+      metadata: { email: normalizedEmail, roleId, bucketIds: normalizedBucketIds },
     })
 
     return NextResponse.json({ inviteId: invite.id })
