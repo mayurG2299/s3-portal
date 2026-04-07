@@ -80,3 +80,7 @@ Thumbs.db
 /docs
 .agents/
 .github/
+utilScripts/
+
+# superpowers brainstorm mockups
+.superpowers/
