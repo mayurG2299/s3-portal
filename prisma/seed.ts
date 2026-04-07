@@ -135,9 +135,56 @@ async function seedRoles() {
   console.log('🎉 Seeding completed successfully!')
 }
 
-seedRoles()
+async function seedBucketAccessForExistingMembers() {
+  console.log('Seeding bucket access for existing members...')
+
+  const members = await prisma.teamMember.findMany({
+    include: {
+      role: true,
+      team: {
+        include: {
+          credentials: {
+            include: { buckets: true },
+          },
+        },
+      },
+      bucketAccess: true,
+    },
+  })
+
+  for (const member of members) {
+    // Skip if this member already has bucket access records
+    if (member.bucketAccess.length > 0) continue
+    // Skip admins/owners — they're unrestricted by design (no rows needed)
+    if (member.role.level >= 50) continue
+
+    const allBuckets = member.team.credentials.flatMap((c) => c.buckets)
+    if (allBuckets.length === 0) continue
+
+    await prisma.teamMemberBucketAccess.createMany({
+      data: allBuckets.map((b) => ({
+        teamMemberId: member.id,
+        bucketId: b.id,
+      })),
+      skipDuplicates: true,
+    })
+
+    console.log(
+      `  Granted ${allBuckets.length} bucket(s) to member ${member.id} in team ${member.teamId}`
+    )
+  }
+
+  console.log('Done seeding bucket access.')
+}
+
+async function main() {
+  await seedRoles()
+  await seedBucketAccessForExistingMembers()
+}
+
+main()
   .catch((error) => {
-    console.error('❌ Error seeding roles:', error)
+    console.error('❌ Error during seeding:', error)
     process.exit(1)
   })
   .finally(async () => {
