@@ -93,50 +93,73 @@ export default function CredentialForm({ onSuccess, onCancel }: CredentialFormPr
         { bucket: '', cloudfrontDomain: '', cloudfrontKeyPairId: '', cloudfrontPrivateKey: '' },
       ])
 
-      // Notify admin if any restricted team members don't have access to the new buckets
+      // Notify admin if any restricted team members don't have access to the new buckets.
+      // Collect across ALL new buckets and fire ONE consolidated toast.
       if (activeTeamId && Array.isArray(created?.buckets)) {
-        for (const b of created.buckets as { id: string }[]) {
-          try {
-            const res = await fetch(
-              `/api/team/members/restricted?teamId=${encodeURIComponent(activeTeamId)}&bucketId=${encodeURIComponent(b.id)}`
-            )
-            if (!res.ok) continue
-            const { members } = await res.json()
-            if (Array.isArray(members) && members.length > 0) {
-              const bucketId = b.id
-              const teamId = activeTeamId
-              toast({
-                title: 'New bucket added',
-                description: `${members.length} restricted member(s) don't have access to this bucket yet.`,
-                action: (
-                  <ToastAction
-                    altText="Grant access"
-                    onClick={async () => {
-                      await Promise.all(
-                        members.map((m: { id: string; bucketAccess: { bucketId: string }[] }) =>
-                          fetch(`/api/team/members/${m.id}/buckets`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              bucketIds: [
-                                ...m.bucketAccess.map((ba: { bucketId: string }) => ba.bucketId),
-                                bucketId,
-                              ],
-                            }),
-                          })
-                        )
+        try {
+          type RestrictedMember = { id: string; bucketAccess: { bucketId: string }[] }
+          // Map memberId → { member, set of new bucketIds they're missing }
+          const missingByMember = new Map<string, { member: RestrictedMember; newBucketIds: string[] }>()
+
+          await Promise.all(
+            (created.buckets as { id: string }[]).map(async (b) => {
+              const res = await fetch(
+                `/api/team/members/restricted?teamId=${encodeURIComponent(activeTeamId)}&bucketId=${encodeURIComponent(b.id)}`
+              )
+              if (!res.ok) return
+              const { members } = await res.json()
+              for (const m of members as RestrictedMember[]) {
+                const entry = missingByMember.get(m.id)
+                if (entry) {
+                  entry.newBucketIds.push(b.id)
+                } else {
+                  missingByMember.set(m.id, { member: m, newBucketIds: [b.id] })
+                }
+              }
+            })
+          )
+
+          if (missingByMember.size > 0) {
+            const bucketWord = created.buckets.length === 1 ? 'bucket' : 'buckets'
+            toast({
+              title: `${created.buckets.length} new ${bucketWord} added`,
+              description: `${missingByMember.size} restricted member(s) lack access to at least one new bucket.`,
+              action: (
+                <ToastAction
+                  altText="Grant access"
+                  onClick={async () => {
+                    const results = await Promise.allSettled(
+                      [...missingByMember.values()].map(({ member, newBucketIds }) =>
+                        fetch(`/api/team/members/${member.id}/buckets`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            bucketIds: [
+                              ...member.bucketAccess.map((ba) => ba.bucketId),
+                              ...newBucketIds,
+                            ],
+                          }),
+                        })
                       )
+                    )
+                    const failed = results.filter((r) => r.status === 'rejected').length
+                    if (failed === 0) {
                       toast({ title: 'Access granted to all affected members' })
-                    }}
-                  >
-                    Grant Access
-                  </ToastAction>
-                ),
-              })
-            }
-          } catch {
-            // Non-critical: silently ignore notification errors
+                    } else {
+                      toast({
+                        variant: 'destructive',
+                        title: `Partial failure: ${failed} of ${results.length} member(s) could not be granted access`,
+                      })
+                    }
+                  }}
+                >
+                  Grant Access
+                </ToastAction>
+              ),
+            })
           }
+        } catch {
+          // Non-critical: silently ignore notification errors
         }
       }
 

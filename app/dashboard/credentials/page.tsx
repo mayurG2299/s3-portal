@@ -6,6 +6,7 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
+import { useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 
 interface Credential {
@@ -18,13 +19,14 @@ interface Credential {
 }
 
 export default function CredentialsPage() {
+  const { teamRemoved } = useTeamRemoved();
   const router = useRouter()
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [personalScopeFallback, setPersonalScopeFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const { selectedTeamId } = useDashboard()
+  const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
   const activeTeamId = selectedTeamId
 
   useEffect(() => {
@@ -39,6 +41,11 @@ export default function CredentialsPage() {
           ? `/api/credentials?teamId=${encodeURIComponent(activeTeamId)}`
           : '/api/credentials'
         const response = await fetch(url, { signal: controller.signal })
+
+        if (response.status === 403 || response.status === 404) {
+          handleTeamAccessFailure(response.status)
+          return
+        }
 
         if (!response.ok) {
           throw new Error('Failed to fetch credentials')
@@ -63,12 +70,13 @@ export default function CredentialsPage() {
         }
       } catch (error: any) {
         if (controller.signal.aborted) return
-
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error?.message || 'Failed to fetch credentials',
-        })
+        if (!teamRemoved) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error?.message || 'Failed to fetch credentials',
+          })
+        }
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -82,7 +90,7 @@ export default function CredentialsPage() {
       isActive = false
       controller.abort()
     }
-  }, [router, refreshKey, activeTeamId])
+  }, [router, refreshKey, activeTeamId, handleTeamAccessFailure])
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this credential?')) return
@@ -91,6 +99,11 @@ export default function CredentialsPage() {
       const response = await fetch(`/api/credentials?id=${id}`, {
         method: 'DELETE',
       })
+
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
 
       if (!response.ok) {
         throw new Error('Failed to delete')
@@ -104,11 +117,13 @@ export default function CredentialsPage() {
       // Trigger refetch by incrementing refreshKey
       setRefreshKey((prev) => prev + 1)
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Failed to delete credential',
-      })
+      if (!teamRemoved) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || 'Failed to delete credential',
+        })
+      }
     }
   }
 

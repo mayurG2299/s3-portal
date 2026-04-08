@@ -5,9 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
+import { logUserAction } from '@/lib/audit'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { InviteUserForm } from '@/components/admin/invite-user-form'
+import { PendingInvitesList } from '@/components/dashboard/PendingInvitesList'
 import { UserRoleManagement } from '@/components/admin/user-role-management'
 import { cn } from '@/lib/utils'
 import { Users, Info, UserPlus, PlusCircle, Pencil, Trash2 } from 'lucide-react'
@@ -27,6 +29,16 @@ async function updateTeamAction(formData: FormData) {
   await prisma.team.update({
     where: { id: teamId },
     data: { name },
+  })
+
+  await logUserAction({
+    action: 'TEAM_UPDATE',
+    success: true,
+    userId: session.user.id,
+    teamId,
+    resourceType: 'team',
+    resourceId: teamId,
+    metadata: { name },
   })
 
   revalidatePath('/dashboard/teams')
@@ -55,6 +67,17 @@ async function deleteTeamAction(formData: FormData) {
   }
 
   await prisma.team.delete({ where: { id: teamId } })
+
+  await logUserAction({
+    action: 'TEAM_DELETE',
+    success: true,
+    userId: session.user.id,
+    teamId,
+    resourceType: 'team',
+    resourceId: teamId,
+    metadata: { teamName: team.name },
+  })
+
   revalidatePath('/dashboard/teams')
 }
 
@@ -156,6 +179,9 @@ export default async function TeamsPage({
               />
             </div>
           </div>
+
+          {/* Pending Invites */}
+          <PendingInvitesList teamId={team.id} />
 
           {/* Invite Members */}
           <div className="glass-card !p-0 overflow-hidden animate-slide-up" style={{ animationDelay: '150ms' }}>

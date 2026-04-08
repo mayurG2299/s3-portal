@@ -7,6 +7,7 @@ import {
   type AWSConfig,
   decryptAWSConfig,
   generatePresignedUploadUrl,
+  createFolderMarkerObject,
   initMultipartUpload,
   getPresignedUploadPartUrl,
   completeMultipartUpload,
@@ -1399,23 +1400,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Create empty object to represent folder
-      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
-      const client = new S3Client({
-        region: config.region,
-        credentials: {
-          accessKeyId: config.accessKeyId,
-          secretAccessKey: config.secretAccessKey,
-        },
-      })
-
-      await client.send(
-        new PutObjectCommand({
-          Bucket: config.bucket,
-          Key: folderKey,
-          Body: '',
-        })
-      )
+      // Create empty object to represent folder.
+      await createFolderMarkerObject(config, folderKey)
 
       await prisma.file.create({
         data: {

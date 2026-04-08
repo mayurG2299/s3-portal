@@ -27,6 +27,13 @@ export async function GET(request: NextRequest) {
     const hasAccess = await canManageTeam(session.user.id, teamId)
     if (!hasAccess) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+    const bucketExists = await prisma.awsBucket.count({
+      where: { id: bucketId, credential: { teamId } },
+    })
+    if (!bucketExists) {
+      return NextResponse.json({ error: 'Bucket not found' }, { status: 404 })
+    }
+
     // Non-admin members who have some bucket access but NOT this bucket
     const restrictedMembers = await prisma.teamMember.findMany({
       where: {

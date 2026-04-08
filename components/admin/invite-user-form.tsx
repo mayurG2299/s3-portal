@@ -40,8 +40,10 @@ export function InviteUserForm({ teamId }: Props) {
         if (res.ok) {
           const data = await res.json()
           setRoles(data)
-          const admin = data.find((r: Role) => r.name === 'ADMIN')
-          if (admin) setRoleId(admin.id)
+          const viewer = data.find((r: Role) => r.name === 'VIEWER')
+          const fallback = data.filter((r: Role) => r.level < 50).sort((a: Role, b: Role) => a.level - b.level)[0]
+          const defaultRole = viewer || fallback
+          if (defaultRole) setRoleId(defaultRole.id)
         }
       } catch (err) {
         console.error('Failed to fetch roles:', err)
@@ -147,8 +149,10 @@ export function InviteUserForm({ teamId }: Props) {
     setEmail('')
     setLookupStatus('idle')
     setFoundUser(null)
-    const admin = roles.find(r => r.name === 'ADMIN')
-    if (admin) setRoleId(admin.id)
+    const viewer = roles.find(r => r.name === 'VIEWER')
+    const fallback = roles.filter(r => r.level < 50).sort((a, b) => a.level - b.level)[0]
+    const defaultRole = viewer || fallback
+    if (defaultRole) setRoleId(defaultRole.id)
     const allIds = credentials.flatMap((c) => c.buckets.map((b) => b.id))
     setSelectedBucketIds(allIds)
   }

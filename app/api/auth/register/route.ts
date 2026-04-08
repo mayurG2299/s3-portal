@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/crypto'
+import { logUserAction } from '@/lib/audit'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -76,6 +77,14 @@ export async function POST(request: NextRequest) {
         email: user.email,
         createdAt: user.createdAt,
       }
+    })
+
+    await logUserAction({
+      request,
+      action: 'USER_REGISTER',
+      success: true,
+      userId: result.id,
+      metadata: { email: result.email, name: result.name },
     })
 
     return NextResponse.json(result, { status: 201 })

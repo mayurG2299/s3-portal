@@ -10,7 +10,7 @@ import {
 } from '@/lib/aws'
 import { hashPassword } from '@/lib/crypto'
 import { generateLinkHash } from '@/lib/utils'
-import { canAccessBucket } from '@/lib/bucket-access'
+import { canAccessBucket, getAccessibleBucketIds } from '@/lib/bucket-access'
 
 import { z } from 'zod'
 
@@ -288,7 +288,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       await logUserAction({
         request,
-        action: 'LINK_DELETE',
+        action: 'LINK_LIST',
         success: false,
         errorMessage: 'Unauthorized',
       })
@@ -321,13 +321,25 @@ export async function GET(request: NextRequest) {
       usePersonalScopeFallback = true
     }
 
+    // Bucket-scope filter for restricted team members
+    let bucketFilter: { in: string[] } | undefined = undefined
+    if (teamIdToQuery) {
+      const allowedIds = await getAccessibleBucketIds(session.user.id, teamIdToQuery)
+      if (allowedIds !== null) {
+        bucketFilter = { in: allowedIds }
+      }
+    }
+
     const where: any = usePersonalScopeFallback
       ? {
           userId: session.user.id,
           file: { teamId: null },
         }
       : {
-          file: { teamId: teamIdToQuery },
+          file: {
+            teamId: teamIdToQuery,
+            ...(bucketFilter ? { bucketId: bucketFilter } : {}),
+          },
         }
 
     if (fileId) {

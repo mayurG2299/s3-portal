@@ -56,7 +56,7 @@ interface StoredFile {
   description?: string | null
 }
 export default function FilesPage() {
-  const { selectedIdentityId, selectedBucketId } = useDashboard()
+  const { selectedIdentityId, selectedBucketId, selectedTeamId, handleTeamAccessFailure } = useDashboard()
   const [files, setFiles] = useState<StoredFile[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -173,6 +173,13 @@ export default function FilesPage() {
         body: JSON.stringify(requestPayload),
       })
 
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        setFiles([])
+        setLoadError(null)
+        return
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.message || 'Failed to load files from storage'
@@ -203,7 +210,7 @@ export default function FilesPage() {
       }
       setIsRefreshing(false)
     }
-  }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage])
+  }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage, handleTeamAccessFailure])
 
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
@@ -256,8 +263,12 @@ export default function FilesPage() {
 
 
   async function handleUpload(uploadFiles: File[], onProgress?: (fileIndex: number, progress: number) => void) {
+
     if (!selectedBucketId) {
       throw new Error('Select a bucket before uploading')
+    }
+    if (!selectedTeamId) {
+      throw new Error('Select a team before uploading')
     }
 
     const tags = uploadTags
@@ -357,6 +368,7 @@ export default function FilesPage() {
               path: currentPath,
               tags,
               description,
+              teamId: selectedTeamId,
             }),
           })
 
@@ -403,9 +415,11 @@ export default function FilesPage() {
               bucketId: selectedBucketId,
               fileName: file.name,
               contentType: file.type,
+              size: file.size,
               path: currentPath,
               tags,
               description,
+              teamId: selectedTeamId,
             }),
           })
           if (!initRes.ok) throw new Error('Failed to init multipart upload')

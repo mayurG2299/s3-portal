@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { OnboardingStep } from './OnboardingStep'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/hooks/use-toast'
+import { useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { Zap, Database, Upload, ChevronRight, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWindowSize } from '@/hooks/use-window-size'
@@ -47,6 +48,7 @@ export function FirstTimeWizard({
   const rbac = useRBAC()
 
   // Check if user can create credentials
+  const { teamRemoved } = useTeamRemoved();
   const canCreateCredentials = rbac.canEditScreen('CREDENTIALS_CREATE')
 
   // Use controlled open state if provided, otherwise use internal state
@@ -103,11 +105,13 @@ export function FirstTimeWizard({
 
   const handleAddCredentials = async () => {
     if (!isCredentialsFormValid) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please fill in all fields'
-      })
+      if (!teamRemoved) {
+        toast({
+          variant: 'destructive',
+          title: 'Missing Information',
+          description: 'Please fill in all fields'
+        })
+      }
       return
     }
 
@@ -130,26 +134,32 @@ export function FirstTimeWizard({
       const data = await response.json()
       if (!response.ok) {
         const msg = data?.error || data?.message || 'Failed to save credentials'
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: msg
-        })
+        if (!teamRemoved) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: msg
+          })
+        }
         return
       }
 
-      toast({
-        title: 'Success!',
-        description: 'AWS credentials added. Continue to complete setup.'
-      })
+      if (!teamRemoved) {
+        toast({
+          title: 'Success!',
+          description: 'AWS credentials added. Continue to complete setup.'
+        })
+      }
 
       handleNext()
     } catch (error: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: (error instanceof Error ? error.message : 'Failed to add credentials. Please try again.')
-      })
+      if (!teamRemoved) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: (error instanceof Error ? error.message : 'Failed to add credentials. Please try again.')
+        })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -178,7 +188,11 @@ export function FirstTimeWizard({
         isMobile
           ? 'w-[95vw] max-w-none rounded-t-2xl rounded-b-none'
           : 'sm:max-w-2xl rounded-2xl'
-      )}>
+      )} hideClose>
+        <DialogTitle className="sr-only">First-time onboarding wizard</DialogTitle>
+        <DialogDescription className="sr-only">
+          Complete setup steps to connect AWS credentials and start uploading files.
+        </DialogDescription>
         {/* Progress bar */}
         <div className="space-y-2">
           <div className="flex justify-between items-center pr-12">

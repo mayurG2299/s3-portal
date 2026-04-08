@@ -3,12 +3,21 @@
 jest.mock('@/lib/db', () => ({
   prisma: {
     teamMember: { findUnique: jest.fn() },
-    teamMemberBucketAccess: { findUnique: jest.fn() },
+    teamMemberBucketAccess: {
+      findUnique: jest.fn(),
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+    $transaction: jest.fn().mockImplementation(async (fn) => {
+      if (typeof fn === 'function') return fn(require('@/lib/db').prisma);
+      // array form: execute each item (they are already resolved prisma calls when mocked)
+      return Promise.all(fn);
+    }),
   },
 }));
 
 import { prisma } from '@/lib/db';
-import { getAccessibleBucketIds, canAccessBucket } from '@/lib/bucket-access';
+import { getAccessibleBucketIds, canAccessBucket, grantBucketAccess, setBucketAccess } from '@/lib/bucket-access';
 
 describe('getAccessibleBucketIds', () => {
   beforeEach(() => {
@@ -114,5 +123,69 @@ describe('canAccessBucket', () => {
     const result = await canAccessBucket('user-1', 'team-1', 'bucket-1');
     expect(result).toBe(false);
     expect(prisma.teamMemberBucketAccess.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe('grantBucketAccess', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('calls createMany with skipDuplicates for the given bucket IDs', async () => {
+    (prisma.teamMemberBucketAccess.createMany as jest.Mock).mockResolvedValue({ count: 2 });
+
+    await grantBucketAccess('tm-1', ['bucket-1', 'bucket-2']);
+
+    expect(prisma.teamMemberBucketAccess.createMany).toHaveBeenCalledWith({
+      data: [
+        { teamMemberId: 'tm-1', bucketId: 'bucket-1' },
+        { teamMemberId: 'tm-1', bucketId: 'bucket-2' },
+      ],
+      skipDuplicates: true,
+    });
+  });
+
+  it('does nothing when bucketIds is empty', async () => {
+    await grantBucketAccess('tm-1', []);
+
+    expect(prisma.teamMemberBucketAccess.createMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('setBucketAccess', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    (prisma.teamMemberBucketAccess.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.teamMemberBucketAccess.createMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.$transaction as jest.Mock).mockImplementation(async (ops: any[]) => {
+      return Promise.all(ops);
+    });
+  });
+
+  it('deletes all existing access then creates new access in a transaction', async () => {
+    await setBucketAccess('tm-1', ['bucket-1', 'bucket-2']);
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.deleteMany).toHaveBeenCalledWith({
+      where: { teamMemberId: 'tm-1' },
+    });
+    expect(prisma.teamMemberBucketAccess.createMany).toHaveBeenCalledWith({
+      data: [
+        { teamMemberId: 'tm-1', bucketId: 'bucket-1' },
+        { teamMemberId: 'tm-1', bucketId: 'bucket-2' },
+      ],
+    });
+  });
+
+  it('deduplicates bucket IDs before creating', async () => {
+    await setBucketAccess('tm-1', ['bucket-1', 'bucket-1', 'bucket-2', 'bucket-1']);
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.createMany).toHaveBeenCalledWith({
+      data: [
+        { teamMemberId: 'tm-1', bucketId: 'bucket-1' },
+        { teamMemberId: 'tm-1', bucketId: 'bucket-2' },
+      ],
+    });
   });
 });

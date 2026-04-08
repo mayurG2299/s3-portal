@@ -17,7 +17,7 @@ interface Link {
   maxDownloads?: number
   allowDownload: boolean
   allowPreview: boolean
-  passwordHash?: string | null
+  hasPassword?: boolean
   createdAt: string
   file: {
     name: string
@@ -31,7 +31,7 @@ export default function LinksPage() {
   const [personalScopeFallback, setPersonalScopeFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  const { selectedTeamId } = useDashboard()
+  const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
   const activeTeamId = selectedTeamId
 
   useEffect(() => {
@@ -45,6 +45,10 @@ export default function LinksPage() {
         ? `/api/links?teamId=${encodeURIComponent(activeTeamId)}`
         : '/api/links'
       const response = await fetch(url)
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
       if (response.ok) {
         const data = await response.json()
         // Support both new and old API response shapes
@@ -93,6 +97,11 @@ export default function LinksPage() {
       const response = await fetch(`/api/links?id=${id}`, {
         method: 'DELETE',
       })
+
+      if (response.status === 403 || response.status === 404) {
+        handleTeamAccessFailure(response.status)
+        return
+      }
 
       if (!response.ok) {
         throw new Error('Failed to delete')
@@ -280,8 +289,8 @@ export default function LinksPage() {
                     <div className="flex gap-2">
                       <div className={cn(
                         "p-1.5 rounded-lg border transition-colors",
-                        link.passwordHash ? "bg-amber-400/10 border-amber-400/20 text-amber-500 dark:text-amber-400" : "bg-transparent border-border text-muted-foreground"
-                      )} title={link.passwordHash ? "Password Protected" : "No Password"} aria-label={link.passwordHash ? "Password protected" : "No password"}>
+                        link.hasPassword ? "bg-amber-400/10 border-amber-400/20 text-amber-500 dark:text-amber-400" : "bg-transparent border-border text-muted-foreground"
+                      )} title={link.hasPassword ? "Password Protected" : "No Password"} aria-label={link.hasPassword ? "Password protected" : "No password"}>
                         <Lock size={12} strokeWidth={2.5} />
                       </div>
                       <div className={cn(

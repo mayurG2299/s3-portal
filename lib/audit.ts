@@ -5,26 +5,28 @@ import { Prisma } from '@prisma/client'
 export type AuditStatus = 'SUCCESS' | 'FAILURE'
 
 export type AuditLogInput = {
-  request: NextRequest
-  action: string
-  success: boolean
-  userId?: string | null
-  teamId?: string | null
-  linkId?: string | null
-  resourceType?: string | null
-  resourceId?: string | null
-  errorMessage?: string | null
-  metadata?: Record<string, unknown> | null
-}
+  request?: NextRequest;
+  action: string;
+  success: boolean;
+  userId?: string | null;
+  teamId?: string | null;
+  linkId?: string | null;
+  resourceType?: string | null;
+  resourceId?: string | null;
+  errorMessage?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
-function getClientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for')
+function getClientIp(request?: NextRequest): string {
+  if (!request) return "unknown";
+  const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim()
-    if (first) return first
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
   }
-
-  return request.ip ?? 'unknown'
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp;
+  return "unknown";
 }
 
 export async function logUserAction({
@@ -52,9 +54,9 @@ export async function logUserAction({
         errorMessage: errorMessage ? errorMessage.slice(0, 1000) : undefined,
         metadata: (metadata as Prisma.InputJsonValue) ?? undefined,
         ipAddress: getClientIp(request),
-        userAgent: request.headers.get('user-agent') ?? undefined,
+        userAgent: request?.headers.get("user-agent") ?? undefined,
       },
-    })
+    });
   } catch (error) {
     console.error('Failed to write audit log:', error)
   }

@@ -71,37 +71,48 @@ export async function PATCH(
         where: { userId: session.user.id, teamId: invite.teamId },
       })
 
-      let teamMemberId: string
+      // Run member creation, bucket access grant, and invite status update atomically
+      const teamMemberId = await prisma.$transaction(async (tx) => {
+        let memberId: string
 
-      if (!alreadyMember) {
-        const newMember = await prisma.teamMember.create({
-          data: {
-            userId: session.user.id,
-            teamId: invite.teamId,
-            roleId: invite.roleId,
-          },
-        })
-        teamMemberId = newMember.id
-      } else {
-        teamMemberId = alreadyMember.id
-      }
-
-      // Grant bucket access from invite.
-      // IMPORTANT: for non-admin roles, empty inviteBucketIds = no access (not unrestricted).
-      // Admins (role.level >= 50) bypass the bucket check entirely in getAccessibleBucketIds.
-      if (invite.inviteBucketIds.length > 0) {
-        if (alreadyMember) {
-          // Re-invite: replace existing bucket access with the new set
-          await setBucketAccess(teamMemberId, invite.inviteBucketIds)
+        if (!alreadyMember) {
+          const newMember = await tx.teamMember.create({
+            data: {
+              userId: session.user.id,
+              teamId: invite.teamId,
+              roleId: invite.roleId,
+            },
+          })
+          memberId = newMember.id
         } else {
-          // New member: grant the invited buckets
-          await grantBucketAccess(teamMemberId, invite.inviteBucketIds)
+          memberId = alreadyMember.id
         }
-      }
 
-      await prisma.teamInvite.update({
-        where: { id: invite.id },
-        data: { status: "ACCEPTED" },
+        // Bucket access from invite.
+        // IMPORTANT: for non-admin roles, empty inviteBucketIds = no access (not unrestricted).
+        // Admins (role.level >= 50) bypass bucket checks entirely in getAccessibleBucketIds.
+        if (alreadyMember) {
+          // Re-invite: always replace — empty list intentionally revokes all bucket access
+          await tx.teamMemberBucketAccess.deleteMany({ where: { teamMemberId: memberId } })
+          if (invite.inviteBucketIds.length > 0) {
+            await tx.teamMemberBucketAccess.createMany({
+              data: invite.inviteBucketIds.map((bucketId) => ({ teamMemberId: memberId, bucketId })),
+            })
+          }
+        } else if (invite.inviteBucketIds.length > 0) {
+          // New member: grant the invited buckets
+          await tx.teamMemberBucketAccess.createMany({
+            data: invite.inviteBucketIds.map((bucketId) => ({ teamMemberId: memberId, bucketId })),
+            skipDuplicates: true,
+          })
+        }
+
+        await tx.teamInvite.update({
+          where: { id: invite.id },
+          data: { status: "ACCEPTED" },
+        })
+
+        return memberId
       });
 
       await logUserAction({

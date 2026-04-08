@@ -1,5 +1,6 @@
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getAccessibleBucketIds } from '@/lib/bucket-access'
 import Link from 'next/link'
 import { FolderOpen, HardDrive, Users, Link as LinkIcon, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,11 +20,24 @@ export default async function DashboardPage() {
   const identityId = cookieStore.get('selectedIdentityId')?.value || undefined
   const bucketId = cookieStore.get('selectedBucketId')?.value || undefined
 
+  // Resolve bucket-level access for restricted members
+  const allowedBucketIds = activeTeamId
+    ? await getAccessibleBucketIds(session.user.id, activeTeamId)
+    : null // null = unrestricted (no team context, personal scope)
+
+  // Build bucket filter: null = no restriction, string[] = allowed IDs
+  const bucketIdFilter = allowedBucketIds !== null
+    ? { in: allowedBucketIds }
+    : bucketId
+      ? bucketId
+      : undefined
+
   // Fetch user stats scoped by context
   const [bucketsCount, credentialsCount, filesCount, linksCount, teamsCount] =
     await Promise.all([
       prisma.awsBucket.count({
-        where: { 
+        where: {
+          ...(allowedBucketIds !== null ? { id: { in: allowedBucketIds } } : {}),
           credential: {
             id: identityId,
             teamId: activeTeamId || null,
@@ -40,7 +54,7 @@ export default async function DashboardPage() {
         where: {
           teamId: activeTeamId || null,
           credentialId: identityId,
-          bucketId: bucketId
+          bucketId: bucketIdFilter,
         },
       }),
       prisma.link.count({
@@ -48,7 +62,7 @@ export default async function DashboardPage() {
           file: {
             teamId: activeTeamId || null,
             credentialId: identityId,
-            bucketId: bucketId
+            bucketId: bucketIdFilter,
           }
         },
       }),
@@ -87,7 +101,7 @@ export default async function DashboardPage() {
     where: {
       teamId: activeTeamId || null,
       credentialId: identityId,
-      bucketId: bucketId
+      bucketId: bucketIdFilter,
     },
     select: { size: true, createdAt: true }
   })
@@ -119,7 +133,7 @@ export default async function DashboardPage() {
     where: {
       teamId: activeTeamId || null,
       credentialId: identityId,
-      bucketId: bucketId
+      bucketId: bucketIdFilter,
     },
     take: 2,
     orderBy: { createdAt: 'desc' },

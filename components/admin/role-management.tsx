@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Role } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,8 @@ import { Plus, Trash2, Crown, Shield, Eye } from 'lucide-react'
 
 type Props = {
   teamId: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const SCREEN_OPTIONS = {
@@ -34,21 +36,19 @@ type ScreenPermission = {
   level: 'VIEW' | 'EDIT' | null
 }
 
-export function RoleManagement({ teamId }: Props) {
+export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [openInternal, setOpenInternal] = useState(false)
+  const open = openProp !== undefined ? openProp : openInternal
+  const setOpen = onOpenChange !== undefined ? onOpenChange : setOpenInternal
   const [screenPermissions, setScreenPermissions] = useState<ScreenPermission[]>(
     Object.values(SCREEN_OPTIONS).flat().map(screen => ({ screen, level: null }))
   )
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchRoles()
-  }, [teamId])
-
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const res = await fetch(`/api/roles?teamId=${encodeURIComponent(teamId)}`)
       if (res.ok) {
@@ -60,7 +60,11 @@ export function RoleManagement({ teamId }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [teamId])
+
+  useEffect(() => {
+    fetchRoles()
+  }, [fetchRoles])
 
   const toggleScreenPermission = (screen: string, level: 'VIEW' | 'EDIT') => {
     setScreenPermissions(prev =>
@@ -188,18 +192,9 @@ export function RoleManagement({ teamId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-muted/30 border border-border rounded-2xl p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--brand)/0.5)]" />
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Authority Definitions</h3>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="btn-primary-gradient h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              <Plus size={14} strokeWidth={3} />
-              Engineer Role
-            </Button>
-          </DialogTrigger>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger className="hidden" />
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden glass-card !bg-background border-border shadow-2xl p-0 flex flex-col">
             <div className="p-6 border-b border-border bg-muted/50">
               <DialogTitle className="text-xl font-black text-foreground">Authority Archetype Creation</DialogTitle>
@@ -298,8 +293,7 @@ export function RoleManagement({ teamId }: Props) {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+      </Dialog>
 
       <div className="space-y-3">
         {roles.map((role, idx) => (

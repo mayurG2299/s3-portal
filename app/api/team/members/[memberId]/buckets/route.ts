@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { canManageTeam } from '@/lib/permissions'
 import { setBucketAccess } from '@/lib/bucket-access'
+import { logUserAction } from '@/lib/audit'
 
 export async function GET(
   request: NextRequest,
@@ -70,6 +71,18 @@ export async function PUT(
       }
     }
     await setBucketAccess(memberId, bucketIds)
+
+    await logUserAction({
+      request,
+      action: 'MEMBER_BUCKET_ACCESS_UPDATE',
+      success: true,
+      userId: session.user.id,
+      teamId: member.teamId,
+      resourceType: 'teamMember',
+      resourceId: memberId,
+      metadata: { bucketIds, bucketCount: bucketIds.length },
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Update member bucket access error:', error)

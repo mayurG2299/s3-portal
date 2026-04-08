@@ -71,7 +71,6 @@ export function Sidebar({
   isMobile,
   onToggle,
   onClose,
-  pendingInviteCount = 0,
 }: SidebarProps) {
   const pathname = usePathname()
   const {
@@ -82,7 +81,8 @@ export function Sidebar({
     isLoading,
     setIdentity,
     setBucket,
-    setTeam
+    setTeam,
+    pendingInviteCount
   } = useDashboard()
 
   const activeIdentity = identities.find(id => id.id === selectedIdentityId)
@@ -165,7 +165,7 @@ export function Sidebar({
           <div className="px-4 mb-8 space-y-4">
             <div className="space-y-1.5">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Team</p>
-              <Select value={selectedTeamId || currentTeamId} onValueChange={setTeam}>
+              <Select value={selectedTeamId || currentTeamId || undefined} onValueChange={setTeam}>
                 <SelectTrigger className={cn(
                   "w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20",
                   isLoading && "animate-pulse opacity-50 pointer-events-none"

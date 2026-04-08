@@ -31,10 +31,11 @@ describe('RBACProvider abort guard', () => {
   it('should only update permissions from the latest fetch (abort guard)', async () => {
     const resolves: { first?: (value: any) => void; second?: (value: any) => void } = {}
     const firstPromise = new Promise(res => { resolves.first = res })
-    const secondPromise = new Promise(res => { resolves.second = res })
+    const secondPromise = new Promise(res => { resolves.second = res });
 
     // Simulate two rapid fetches: first is slow, second is fast
     (fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'ADMIN', name: 'ADMIN', level: 50 }) })
       .mockImplementationOnce(() => firstPromise)
       .mockImplementationOnce(() => secondPromise)
 
@@ -46,7 +47,7 @@ describe('RBACProvider abort guard', () => {
     }
 
     function Wrapper() {
-      const [teamId, setTeamId] = ReactModule.useState('team-1')
+      const [teamId, setTeamId] = ReactModule.useState('team-1');
       // Expose setTeamId for test
       (Wrapper as any).setTeamId = setTeamId
       return (

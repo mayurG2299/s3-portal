@@ -27,7 +27,7 @@ const RBACContext = createContext<RBACContextType | undefined>(undefined)
 
 export function RBACProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
-  const { selectedTeamId } = useDashboard()
+  const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
   const loading = status === 'loading'
 
   const roleId = session?.user?.roleId
@@ -82,6 +82,11 @@ export function RBACProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch(`/api/permissions/screens?teamId=${teamId}`)
         if (!isActive || latestFetchToken.current !== token) return
+        if (response.status === 403 || response.status === 404) {
+          handleTeamAccessFailure(response.status)
+          setScreenPermissions(null)
+          return
+        }
         if (response.ok) {
           const data = await response.json()
           const permMap = new Map<ScreenName, 'VIEW' | 'EDIT'>()
@@ -105,7 +110,7 @@ export function RBACProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isActive = false
     }
-  }, [userId, teamId])
+  }, [handleTeamAccessFailure, userId, teamId])
 
   const canViewScreen = (screenName: ScreenName): boolean => {
     if (!screenPermissions) return false

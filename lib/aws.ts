@@ -191,6 +191,27 @@ export async function generatePresignedUploadUrl(
 }
 
 /**
+ * Create a zero-byte folder marker object in S3.
+ * Uses an explicit ContentLength to avoid unknown-length stream warnings.
+ */
+export async function createFolderMarkerObject(
+  config: AWSConfig,
+  key: string
+): Promise<void> {
+  const client = createS3Client(config)
+
+  const command = new PutObjectCommand({
+    Bucket: config.bucket,
+    Key: key,
+    Body: new Uint8Array(0),
+    ContentLength: 0,
+    ContentType: 'application/x-directory',
+  })
+
+  await client.send(command)
+}
+
+/**
  * Multipart upload helpers
  */
 

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { canManageTeam, getUserRoleInTeam } from '@/lib/permissions'
+import { publishMembershipChanged } from "@/lib/events/membership";
 
 // Add user to team
 export async function POST(request: NextRequest) {
@@ -98,6 +99,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    publishMembershipChanged(userId);
+
     return NextResponse.json({ member })
   } catch (error) {
     console.error('Add team member error:', error)
@@ -174,125 +177,125 @@ export async function GET(request: NextRequest) {
 // Remove user from team
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
-        errorMessage: 'Unauthorized',
-      })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        errorMessage: "Unauthorized",
+      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const teamId = searchParams.get('teamId')
-    const userId = searchParams.get('userId')
+    const { searchParams } = new URL(request.url);
+    const teamId = searchParams.get("teamId");
+    const userId = searchParams.get("userId");
 
     if (!teamId || !userId) {
       return NextResponse.json(
-        { error: 'teamId and userId are required' },
-        { status: 400 }
-      )
+        { error: "teamId and userId are required" },
+        { status: 400 },
+      );
     }
 
-    const hasAccess = await canManageTeam(session.user.id!, teamId)
+    const hasAccess = await canManageTeam(session.user.id!, teamId);
     if (!hasAccess) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        errorMessage: 'Only admins can remove team members',
-      })
+        errorMessage: "Only admins can remove team members",
+      });
       return NextResponse.json(
-        { error: 'Only admins can remove team members' },
-        { status: 403 }
-      )
+        { error: "Only admins can remove team members" },
+        { status: 403 },
+      );
     }
 
     if (userId === session.user.id) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        resourceType: 'teamMember',
+        resourceType: "teamMember",
         resourceId: userId,
-        errorMessage: 'Use leave-team flow to remove yourself',
-      })
+        errorMessage: "Use leave-team flow to remove yourself",
+      });
       return NextResponse.json(
-        { error: 'Use leave-team flow to remove yourself' },
-        { status: 400 }
-      )
+        { error: "Use leave-team flow to remove yourself" },
+        { status: 400 },
+      );
     }
 
-    const team = await prisma.team.findUnique({ where: { id: teamId } })
+    const team = await prisma.team.findUnique({ where: { id: teamId } });
     if (!team) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        errorMessage: 'Team not found',
-      })
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+        errorMessage: "Team not found",
+      });
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
 
     if (team.ownerId === userId) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        resourceType: 'teamMember',
+        resourceType: "teamMember",
         resourceId: userId,
-        errorMessage: 'Workspace owner cannot be removed',
-      })
+        errorMessage: "Workspace owner cannot be removed",
+      });
       return NextResponse.json(
-        { error: 'Workspace owner cannot be removed' },
-        { status: 403 }
-      )
+        { error: "Workspace owner cannot be removed" },
+        { status: 403 },
+      );
     }
 
-    const callerRole = await getUserRoleInTeam(session.user.id, teamId)
-    const targetRole = await getUserRoleInTeam(userId, teamId)
+    const callerRole = await getUserRoleInTeam(session.user.id, teamId);
+    const targetRole = await getUserRoleInTeam(userId, teamId);
     if (!callerRole || !targetRole) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        resourceType: 'teamMember',
+        resourceType: "teamMember",
         resourceId: userId,
-        errorMessage: 'Roles could not be verified',
-      })
+        errorMessage: "Roles could not be verified",
+      });
       return NextResponse.json(
-        { error: 'Roles could not be verified' },
-        { status: 400 }
-      )
+        { error: "Roles could not be verified" },
+        { status: 400 },
+      );
     }
 
     if (callerRole.level < 100 && targetRole.level >= callerRole.level) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        resourceType: 'teamMember',
+        resourceType: "teamMember",
         resourceId: userId,
-        errorMessage: 'Cannot remove a member with equal or higher authority',
-      })
+        errorMessage: "Cannot remove a member with equal or higher authority",
+      });
       return NextResponse.json(
-        { error: 'Cannot remove a member with equal or higher authority' },
-        { status: 403 }
-      )
+        { error: "Cannot remove a member with equal or higher authority" },
+        { status: 403 },
+      );
     }
 
     const deleted = await prisma.teamMember.deleteMany({
@@ -300,36 +303,42 @@ export async function DELETE(request: NextRequest) {
         teamId,
         userId,
       },
-    })
+    });
 
     if (deleted.count === 0) {
       await logUserAction({
         request,
-        action: 'TEAM_MEMBER_REMOVE',
+        action: "TEAM_MEMBER_REMOVE",
         success: false,
         userId: session.user.id,
         teamId,
-        resourceType: 'teamMember',
+        resourceType: "teamMember",
         resourceId: userId,
-        errorMessage: 'Team member not found',
-      })
-      return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
+        errorMessage: "Team member not found",
+      });
+      return NextResponse.json(
+        { error: "Team member not found" },
+        { status: 404 },
+      );
     }
 
     await logUserAction({
       request,
-      action: 'TEAM_MEMBER_REMOVE',
+      action: "TEAM_MEMBER_REMOVE",
       success: true,
       userId: session.user.id,
       teamId,
-      resourceType: 'teamMember',
+      resourceType: "teamMember",
       resourceId: userId,
       metadata: {
         removedUserId: userId,
       },
-    })
+    });
 
-    return NextResponse.json({ success: true })
+    // Broadcast SSE event to removed user
+    publishMembershipChanged(userId);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Remove team member error:', error)
     await logUserAction({

@@ -1,8 +1,10 @@
+import { TeamRemovedModalClient } from '@/components/TeamRemovedModalClient'
 import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { DashboardChrome } from '@/components/dashboard/dashboard-chrome'
 import { DashboardProvider } from '@/lib/contexts/dashboard-context'
+import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary'
 
 export default async function DashboardLayout({
   children,
@@ -95,20 +97,23 @@ export default async function DashboardLayout({
       initialIdentityId={initialIdentityId}
       initialBucketId={initialBucketId}
     >
-      <DashboardChrome
-        name={displayName}
-        email={session.user.email || ''}
-        roleTitle={roleTitle}
-        storageUsedBytes={storageUsedBytes}
-        storageLimitBytes={storageLimitBytes}
-        isAdmin={isAdmin}
-        isOwner={isOwner}
-        teams={teams}
-        currentTeamId={currentTeamId}
-        pendingInviteCount={pendingInviteCount}
-      >
-        {children}
-      </DashboardChrome>
+      <TeamRemovedModalClient />
+      <DashboardErrorBoundary>
+        <DashboardChrome
+          name={displayName}
+          email={session.user.email || ''}
+          roleTitle={roleTitle}
+          storageUsedBytes={storageUsedBytes}
+          storageLimitBytes={storageLimitBytes}
+          isAdmin={isAdmin}
+          isOwner={isOwner}
+          initialTeams={teams}
+          currentTeamId={currentTeamId}
+          pendingInviteCount={pendingInviteCount}
+        >
+          {children}
+        </DashboardChrome>
+      </DashboardErrorBoundary>
     </DashboardProvider>
   )
 }

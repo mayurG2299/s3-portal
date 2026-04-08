@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
@@ -24,67 +24,40 @@ function RoleIcon({ name, level }: { name: string; level?: number }) {
 }
 
 export default function InvitationsPage() {
-  const router = useRouter()
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [loading, setLoading] = useState(true)
+  const { invitations, acceptInvitation, rejectInvitation, isLoading } = useDashboard()
+  const invites = useMemo(() => invitations as Invite[], [invitations])
   const [processing, setProcessing] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchInvites()
-  }, [])
-
-  async function fetchInvites() {
-    try {
-      const res = await fetch('/api/team/invites')
-      if (res.ok) {
-        const data = await res.json()
-        setInvites(data)
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleAction(inviteId: string, action: 'accept' | 'decline') {
     setProcessing(inviteId)
     try {
-      const res = await fetch(`/api/team/invites/${inviteId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
-      })
-      const json = await res.json()
-
-      if (!res.ok) throw new Error(json.error || 'Failed')
-
       if (action === 'accept') {
+        const result = await acceptInvitation(inviteId)
         toast({
           title: '🎉 Welcome aboard!',
-          description: `You've joined ${json.teamName}. Switch to it from the team selector!`,
+          description: `You've joined ${result.teamName}. Switch to it from the team selector!`,
         })
       } else {
+        await rejectInvitation(inviteId)
         toast({
           title: 'Invite declined',
           description: 'The invitation has been declined.',
         })
       }
 
-      // Remove from list
-      setInvites(prev => prev.filter(i => i.id !== inviteId))
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to process invite'
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: err.message,
+        description: message,
       })
     } finally {
       setProcessing(null)
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="h-8 w-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { decryptAWSConfig, getS3ObjectMetadata } from '@/lib/aws'
 import { logUserAction } from '@/lib/audit'
+import { canAccessBucket } from '@/lib/bucket-access'
 import { checkQuotaBeforeUpload, incrementUsage, decrementUsage } from '@/lib/storage-quota'
 
 /**
@@ -34,12 +35,18 @@ export async function POST(request: NextRequest) {
   if (file.userId !== session.user.id) {
     const teamMember = await prisma.teamMember.findFirst({
       where: {
-        teamId: file.teamId!,
+        teamId: file.teamId ?? undefined,
         userId: session.user.id,
         role: { name: { in: ['OWNER', 'ADMIN'] } },
       },
     })
     if (!teamMember) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+  }
+
+  // Bucket-scope check: file owner with restricted role cannot verify files outside their buckets
+  if (file.teamId && file.bucketId) {
+    const allowed = await canAccessBucket(session.user.id, file.teamId, file.bucketId)
+    if (!allowed) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
   }
 
   const config = decryptAWSConfig(file.credential as any, file.bucket as any)

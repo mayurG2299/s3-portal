@@ -3,6 +3,7 @@
 // ─── Prisma mock ────────────────────────────────────────────────────────────
 jest.mock('@/lib/db', () => ({
   prisma: {
+    $transaction: jest.fn(),
     user: { findUnique: jest.fn() },
     teamMember: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
     teamInvite: {
@@ -15,7 +16,7 @@ jest.mock('@/lib/db', () => ({
     aWSCredential: { findMany: jest.fn() },
     awsBucket: { count: jest.fn() },
     role: { findUnique: jest.fn() },
-    teamMemberBucketAccess: { createMany: jest.fn(), findUnique: jest.fn() },
+    teamMemberBucketAccess: { createMany: jest.fn(), deleteMany: jest.fn(), findUnique: jest.fn() },
   },
 }));
 
@@ -100,6 +101,9 @@ describe('POST /api/team/invites — bucket-scoped invitations', () => {
   it('stores inviteBucketIds on the created invite when valid bucketIds are provided', async () => {
     mockSession('user-admin', 'team-1');
     (canManageTeam as jest.Mock).mockResolvedValue(true);
+    // role hierarchy: inviter is ADMIN (level 50), target role is VIEWER (level 10)
+    (prisma.teamMember.findFirst as jest.Mock).mockResolvedValueOnce({ role: { level: 50 } });
+    (prisma.role.findUnique as jest.Mock).mockResolvedValue({ level: 10 });
     // bucket validation: 2 buckets found for this team
     (prisma.awsBucket.count as jest.Mock).mockResolvedValue(2);
     // no existing user or pending invite
@@ -131,6 +135,9 @@ describe('POST /api/team/invites — bucket-scoped invitations', () => {
   it('returns 400 when bucketIds contain IDs not belonging to the team', async () => {
     mockSession('user-admin', 'team-1');
     (canManageTeam as jest.Mock).mockResolvedValue(true);
+    // role hierarchy: inviter is ADMIN, target is VIEWER
+    (prisma.teamMember.findFirst as jest.Mock).mockResolvedValueOnce({ role: { level: 50 } });
+    (prisma.role.findUnique as jest.Mock).mockResolvedValue({ level: 10 });
     // Only 1 of 2 buckets is valid for this team
     (prisma.awsBucket.count as jest.Mock).mockResolvedValue(1);
 
@@ -147,11 +154,17 @@ describe('POST /api/team/invites — bucket-scoped invitations', () => {
     expect(res.status).toBe(400);
     expect(json.error).toMatch(/invalid/i);
     expect(prisma.teamInvite.create).not.toHaveBeenCalled();
+    expect(prisma.awsBucket.count).toHaveBeenCalledWith({
+      where: { id: { in: expect.arrayContaining(['bucket-valid', 'bucket-foreign']) }, credential: { teamId: 'team-1' } },
+    });
   });
 
   it('stores empty inviteBucketIds when no bucketIds are provided', async () => {
     mockSession('user-admin', 'team-1');
     (canManageTeam as jest.Mock).mockResolvedValue(true);
+    // role hierarchy: inviter is ADMIN, target is VIEWER
+    (prisma.teamMember.findFirst as jest.Mock).mockResolvedValueOnce({ role: { level: 50 } });
+    (prisma.role.findUnique as jest.Mock).mockResolvedValue({ level: 10 });
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.teamInvite.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.teamInvite.create as jest.Mock).mockResolvedValue({ id: 'invite-2' });
@@ -180,6 +193,9 @@ describe('POST /api/team/invites — bucket-scoped invitations', () => {
   it('deduplicates bucketIds before storing', async () => {
     mockSession('user-admin', 'team-1');
     (canManageTeam as jest.Mock).mockResolvedValue(true);
+    // role hierarchy: inviter is ADMIN, target is VIEWER
+    (prisma.teamMember.findFirst as jest.Mock).mockResolvedValueOnce({ role: { level: 50 } });
+    (prisma.role.findUnique as jest.Mock).mockResolvedValue({ level: 10 });
     // After dedup: 1 unique bucket, count = 1 means valid
     (prisma.awsBucket.count as jest.Mock).mockResolvedValue(1);
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
@@ -223,13 +239,10 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
     params: Promise.resolve({ id }),
   } as any);
 
-  it('calls grantBucketAccess with inviteBucketIds when non-empty (new member)', async () => {
+  it('grants bucket access via createMany for new member with non-empty inviteBucketIds', async () => {
     mockSession('user-1', 'team-1');
 
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-      email: 'user@example.com',
-    });
-
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ email: 'user@example.com' });
     (prisma.teamInvite.findUnique as jest.Mock).mockResolvedValue({
       id: 'invite-1',
       email: 'user@example.com',
@@ -244,7 +257,10 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
 
     // Not already a member
     (prisma.teamMember.findFirst as jest.Mock).mockResolvedValue(null);
+    // $transaction executes the callback with prisma as the tx object
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn: (tx: any) => any) => fn(prisma));
     (prisma.teamMember.create as jest.Mock).mockResolvedValue({ id: 'tm-new' });
+    (prisma.teamMemberBucketAccess.createMany as jest.Mock).mockResolvedValue({});
     (prisma.teamInvite.update as jest.Mock).mockResolvedValue({});
 
     const res = await invitePatch(makeInvitePatchReq('accept'), makeContext('invite-1'));
@@ -252,17 +268,20 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
 
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
-    expect(grantBucketAccess).toHaveBeenCalledWith('tm-new', ['bucket-1', 'bucket-2']);
-    expect(setBucketAccess).not.toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.createMany).toHaveBeenCalledWith({
+      data: [
+        { teamMemberId: 'tm-new', bucketId: 'bucket-1' },
+        { teamMemberId: 'tm-new', bucketId: 'bucket-2' },
+      ],
+      skipDuplicates: true,
+    });
+    expect(prisma.teamMemberBucketAccess.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('calls setBucketAccess when member already exists (re-invite)', async () => {
+  it('replaces bucket access via deleteMany+createMany for re-invited existing member', async () => {
     mockSession('user-1', 'team-1');
 
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-      email: 'user@example.com',
-    });
-
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ email: 'user@example.com' });
     (prisma.teamInvite.findUnique as jest.Mock).mockResolvedValue({
       id: 'invite-2',
       email: 'user@example.com',
@@ -277,6 +296,9 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
 
     // User is already a member
     (prisma.teamMember.findFirst as jest.Mock).mockResolvedValue({ id: 'tm-existing' });
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn: (tx: any) => any) => fn(prisma));
+    (prisma.teamMemberBucketAccess.deleteMany as jest.Mock).mockResolvedValue({});
+    (prisma.teamMemberBucketAccess.createMany as jest.Mock).mockResolvedValue({});
     (prisma.teamInvite.update as jest.Mock).mockResolvedValue({});
 
     const res = await invitePatch(makeInvitePatchReq('accept'), makeContext('invite-2'));
@@ -284,17 +306,18 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
 
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
-    expect(setBucketAccess).toHaveBeenCalledWith('tm-existing', ['bucket-3']);
-    expect(grantBucketAccess).not.toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.deleteMany).toHaveBeenCalledWith({
+      where: { teamMemberId: 'tm-existing' },
+    });
+    expect(prisma.teamMemberBucketAccess.createMany).toHaveBeenCalledWith({
+      data: [{ teamMemberId: 'tm-existing', bucketId: 'bucket-3' }],
+    });
   });
 
-  it('does NOT call grantBucketAccess or setBucketAccess when inviteBucketIds is empty', async () => {
+  it('does NOT call createMany or deleteMany when inviteBucketIds is empty (new member)', async () => {
     mockSession('user-1', 'team-1');
 
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-      email: 'user@example.com',
-    });
-
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue({ email: 'user@example.com' });
     (prisma.teamInvite.findUnique as jest.Mock).mockResolvedValue({
       id: 'invite-3',
       email: 'user@example.com',
@@ -308,6 +331,7 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
     });
 
     (prisma.teamMember.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.$transaction as jest.Mock).mockImplementation(async (fn: (tx: any) => any) => fn(prisma));
     (prisma.teamMember.create as jest.Mock).mockResolvedValue({ id: 'tm-new2' });
     (prisma.teamInvite.update as jest.Mock).mockResolvedValue({});
 
@@ -316,8 +340,8 @@ describe('PATCH /api/team/invites/[id] — accept with bucket access', () => {
 
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
-    expect(grantBucketAccess).not.toHaveBeenCalled();
-    expect(setBucketAccess).not.toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.createMany).not.toHaveBeenCalled();
+    expect(prisma.teamMemberBucketAccess.deleteMany).not.toHaveBeenCalled();
   });
 
   it('returns 403 when invite email does not match user email', async () => {

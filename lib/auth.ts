@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/db'
 import { verifyPassword } from '@/lib/crypto'
+import { logUserAction } from '@/lib/audit'
 import type { Role } from '@prisma/client'
 
 // Extend the next-auth JWT type
@@ -97,6 +98,25 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      await logUserAction({
+        action: 'USER_LOGIN',
+        success: true,
+        userId: user.id,
+        metadata: { email: user.email },
+      })
+    },
+    async signOut({ token }) {
+      if (token?.id) {
+        await logUserAction({
+          action: 'USER_LOGOUT',
+          success: true,
+          userId: token.id as string,
+        })
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {

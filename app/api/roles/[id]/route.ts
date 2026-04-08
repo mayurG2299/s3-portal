@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { RouteContext } from "@/types/next-route-context";
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
@@ -7,39 +8,41 @@ import { canManageTeam } from '@/lib/permissions'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext<{ id: string }>,
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await context.params;
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
-    })
+      where: { id },
+    });
 
     if (!role) {
-      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
+      return NextResponse.json({ error: "Role not found" }, { status: 404 });
     }
 
-    return NextResponse.json(role)
+    return NextResponse.json(role);
   } catch (error) {
-    console.error('Failed to fetch role:', error)
+    console.error("Failed to fetch role:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext<{ id: string }>,
 ) {
+  const { id } = await context.params;
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       await logUserAction({
@@ -75,12 +78,12 @@ export async function DELETE(
         teamId: targetTeamId,
         errorMessage: "Forbidden",
       });
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const role = await prisma.role.findUnique({
-      where: { id: params.id },
-    })
+      where: { id },
+    });
 
     if (!role) {
       await logUserAction({
@@ -90,10 +93,10 @@ export async function DELETE(
         userId: session.user.id,
         teamId: targetTeamId,
         resourceType: "role",
-        resourceId: params.id,
+        resourceId: id,
         errorMessage: "Role not found",
       });
-      return NextResponse.json({ error: 'Role not found' }, { status: 404 })
+      return NextResponse.json({ error: "Role not found" }, { status: 404 });
     }
 
     // Prevent deletion of system roles
@@ -109,15 +112,15 @@ export async function DELETE(
         errorMessage: "System roles cannot be deleted",
       });
       return NextResponse.json(
-        { error: 'System roles cannot be deleted' },
-        { status: 400 }
-      )
+        { error: "System roles cannot be deleted" },
+        { status: 400 },
+      );
     }
 
     // Delete the role
     await prisma.role.delete({
-      where: { id: params.id },
-    })
+      where: { id },
+    });
 
     await logUserAction({
       request,
@@ -126,21 +129,21 @@ export async function DELETE(
       userId: session.user.id,
       teamId: targetTeamId,
       resourceType: "role",
-      resourceId: params.id,
+      resourceId: id,
     });
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to delete role:', error)
+    console.error("Failed to delete role:", error);
     await logUserAction({
       request,
-      action: 'ROLE_DELETE',
+      action: "ROLE_DELETE",
       success: false,
-      errorMessage: 'Internal server error',
-    })
+      errorMessage: "Internal server error",
+    });
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

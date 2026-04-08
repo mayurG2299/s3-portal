@@ -41,7 +41,19 @@ async function seedRoles() {
             updatedAt: new Date(),
         },
     });
-    console.log('✅ Roles created:', { owner: owner.name, admin: admin.name, viewer: viewer.name });
+    const bucketAdmin = await prisma.role.upsert({
+        where: { name: 'BUCKET ADMIN' },
+        update: {},
+        create: {
+            id: 'role_bucket_admin',
+            name: 'BUCKET ADMIN',
+            description: 'Full file and credential access scoped to assigned buckets only',
+            level: 40,
+            isSystem: true,
+            updatedAt: new Date(),
+        },
+    });
+    console.log('✅ Roles created:', { owner: owner.name, admin: admin.name, viewer: viewer.name, bucketAdmin: bucketAdmin.name });
     // Create OWNER permissions (all screens with EDIT)
     const ownerScreens = [
         'FILES_LIST', 'FILES_UPLOAD', 'FILES_DELETE', 'FILES_SHARE',
@@ -124,6 +136,36 @@ async function seedRoles() {
         });
     }
     console.log(`✅ Created ${viewerScreens.length} VIEWER permissions`);
+    // Create BUCKET ADMIN permissions — same as ADMIN but scoped to assigned buckets (level 40 < 50)
+    const bucketAdminPerms = [
+        { screen: 'FILES_LIST', level: 'EDIT' },
+        { screen: 'FILES_UPLOAD', level: 'EDIT' },
+        { screen: 'FILES_DELETE', level: 'EDIT' },
+        { screen: 'FILES_SHARE', level: 'EDIT' },
+        { screen: 'CREDENTIALS_LIST', level: 'VIEW' },
+        { screen: 'LINKS_LIST', level: 'EDIT' },
+        { screen: 'LINKS_CREATE', level: 'EDIT' },
+        { screen: 'LINKS_DELETE', level: 'EDIT' },
+        { screen: 'TEAM_MEMBERS', level: 'VIEW' },
+    ];
+    for (const perm of bucketAdminPerms) {
+        await prisma.rolePermission.upsert({
+            where: {
+                roleId_screenName: {
+                    roleId: bucketAdmin.id,
+                    screenName: perm.screen,
+                },
+            },
+            update: {},
+            create: {
+                id: `rp_bucket_admin_${perm.screen.toLowerCase()}`,
+                roleId: bucketAdmin.id,
+                screenName: perm.screen,
+                permissionLevel: perm.level,
+            },
+        });
+    }
+    console.log(`✅ Created ${bucketAdminPerms.length} BUCKET ADMIN permissions`);
     console.log('🎉 Seeding completed successfully!');
 }
 async function seedBucketAccessForExistingMembers() {

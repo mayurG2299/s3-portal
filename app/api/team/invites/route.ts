@@ -90,6 +90,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only admins can invite users' }, { status: 403 })
     }
 
+    // Validate role exists and enforce hierarchy — cannot invite to a role >= your own level
+    const [inviterMembership, targetRole] = await Promise.all([
+      prisma.teamMember.findFirst({
+        where: { userId: session.user.id, teamId },
+        select: { role: { select: { level: true } } },
+      }),
+      prisma.role.findUnique({ where: { id: roleId }, select: { level: true } }),
+    ])
+    if (!targetRole) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+    }
+    if (!inviterMembership || targetRole.level >= inviterMembership.role.level) {
+      return NextResponse.json(
+        { error: 'Cannot invite to a role equal to or higher than your own' },
+        { status: 403 }
+      )
+    }
+
     const normalizedBucketIds: string[] = [...new Set(Array.isArray(bucketIds) ? bucketIds : [])]
     if (normalizedBucketIds.length > 0) {
       const validCount = await prisma.awsBucket.count({

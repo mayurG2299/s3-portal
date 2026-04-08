@@ -50,8 +50,8 @@ function LoginPageContent() {
         return
       }
 
-      router.push(callbackUrl)
-      router.refresh()
+      // Force session refresh by reloading the page
+      window.location.href = callbackUrl
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -64,7 +64,7 @@ function LoginPageContent() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-slate-200 selection:bg-brand/30">
+    <div className="min-h-screen flex bg-background text-slate-200 selection:bg-brand/30 overflow-y-auto">
       {/* Branded panel - hidden on mobile */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-background via-slate-950 to-background relative overflow-hidden border-r border-white/5">
         {/* Animated Background Elements */}
@@ -113,18 +113,18 @@ function LoginPageContent() {
       </div>
 
       {/* Form panel */}
-      <div className="flex-1 flex items-center justify-center p-8 relative">
+      <div className="flex-1 flex items-start sm:items-center justify-center p-4 sm:p-8 py-6 sm:py-8 relative">
         <div className="w-full max-w-md animate-slide-up">
           {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-10 lg:hidden">
+          <div className="flex items-center gap-3 mb-6 sm:mb-10 lg:hidden">
             <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-xl flex items-center justify-center shadow-lg shadow-brand/25">
               <span className="text-white font-bold text-sm tracking-tighter">S3</span>
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">S3 Portal</h1>
           </div>
 
-          <div className="glass-morphic p-8 sm:p-10 rounded-3xl border border-white/10 relative z-10 shadow-3xl">
-            <div className="mb-10 text-center sm:text-left">
+          <div className="glass-morphic p-6 sm:p-10 rounded-3xl border border-white/10 relative z-10 shadow-3xl">
+            <div className="mb-6 sm:mb-10 text-center sm:text-left">
               <h3 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h3>
               <p className="text-slate-400">Please enter your credentials to access the portal.</p>
               {errorParam === 'unauthorized' && (
@@ -185,7 +185,7 @@ function LoginPageContent() {
               </Button>
             </form>
 
-            <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <div className="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-white/5 text-center">
               <p className="text-sm text-slate-500">
                 New to S3 Portal?{' '}
                 <Link href="/register" className="font-bold text-white hover:text-brand-light underline underline-offset-4 decoration-brand/30 hover:decoration-brand-light transition-all duration-300">
@@ -195,7 +195,7 @@ function LoginPageContent() {
             </div>
           </div>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
+          <div className="mt-6 sm:mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-slate-600 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <Link href="#" className="hover:text-slate-400 transition-colors">Privacy Policy</Link>
             <Link href="#" className="hover:text-slate-400 transition-colors">Terms of Service</Link>
             <Link href="#" className="hover:text-slate-400 transition-colors">Help Center</Link>

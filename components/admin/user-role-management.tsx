@@ -122,10 +122,24 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
       }
 
       if (!teamRemoved) {
-        toast({
-          title: 'Protocol Modified',
-          description: `Authority level recalibrated successfully.`,
-        })
+        const currentMember = teamMembers.find((m) => m.id === memberId)
+        const oldLevel = currentMember?.role.level ?? 0
+        const newRole = availableRoles.find((r) => r.id === newRoleId)
+        const newLevel = newRole?.level ?? 0
+
+        // Detect admin → restricted demotion: the user now has zero bucket access
+        if (oldLevel >= 50 && newLevel < 50) {
+          toast({
+            title: 'Bucket access needed',
+            description: 'This member was demoted to a restricted role and now has no bucket access. Configure it using the Bucket Access panel.',
+            variant: 'destructive',
+          })
+        } else {
+          toast({
+            title: 'Protocol Modified',
+            description: `Authority level recalibrated successfully.`,
+          })
+        }
       }
 
       // Refresh the page
