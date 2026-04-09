@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, Crown, Shield, Eye } from 'lucide-react'
+import { Plus, Trash2, Crown, Shield, Eye, Pencil } from 'lucide-react'
 
 type Props = {
   teamId: string
@@ -36,17 +36,39 @@ type ScreenPermission = {
   level: 'VIEW' | 'EDIT' | null
 }
 
+type RoleDetails = Role & {
+  rolePermissions?: Array<{
+    screenName: string
+    permissionLevel: 'VIEW' | 'EDIT'
+  }>
+}
+
+type DialogMode = 'create' | 'view' | 'edit'
+
+const DEFAULT_SCREEN_PERMISSIONS = Object.values(SCREEN_OPTIONS)
+  .flat()
+  .map(screen => ({ screen, level: null as 'VIEW' | 'EDIT' | null }))
+
+const getRoleLevel = (permissions: ScreenPermission[]) => {
+  const editCount = permissions.filter(sp => sp.level === 'EDIT').length
+  return Math.max(20, Math.min(80, 20 + editCount * 3))
+}
+
 export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [dialogMode, setDialogMode] = useState<DialogMode>('create')
   const [openInternal, setOpenInternal] = useState(false)
   const open = openProp !== undefined ? openProp : openInternal
   const setOpen = onOpenChange !== undefined ? onOpenChange : setOpenInternal
-  const [screenPermissions, setScreenPermissions] = useState<ScreenPermission[]>(
-    Object.values(SCREEN_OPTIONS).flat().map(screen => ({ screen, level: null }))
-  )
+  const [activeRoleId, setActiveRoleId] = useState<string | null>(null)
+  const [loadingRoleDetails, setLoadingRoleDetails] = useState(false)
+  const [roleName, setRoleName] = useState('')
+  const [roleDescription, setRoleDescription] = useState('')
+  const [screenPermissions, setScreenPermissions] = useState<ScreenPermission[]>(DEFAULT_SCREEN_PERMISSIONS)
   const { toast } = useToast()
+  const readOnly = dialogMode === 'view'
 
   const fetchRoles = useCallback(async () => {
     try {
@@ -66,6 +88,72 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
     fetchRoles()
   }, [fetchRoles])
 
+  const resetForm = useCallback(() => {
+    setActiveRoleId(null)
+    setRoleName('')
+    setRoleDescription('')
+    setScreenPermissions(DEFAULT_SCREEN_PERMISSIONS)
+    setLoadingRoleDetails(false)
+  }, [])
+
+  const syncRoleIntoForm = useCallback((role: RoleDetails) => {
+    setActiveRoleId(role.id)
+    setRoleName(role.name)
+    setRoleDescription(role.description || '')
+    const permissionMap = new Map(
+      (role.rolePermissions || []).map(permission => [permission.screenName, permission.permissionLevel] as const)
+    )
+    setScreenPermissions(
+      DEFAULT_SCREEN_PERMISSIONS.map(permission => ({
+        screen: permission.screen,
+        level: permissionMap.get(permission.screen) || null,
+      }))
+    )
+  }, [])
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      resetForm()
+      setDialogMode('create')
+    }
+  }
+
+  const openCreateDialog = () => {
+    resetForm()
+    setDialogMode('create')
+    setOpen(true)
+  }
+
+  const openRoleDialog = async (roleId: string, mode: DialogMode) => {
+    setDialogMode(mode)
+    setLoadingRoleDetails(true)
+    setOpen(true)
+
+    try {
+      const res = await fetch(`/api/roles/${roleId}?teamId=${encodeURIComponent(teamId)}`)
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => null)
+        throw new Error(error?.error || 'Failed to load role')
+      }
+
+      const role = await res.json()
+      syncRoleIntoForm(role)
+    } catch (error) {
+      setOpen(false)
+      resetForm()
+      setDialogMode('create')
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to load role',
+      })
+    } finally {
+      setLoadingRoleDetails(false)
+    }
+  }
+
   const toggleScreenPermission = (screen: string, level: 'VIEW' | 'EDIT') => {
     setScreenPermissions(prev =>
       prev.map(sp => {
@@ -80,68 +168,78 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
 
   const handleCreateRole = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setCreating(true)
+    if (readOnly || loadingRoleDetails) {
+      return
+    }
 
-    const formData = new FormData(e.currentTarget)
-    const name = formData.get('name') as string
-    const description = formData.get('description') as string
+    setSaving(true)
 
-    // Calculate level based on number of edit permissions
-    const editCount = screenPermissions.filter(sp => sp.level === 'EDIT').length
-    const level = Math.max(20, Math.min(80, 20 + editCount * 3)) // Range from 20-80
+    const name = roleName.trim()
+    const description = roleDescription.trim()
+    const permissionsToCreate = screenPermissions.filter(sp => sp.level !== null)
+    const level = getRoleLevel(screenPermissions)
 
     try {
-      const res = await fetch('/api/roles', {
-        method: 'POST',
+      const endpoint = dialogMode === 'edit' && activeRoleId ? `/api/roles/${activeRoleId}?teamId=${encodeURIComponent(teamId)}` : '/api/roles'
+      const method = dialogMode === 'edit' ? 'PATCH' : 'POST'
+      const body = dialogMode === 'edit'
+        ? { name, description, permissions: permissionsToCreate.map(sp => ({ screenName: sp.screen, permissionLevel: sp.level })) }
+        : { name, description, level, teamId }
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, level, teamId }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || 'Failed to create role')
+        throw new Error(error.error || `Failed to ${dialogMode === 'edit' ? 'update' : 'create'} role`)
       }
 
-      const newRole = await res.json()
+      if (dialogMode === 'edit') {
+        const updatedRole = await res.json()
+        setRoles(prev => prev.map(role => role.id === updatedRole.id ? updatedRole : role))
+      } else {
+        const newRole = await res.json()
 
-      // Create role permissions
-      const permissionsToCreate = screenPermissions.filter(sp => sp.level !== null)
-      if (permissionsToCreate.length > 0) {
-        await Promise.all(
-          permissionsToCreate.map(sp =>
-            fetch('/api/roles/permissions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                roleId: newRole.id,
-                teamId,
-                screenName: sp.screen,
-                permissionLevel: sp.level,
-              }),
-            })
+        if (permissionsToCreate.length > 0) {
+          await Promise.all(
+            permissionsToCreate.map(sp =>
+              fetch('/api/roles/permissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  roleId: newRole.id,
+                  teamId,
+                  screenName: sp.screen,
+                  permissionLevel: sp.level,
+                }),
+              })
+            )
           )
-        )
+        }
+
+        setRoles(prev => [...prev, newRole])
       }
 
-      setRoles([...roles, newRole])
-      setOpen(false)
-      setScreenPermissions(
-        Object.values(SCREEN_OPTIONS).flat().map(screen => ({ screen, level: null }))
-      )
-      ;(e.target as HTMLFormElement).reset()
+      handleOpenChange(false)
 
       toast({
         title: 'Success',
-        description: `Role "${name}" created with ${permissionsToCreate.length} screen permissions`,
+        description:
+          dialogMode === 'edit'
+            ? `Role "${name}" updated successfully`
+            : `Role "${name}" created with ${permissionsToCreate.length} screen permissions`,
       })
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create role',
+        description: error instanceof Error ? error.message : `Failed to ${dialogMode === 'edit' ? 'update' : 'create'} role`,
       })
     } finally {
-      setCreating(false)
+      setSaving(false)
     }
   }
 
@@ -193,17 +291,29 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
   return (
     <div className="space-y-6">
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger className="hidden" />
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden glass-card !bg-background border-border shadow-2xl p-0 flex flex-col">
             <div className="p-6 border-b border-border bg-muted/50">
-              <DialogTitle className="text-xl font-black text-foreground">Authority Archetype Creation</DialogTitle>
+              <DialogTitle className="text-xl font-black text-foreground">
+                {dialogMode === 'create' ? 'Authority Archetype Creation' : dialogMode === 'edit' ? 'Authority Archetype Update' : 'Authority Archetype Overview'}
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground text-xs font-medium mt-1">
-                Configure permission parameters for specialized system roles.
+                {dialogMode === 'create'
+                  ? 'Configure permission parameters for specialized system roles.'
+                  : dialogMode === 'edit'
+                    ? 'Update role identity and permission parameters.'
+                    : 'Inspect role identity and permission parameters.'}
               </DialogDescription>
             </div>
 
             <form onSubmit={handleCreateRole} className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+              {loadingRoleDetails ? (
+                <div className="py-12 text-center text-sm font-medium text-muted-foreground">
+                  Loading role details...
+                </div>
+              ) : (
+                <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Designation</Label>
@@ -212,8 +322,10 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
                     name="name"
                     placeholder="e.g., ARCHITECT, AUDITOR"
                     required
+                    value={roleName}
+                    onChange={(e) => setRoleName(e.target.value)}
                     className="h-12 bg-background border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50"
-                    disabled={creating}
+                    disabled={saving || readOnly}
                   />
                 </div>
 
@@ -224,8 +336,10 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
                     name="description"
                     placeholder="Brief definition of role purpose"
                     required
+                    value={roleDescription}
+                    onChange={(e) => setRoleDescription(e.target.value)}
                     className="h-12 bg-background border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50"
-                    disabled={creating}
+                    disabled={saving || readOnly}
                   />
                 </div>
               </div>
@@ -249,7 +363,7 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
                                   <Checkbox
                                     checked={permission?.level === 'VIEW'}
                                     onCheckedChange={() => toggleScreenPermission(screen, 'VIEW')}
-                                    disabled={creating}
+                                    disabled={saving || readOnly}
                                     className="border-border bg-background data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
                                   <span className="text-[10px] font-black text-muted-foreground group-hover/label:text-foreground uppercase tracking-widest">READ</span>
@@ -258,7 +372,7 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
                                   <Checkbox
                                     checked={permission?.level === 'EDIT'}
                                     onCheckedChange={() => toggleScreenPermission(screen, 'EDIT')}
-                                    disabled={creating}
+                                    disabled={saving || readOnly}
                                     className="border-border bg-background data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                   />
                                   <span className="text-[10px] font-black text-muted-foreground group-hover/label:text-foreground uppercase tracking-widest">WRITE</span>
@@ -274,23 +388,27 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
               </div>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-border">
-                <Button
+                  <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => setOpen(false)}
-                  disabled={creating}
+                  onClick={() => handleOpenChange(false)}
+                  disabled={saving}
                   className="h-11 px-6 rounded-xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
-                  Cancel
+                  {readOnly ? 'Close' : 'Cancel'}
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={creating}
-                  className="btn-primary-gradient h-11 px-8 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl"
-                >
-                  {creating ? 'Engineering...' : 'Commit Protocol'}
-                </Button>
+                {!readOnly && (
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="btn-primary-gradient h-11 px-8 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl"
+                  >
+                    {saving ? (dialogMode === 'edit' ? 'Updating...' : 'Engineering...') : dialogMode === 'edit' ? 'Update Protocol' : 'Commit Protocol'}
+                  </Button>
+                )}
               </div>
+                </>
+              )}
             </form>
           </DialogContent>
       </Dialog>
@@ -321,16 +439,39 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
               </div>
             </div>
 
-            {!role.isSystem && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDeleteRole(role.id, role.name)}
-                className="h-9 w-9 rounded-xl text-rose-500/50 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
+                aria-label={`View role ${role.name}`}
+                onClick={() => openRoleDialog(role.id, 'view')}
+                className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-background border border-transparent hover:border-border transition-all"
               >
-                <Trash2 size={16} strokeWidth={2.5} />
+                <Eye size={16} strokeWidth={2.5} />
               </Button>
-            )}
+              {!role.isSystem && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Edit role ${role.name}`}
+                    onClick={() => openRoleDialog(role.id, 'edit')}
+                    className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-background border border-transparent hover:border-border transition-all"
+                  >
+                    <Pencil size={16} strokeWidth={2.5} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Delete role ${role.name}`}
+                    onClick={() => handleDeleteRole(role.id, role.name)}
+                    className="h-9 w-9 rounded-xl text-rose-500/50 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all"
+                  >
+                    <Trash2 size={16} strokeWidth={2.5} />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         ))}
 
