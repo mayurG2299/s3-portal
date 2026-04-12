@@ -164,4 +164,42 @@ describe('useKeyboardNav', () => {
     const { result } = renderHook(() => useKeyboardNav(baseOptions))
     expect(result.current.itemRefs).toHaveLength(files.length)
   })
+
+  test('event.repeat is ignored for Space', () => {
+    const onPreview = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onPreview }))
+    fireKey('ArrowDown')
+    advanceThrottle()
+    fireKey('ArrowDown') // index 1 = file-b.txt
+    fireKey(' ', { repeat: true })
+    expect(onPreview).not.toHaveBeenCalled()
+  })
+
+  test('event.repeat is ignored for Backspace', () => {
+    const onNavigateUp = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onNavigateUp }))
+    fireKey('Backspace', { repeat: true })
+    expect(onNavigateUp).not.toHaveBeenCalled()
+  })
+
+  test('focusedIndex resets to null when files array changes', () => {
+    const newFiles = [makeFile('4', 'new-file.txt')]
+    const { result, rerender } = renderHook(
+      ({ files }: { files: ReturnType<typeof makeFile>[] }) =>
+        useKeyboardNav({ ...baseOptions, files }),
+      { initialProps: { files } }
+    )
+    fireKey('ArrowDown') // focus index 0
+    expect(result.current.focusedIndex).toBe(0)
+    rerender({ files: newFiles })
+    expect(result.current.focusedIndex).toBeNull()
+  })
+
+  test('Enter with no focused item does nothing', () => {
+    const onNavigateToFolder = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onNavigateToFolder }))
+    // do not fire ArrowDown first — focusedIndex is null
+    fireKey('Enter')
+    expect(onNavigateToFolder).not.toHaveBeenCalled()
+  })
 })
