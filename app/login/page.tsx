@@ -39,6 +39,7 @@ function LoginPageContent() {
         email: formData.get('email'),
         password: formData.get('password'),
         redirect: false,
+        callbackUrl,
       })
 
       if (result?.error) {
@@ -50,8 +51,8 @@ function LoginPageContent() {
         return
       }
 
-      // Force session refresh by reloading the page
-      window.location.href = callbackUrl
+      const destination = result?.url || callbackUrl
+      router.replace(destination)
     } catch (error) {
       toast({
         variant: 'destructive',
