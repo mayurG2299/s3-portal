@@ -21,6 +21,8 @@ import {
 import { ProfileActions } from './profile-actions'
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 import {
   Select,
   SelectContent,
@@ -37,8 +39,6 @@ interface Team {
 
 interface SidebarProps {
   email: string
-  isAdmin: boolean
-  isOwner: boolean
   teams: Team[]
   currentTeamId?: string
   storageUsedBytes?: number
@@ -61,8 +61,6 @@ function formatBytes(bytes: number, decimals = 1) {
 
 export function Sidebar({
   email,
-  isAdmin,
-  isOwner,
   teams,
   currentTeamId,
   storageUsedBytes = 0,
@@ -84,26 +82,43 @@ export function Sidebar({
     setTeam,
     pendingInviteCount
   } = useDashboard()
+  const { canViewScreen } = useRBAC()
 
   const activeIdentity = identities.find(id => id.id === selectedIdentityId)
   const availableBuckets = activeIdentity?.buckets || []
 
   const navItems = useMemo(
-    () => [
-      { href: '/dashboard', label: 'Dashboard', icon: Home },
-      { href: '/dashboard/files', label: 'Files', icon: FolderOpen },
-      { href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon },
-      { href: '/dashboard/teams', label: 'Teams', icon: Users },
-      { href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount },
-      { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-      ...(isAdmin
-        ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
-        : []),
-      ...(isOwner
-        ? [{ href: '/dashboard/admin/audit', label: 'Audit Logs', icon: ClipboardList }]
-        : []),
-    ],
-    [isAdmin, isOwner, pendingInviteCount]
+    () => {
+      const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
+      const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
+      const canViewTeams =
+        canViewScreen(SCREENS.TEAM_MEMBERS) ||
+        canViewScreen(SCREENS.TEAM_SETTINGS)
+      const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
+      const canViewSettings =
+        canViewScreen(SCREENS.CREDENTIALS_LIST) ||
+        canViewScreen(SCREENS.TEAM_SETTINGS)
+      const canViewPermissions = canViewScreen(SCREENS.ADMIN_SETTINGS)
+      const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
+
+      return [
+        { href: '/dashboard', label: 'Dashboard', icon: Home },
+        ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
+        ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
+        ...(canViewTeams ? [{ href: '/dashboard/teams', label: 'Teams', icon: Users }] : []),
+        ...(canViewInvitations
+          ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
+          : []),
+        ...(canViewSettings ? [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }] : []),
+        ...(canViewPermissions
+          ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
+          : []),
+        ...(canViewAuditLogs
+          ? [{ href: '/dashboard/admin/audit', label: 'Audit Logs', icon: ClipboardList }]
+          : []),
+      ]
+    },
+    [canViewScreen, pendingInviteCount]
   )
 
   const handleNavClick = useCallback(() => {

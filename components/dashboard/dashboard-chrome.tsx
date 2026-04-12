@@ -32,15 +32,13 @@ interface DashboardChromeProps {
   roleTitle: string
   storageUsedBytes: number
   storageLimitBytes: number
-  isAdmin: boolean
-  isOwner: boolean
   initialTeams: Team[]
   currentTeamId?: string
   children: React.ReactNode
   pendingInviteCount?: number
 }
 
-export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, isAdmin, isOwner, initialTeams, currentTeamId, children, pendingInviteCount = 0 }: DashboardChromeProps) {
+export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, initialTeams, currentTeamId, children, pendingInviteCount = 0 }: DashboardChromeProps) {
   // initialTeams is available if needed for fallback or initialization
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
@@ -105,21 +103,20 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
           <TeamRemovedModal open={true} onRefresh={handleRefresh} />
         </div>
       ) : (
-        <div className="flex overflow-hidden min-h-screen">
-          <Sidebar
-            email={email}
-            isAdmin={isAdmin}
-            isOwner={isOwner}
-            teams={teams}
-            currentTeamId={selectedTeamId || currentTeamId}
-            storageUsedBytes={storageUsedBytes}
-            storageLimitBytes={storageLimitBytes}
-            isOpen={sidebarOpen}
-            isMobile={isMobile}
-            onToggle={handleToggle}
-            onClose={handleClose}
-            pendingInviteCount={pendingInviteCount}
-          />
+        <RBACProvider>
+          <div className="flex overflow-hidden min-h-screen">
+            <Sidebar
+              email={email}
+              teams={teams}
+              currentTeamId={selectedTeamId || currentTeamId}
+              storageUsedBytes={storageUsedBytes}
+              storageLimitBytes={storageLimitBytes}
+              isOpen={sidebarOpen}
+              isMobile={isMobile}
+              onToggle={handleToggle}
+              onClose={handleClose}
+              pendingInviteCount={pendingInviteCount}
+            />
             <div
               className={cn(
                 "flex-1 flex flex-col min-w-0 overflow-hidden relative transition-[margin] duration-500 ease-in-out",
@@ -250,12 +247,11 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                   'p-6 lg:p-8'
                 )}
               >
-                <RBACProvider>
-                  {children}
-                </RBACProvider>
+                {children}
               </main>
             </div>
-        </div>
+          </div>
+        </RBACProvider>
       )}
     </div>
   )

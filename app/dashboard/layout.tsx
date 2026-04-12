@@ -105,8 +105,6 @@ export default async function DashboardLayout({
           roleTitle={roleTitle}
           storageUsedBytes={storageUsedBytes}
           storageLimitBytes={storageLimitBytes}
-          isAdmin={isAdmin}
-          isOwner={isOwner}
           initialTeams={teams}
           currentTeamId={currentTeamId}
           pendingInviteCount={pendingInviteCount}

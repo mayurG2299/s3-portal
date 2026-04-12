@@ -1,6 +1,8 @@
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getAccessibleBucketIds } from '@/lib/bucket-access'
+import { userCanViewScreen } from '@/lib/permissions'
+import { SCREENS } from '@/lib/screen-permissions'
 import Link from 'next/link'
 import { FolderOpen, HardDrive, Users, Link as LinkIcon, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -94,6 +96,13 @@ export default async function DashboardPage() {
     )
   }
 
+  const [canViewFiles, canViewLinks, canViewTeams, canViewSettings] = await Promise.all([
+    userCanViewScreen(session.user.id, activeTeamId, SCREENS.FILES_LIST),
+    userCanViewScreen(session.user.id, activeTeamId, SCREENS.LINKS_LIST),
+    userCanViewScreen(session.user.id, activeTeamId, SCREENS.TEAM_MEMBERS),
+    userCanViewScreen(session.user.id, activeTeamId, SCREENS.CREDENTIALS_LIST),
+  ])
+
   // Aggregate File Sizes (in Bytes) by Month for the Current Year
   const currentYear = new Date().getFullYear()
 
@@ -165,8 +174,8 @@ export default async function DashboardPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {[
-              { href: '/dashboard/teams', label: 'Team Access', icon: Users, color: 'amber' },
-              { href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon, color: 'violet' }
+              ...(canViewTeams ? [{ href: '/dashboard/teams', label: 'Team Access', icon: Users, color: 'amber' }] : []),
+              ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon, color: 'violet' }] : []),
             ].map((item, i) => (
               <Link key={i} href={item.href}>
                 <Button variant="outline" className="rounded-xl h-12 bg-card text-foreground border-border hover:border-primary/30 hover:bg-accent/5 transition-all font-bold text-sm px-4 gap-2">
@@ -178,17 +187,21 @@ export default async function DashboardPage() {
                 </Button>
               </Link>
             ))}
-            <Link href="/dashboard/settings">
-              <Button className="rounded-xl h-12 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all font-bold text-sm px-6">
-                Configure AWS
-              </Button>
-            </Link>
-            <Link href="/dashboard/files">
-              <Button className="rounded-xl h-12 btn-primary-gradient font-bold text-sm px-6 gap-2">
-                Browse Files
-                <ArrowRight size={16} />
-              </Button>
-            </Link>
+            {canViewSettings && (
+              <Link href="/dashboard/settings">
+                <Button className="rounded-xl h-12 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all font-bold text-sm px-6">
+                  Configure AWS
+                </Button>
+              </Link>
+            )}
+            {canViewFiles && (
+              <Link href="/dashboard/files">
+                <Button className="rounded-xl h-12 btn-primary-gradient font-bold text-sm px-6 gap-2">
+                  Browse Files
+                  <ArrowRight size={16} />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -239,7 +252,9 @@ export default async function DashboardPage() {
                 <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                 Transmission Feed
               </h4>
-              <Link href="/dashboard/files" className="text-[10px] font-black text-brand hover:text-brand-light transition-colors uppercase tracking-[0.2em]">Live Stream</Link>
+              {canViewFiles && (
+                <Link href="/dashboard/files" className="text-[10px] font-black text-brand hover:text-brand-light transition-colors uppercase tracking-[0.2em]">Live Stream</Link>
+              )}
             </div>
 
             {recentFiles.length === 0 ? (
@@ -280,7 +295,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* First-time user onboarding wizard */}
-      <FirstTimeWizard currentCredentialsCount={credentialsCount} />
+      {canViewSettings && <FirstTimeWizard currentCredentialsCount={credentialsCount} />}
     </div>
   )
 }
