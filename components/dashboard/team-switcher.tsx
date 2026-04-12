@@ -13,6 +13,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 
 interface Team {
   id: string
@@ -31,6 +33,8 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
   const { update } = useSession()
   const [isPending, startTransition] = useTransition()
   const [optimisticTeamId, setOptimisticTeamId] = useOptimistic(currentTeamId)
+  const { canViewScreen } = useRBAC()
+  const canCreateTeam = canViewScreen(SCREENS.TEAM_SETTINGS)
 
   const handleTeamChange = useCallback(
     (teamId: string) => {
@@ -66,11 +70,13 @@ export function TeamSwitcher({ teams, currentTeamId, onTeamChange }: TeamSwitche
         </SelectContent>
       </Select>
 
-      <Button variant="ghost" size="icon" asChild title="Create new team" className="text-slate-400 hover:text-white hover:bg-white/10">
-        <Link href="/dashboard/teams/new">
-          <Plus className="h-4 w-4" />
-        </Link>
-      </Button>
+      {canCreateTeam && (
+        <Button variant="ghost" size="icon" asChild title="Create new team" className="text-slate-400 hover:text-white hover:bg-white/10">
+          <Link href="/dashboard/teams/new">
+            <Plus className="h-4 w-4" />
+          </Link>
+        </Button>
+      )}
     </div>
   )
 }

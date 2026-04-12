@@ -90,8 +90,6 @@ function renderDashboardProvider() {
             roleTitle="ADMIN"
             storageUsedBytes={0}
             storageLimitBytes={1000}
-            isAdmin={true}
-            isOwner={true}
             initialTeams={[
               { id: 'team-a', name: 'Team A', slug: 'team-a' },
               { id: 'team-b', name: 'Team B', slug: 'team-b' },

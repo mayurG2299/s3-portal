@@ -1,11 +1,15 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { formatRelativeTime } from '@/lib/utils'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 
 interface Invite {
   id: string
@@ -24,9 +28,22 @@ function RoleIcon({ name, level }: { name: string; level?: number }) {
 }
 
 export default function InvitationsPage() {
+  const router = useRouter()
   const { invitations, acceptInvitation, rejectInvitation, isLoading } = useDashboard()
+  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
   const invites = useMemo(() => invitations as Invite[], [invitations])
   const [processing, setProcessing] = useState<string | null>(null)
+  const canAccessInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
+
+  useEffect(() => {
+    if (!loading && !loadingScreenPermissions && !canAccessInvitations) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessInvitations, loading, loadingScreenPermissions, router])
+
+  if (loading || loadingScreenPermissions || !canAccessInvitations) {
+    return null
+  }
 
   async function handleAction(inviteId: string, action: 'accept' | 'decline') {
     setProcessing(inviteId)
