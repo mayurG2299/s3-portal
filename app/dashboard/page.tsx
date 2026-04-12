@@ -1,7 +1,7 @@
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getAccessibleBucketIds } from '@/lib/bucket-access'
-import { userCanViewScreen } from '@/lib/permissions'
+import { userCanViewScreen, canManageTeam } from '@/lib/permissions'
 import { SCREENS } from '@/lib/screen-permissions'
 import Link from 'next/link'
 import { FolderOpen, HardDrive, Users, Link as LinkIcon, ArrowRight } from 'lucide-react'
