@@ -97,7 +97,7 @@ export function Sidebar({
         canViewScreen(SCREENS.CREDENTIALS_LIST) ||
         canViewScreen(SCREENS.TEAM_SETTINGS)
       const canViewPermissions = isAdmin
-      const canViewAuditLogs = isOwner
+      const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
 
       return [
         { href: '/dashboard', label: 'Dashboard', icon: Home },
