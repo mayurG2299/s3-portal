@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for development and production
 # Use --target=development for dev, --target=production for prod
 
-FROM --platform=$BUILDPLATFORM node:20-alpine AS base
+FROM node:20-alpine AS base
 
 # Install dependencies
 RUN apk add --no-cache libc6-compat openssl
