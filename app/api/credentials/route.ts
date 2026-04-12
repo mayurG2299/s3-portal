@@ -339,6 +339,18 @@ export async function POST(request: NextRequest) {
       return ApiResponse.validationError(error.errors[0].message)
     }
 
+    const message = error instanceof Error ? error.message : ''
+    if (
+      message.includes('ENCRYPTION_KEY') ||
+      message.includes('Failed to encrypt data') ||
+      message.includes('Failed to decrypt data')
+    ) {
+      return ApiResponse.error(
+        'Server encryption configuration error. Ensure ENCRYPTION_KEY is valid and restart the app.',
+        500
+      )
+    }
+
     return ApiResponse.error('Internal server error')
   }
 }
@@ -607,6 +619,18 @@ export async function PUT(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return ApiResponse.validationError(error.errors[0].message)
+    }
+
+    const message = error instanceof Error ? error.message : ''
+    if (
+      message.includes('ENCRYPTION_KEY') ||
+      message.includes('Failed to encrypt data') ||
+      message.includes('Failed to decrypt data')
+    ) {
+      return ApiResponse.error(
+        'Server encryption configuration error. Ensure ENCRYPTION_KEY is valid and restart the app.',
+        500
+      )
     }
 
     return ApiResponse.error('Internal server error')

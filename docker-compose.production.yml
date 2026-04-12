@@ -3,7 +3,7 @@
 # =============================================================================
 # Setup:
 #   1. cp .env.example .env          (fill in all values)
-#   2. export DOCKER_USER=yourname   (your Docker Hub username)
+#   2. export DOCKER_IMAGE=ghcr.io/<org>/s3-portal:latest
 #   3. docker compose -f docker-compose.production.yml up -d
 #   4. First time only:
 #      docker compose -f docker-compose.production.yml run --rm app npx prisma db seed
@@ -31,7 +31,7 @@ services:
       - s3portal
 
   app:
-    image: ${DOCKER_USER}/s3-portal:latest
+    image: ${DOCKER_IMAGE:-may99/s3-portal:latest}
     container_name: s3portal-app
     restart: unless-stopped
     depends_on:
@@ -56,7 +56,7 @@ services:
     networks:
       - s3portal
     command: >
-      sh -c "npx prisma migrate deploy && node prisma/seed.js && exec node server.js"
+      sh -c "node_modules/.bin/prisma migrate deploy && exec node server.js"
 
 networks:
   s3portal:
