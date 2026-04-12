@@ -1,5 +1,5 @@
 // hooks/use-keyboard-nav.ts
-import { useState, useEffect, useRef, createRef, useCallback } from 'react'
+import { useState, useEffect, useRef, createRef } from 'react'
 
 interface StoredFile {
   id: string
@@ -55,8 +55,6 @@ export function useKeyboardNav({
   const refsRef = useRef<React.RefObject<HTMLDivElement>[]>([])
   while (refsRef.current.length < files.length) refsRef.current.push(createRef<HTMLDivElement>())
   refsRef.current.length = files.length
-  const itemRefs = refsRef.current
-
   // Reset focus when file list changes (folder navigation reloads files)
   useEffect(() => {
     setFocusedIndex(null)
@@ -65,22 +63,27 @@ export function useKeyboardNav({
   // Move real DOM focus whenever focusedIndex changes
   useEffect(() => {
     if (focusedIndex === null) return
-    const ref = itemRefs[focusedIndex]
+    const ref = refsRef.current[focusedIndex]
     if (!ref?.current) return
     ref.current.focus()
     ref.current.scrollIntoView({ block: 'nearest' })
-  }, [focusedIndex, itemRefs])
+  }, [focusedIndex])
 
-  const moveFocus = useCallback(
+  // Stable ref to files.length so the throttled function never closes over stale values
+  const filesLengthRef = useRef(files.length)
+  filesLengthRef.current = files.length
+
+  // Single throttled moveFocus instance — created once, reads filesLengthRef for current length
+  const moveFocusRef = useRef(
     throttle((direction: 'up' | 'down') => {
       setFocusedIndex((prev) => {
-        if (files.length === 0) return null
-        if (prev === null) return direction === 'down' ? 0 : files.length - 1
-        if (direction === 'down') return prev < files.length - 1 ? prev + 1 : prev
+        const len = filesLengthRef.current
+        if (len === 0) return null
+        if (prev === null) return direction === 'down' ? 0 : len - 1
+        if (direction === 'down') return prev < len - 1 ? prev + 1 : prev
         return prev > 0 ? prev - 1 : prev
       })
-    }, 80),
-    [files.length]
+    }, 80)
   )
 
   useEffect(() => {
@@ -91,11 +94,11 @@ export function useKeyboardNav({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
-          moveFocus('down')
+          moveFocusRef.current('down')
           break
         case 'ArrowUp':
           e.preventDefault()
-          moveFocus('up')
+          moveFocusRef.current('up')
           break
         case 'Enter': {
           if (e.repeat) return
@@ -129,7 +132,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, moveFocus, onNavigateToFolder, onNavigateUp, onPreview])
+  }, [files, focusedIndex, isModalOpen, onNavigateToFolder, onNavigateUp, onPreview])
 
-  return { focusedIndex, itemRefs }
+  return { focusedIndex, itemRefs: refsRef.current }
 }
