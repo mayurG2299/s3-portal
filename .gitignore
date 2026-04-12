@@ -84,3 +84,5 @@ utilScripts/
 
 # superpowers brainstorm mockups
 .superpowers/
+# playwright mcp screenshots and snapshots
+.playwright-mcp/
