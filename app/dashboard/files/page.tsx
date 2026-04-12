@@ -101,21 +101,6 @@ export default function FilesPage() {
   })
   const [isSavingCdn, setIsSavingCdn] = useState(false)
 
-  const isAnyModalOpen =
-    isUploadOpen || isShareOpen || isFolderDialogOpen ||
-    !!editingTagsFile || isPreviewOpen || isDirectLinkOpen
-
-  const { focusedIndex, itemRefs } = useKeyboardNav({
-    files,
-    isModalOpen: isAnyModalOpen,
-    onNavigateToFolder: (file) => navigateToFolder(`${currentPath}${file.name}/`),
-    onNavigateUp: navigateUp,
-    onPreview: (file) => {
-      setPreviewFile(file as StoredFile)
-      setIsPreviewOpen(true)
-    },
-  })
-
   const [shareSettings, setShareSettings] = useState({
     linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
     expiryMode: 'preset' as 'preset' | 'custom' | 'never',
@@ -130,6 +115,21 @@ export default function FilesPage() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
+
+  const isAnyModalOpen =
+    isUploadOpen || isShareOpen || isFolderDialogOpen ||
+    !!editingTagsFile || isPreviewOpen || isDirectLinkOpen
+
+  const { focusedIndex, itemRefs } = useKeyboardNav({
+    files,
+    isModalOpen: isAnyModalOpen,
+    onNavigateToFolder: (file) => navigateToFolder(`${currentPath}${file.name}/`),
+    onNavigateUp: navigateUp,
+    onPreview: (file) => {
+      setPreviewFile(file as StoredFile)
+      setIsPreviewOpen(true)
+    },
+  })
 
   useEffect(() => {
     const rawPath = searchParams.get('path')
@@ -1001,7 +1001,7 @@ export default function FilesPage() {
                     data-keyboard-focused={focusedIndex === index}
                     className={cn(
                       'p-4 hover:bg-accent/50 transition-colors outline-none',
-                      'data-[keyboard-focused=true]:bg-accent/30 data-[keyboard-focused=true]:border-border'
+                      'data-[keyboard-focused=true]:bg-accent/30 data-[keyboard-focused=true]:ring-1 data-[keyboard-focused=true]:ring-primary/50'
                     )}
                   >
                     <div className="flex items-center justify-between">
