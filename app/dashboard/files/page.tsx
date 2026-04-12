@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+import { useKeyboardNav } from '@/hooks/use-keyboard-nav'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -99,6 +100,21 @@ export default function FilesPage() {
     cloudfrontPrivateKey: '',
   })
   const [isSavingCdn, setIsSavingCdn] = useState(false)
+
+  const isAnyModalOpen =
+    isUploadOpen || isShareOpen || isFolderDialogOpen ||
+    !!editingTagsFile || isPreviewOpen || isDirectLinkOpen
+
+  const { focusedIndex, itemRefs } = useKeyboardNav({
+    files,
+    isModalOpen: isAnyModalOpen,
+    onNavigateToFolder: (file) => navigateToFolder(`${currentPath}${file.name}/`),
+    onNavigateUp: navigateUp,
+    onPreview: (file) => {
+      setPreviewFile(file as StoredFile)
+      setIsPreviewOpen(true)
+    },
+  })
 
   const [shareSettings, setShareSettings] = useState({
     linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
@@ -977,8 +993,17 @@ export default function FilesPage() {
                         <p className="text-sm text-muted-foreground animate-pulse">Syncing files...</p>
                       </div>
                     )}
-                  {files.map((file) => (
-                  <Card key={file.id} className="p-4 hover:bg-accent/50 transition-colors">
+                  {files.map((file, index) => (
+                  <Card
+                    key={file.id}
+                    ref={itemRefs[index] as React.RefObject<HTMLDivElement>}
+                    tabIndex={0}
+                    data-keyboard-focused={focusedIndex === index}
+                    className={cn(
+                      'p-4 hover:bg-accent/50 transition-colors outline-none',
+                      'data-[keyboard-focused=true]:bg-accent/30 data-[keyboard-focused=true]:border-border'
+                    )}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 flex-1">
                         <Checkbox
