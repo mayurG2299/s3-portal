@@ -20,6 +20,25 @@ export interface AppConfig {
   }
 }
 
+function isValidEncryptionKey(secret: string | undefined): boolean {
+  if (!secret) return false
+
+  let buf: Buffer
+  if (/^[0-9a-fA-F]+$/.test(secret) && secret.length >= 64) {
+    buf = Buffer.from(secret, 'hex')
+  } else if (/^[A-Za-z0-9+/=]+$/.test(secret) && secret.length % 4 === 0) {
+    try {
+      buf = Buffer.from(secret, 'base64')
+    } catch {
+      buf = Buffer.from(secret, 'utf-8')
+    }
+  } else {
+    buf = Buffer.from(secret, 'utf-8')
+  }
+
+  return buf.length >= 32
+}
+
 /**
  * Validate and load environment configuration
  * Throws error if validation fails - prevents app from starting with missing config
@@ -51,9 +70,9 @@ export function loadConfig(): AppConfig {
     errors.push('NEXTAUTH_URL is required')
   }
 
-  if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length < 32) {
+  if (!isValidEncryptionKey(ENCRYPTION_KEY)) {
     errors.push(
-      'ENCRYPTION_KEY must be at least 32 characters'
+      'ENCRYPTION_KEY is invalid (must decode to at least 32 bytes; recommended: openssl rand -hex 32)'
     )
   }
 

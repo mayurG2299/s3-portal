@@ -38,7 +38,7 @@ The fastest way to get running. Requires Docker and a PostgreSQL database.
 
 ```bash
 export NEXTAUTH_SECRET=$(openssl rand -base64 32)
-export ENCRYPTION_KEY=$(openssl rand -base64 32 | cut -c1-32)
+export ENCRYPTION_KEY=$(openssl rand -hex 32)
 echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET"
 echo "ENCRYPTION_KEY=$ENCRYPTION_KEY"
 ```
@@ -59,8 +59,8 @@ ENCRYPTION_KEY=<generated above>
 # App URL (used in share links)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Docker Hub username
-DOCKER_USER=may99
+# Full image reference for production compose
+DOCKER_IMAGE=may99/s3-portal:latest
 ```
 
 **3. Pull and start**
@@ -127,7 +127,7 @@ Open [http://localhost:3000](http://localhost:3000)
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/s3portal` |
 | `NEXTAUTH_SECRET` | Min 32-char random secret | `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | Your app's public URL | `https://s3.mycompany.com` |
-| `ENCRYPTION_KEY` | Exactly 32-char key for AWS credential encryption | `openssl rand -base64 32 \| cut -c1-32` |
+| `ENCRYPTION_KEY` | Key that decodes to at least 32 bytes (recommended 64-char hex) | `openssl rand -hex 32` |
 | `NEXT_PUBLIC_APP_URL` | Same as `NEXTAUTH_URL` — used in share links | `https://s3.mycompany.com` |
 
 ### Optional
