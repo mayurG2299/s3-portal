@@ -30,6 +30,7 @@ function advanceThrottle() {
 const baseOptions = {
   files,
   isModalOpen: false,
+  isPreviewOpen: false,
   onNavigateToFolder: jest.fn(),
   onNavigateUp: jest.fn(),
   onPreview: jest.fn(),

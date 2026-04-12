@@ -11,6 +11,7 @@ interface StoredFile {
 interface UseKeyboardNavOptions {
   files: StoredFile[]
   isModalOpen: boolean
+  isPreviewOpen: boolean
   onNavigateToFolder: (file: StoredFile) => void
   onNavigateUp: () => void
   onPreview: (file: StoredFile) => void
@@ -45,6 +46,7 @@ function isEditableElement(el: Element | null): boolean {
 export function useKeyboardNav({
   files,
   isModalOpen,
+  isPreviewOpen,
   onNavigateToFolder,
   onNavigateUp,
   onPreview,
@@ -86,8 +88,33 @@ export function useKeyboardNav({
     }, 80)
   )
 
+  // Stable ref to onPreview so the preview-navigation effect never closes over stale callbacks
+  const onPreviewRef = useRef(onPreview)
+  onPreviewRef.current = onPreview
+
+  // When preview is open and focusedIndex changes, preview the newly focused file (if not a folder)
+  const prevFocusedIndexRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!isPreviewOpen) {
+      prevFocusedIndexRef.current = focusedIndex
+      return
+    }
+    if (focusedIndex === null) return
+    if (focusedIndex === prevFocusedIndexRef.current) return
+    prevFocusedIndexRef.current = focusedIndex
+    const file = files[focusedIndex]
+    if (file && !isFolder(file)) onPreviewRef.current(file)
+  }, [files, focusedIndex, isPreviewOpen])
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // While preview is open: only allow arrow keys to navigate between files
+      if (isPreviewOpen) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveFocusRef.current('down') }
+        if (e.key === 'ArrowUp') { e.preventDefault(); moveFocusRef.current('up') }
+        return
+      }
+
       if (isModalOpen) return
       if (isEditableElement(document.activeElement)) return
 
@@ -132,7 +159,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, onNavigateToFolder, onNavigateUp, onPreview])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }

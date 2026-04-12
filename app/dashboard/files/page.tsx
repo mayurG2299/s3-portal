@@ -118,11 +118,12 @@ export default function FilesPage() {
 
   const isAnyModalOpen =
     isUploadOpen || isShareOpen || isFolderDialogOpen ||
-    !!editingTagsFile || isPreviewOpen || isDirectLinkOpen
+    !!editingTagsFile || isDirectLinkOpen
 
   const { focusedIndex, itemRefs } = useKeyboardNav({
     files,
     isModalOpen: isAnyModalOpen,
+    isPreviewOpen,
     onNavigateToFolder: (file) => navigateToFolder(`${currentPath}${file.name}/`),
     onNavigateUp: navigateUp,
     onPreview: (file) => {
