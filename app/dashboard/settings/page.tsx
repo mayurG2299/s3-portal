@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +19,8 @@ import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Us
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 
 type Credential = {
   id: string
@@ -37,6 +40,7 @@ type BucketInput = {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null)
   const [isAddCredentialOpen, setIsAddCredentialOpen] = useState(false)
@@ -46,6 +50,20 @@ export default function SettingsPage() {
   const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
+  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const canAccessSettings =
+    canViewScreen(SCREENS.CREDENTIALS_LIST) ||
+    canViewScreen(SCREENS.TEAM_SETTINGS)
+
+  useEffect(() => {
+    if (!loading && !loadingScreenPermissions && !canAccessSettings) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessSettings, loading, loadingScreenPermissions, router])
+
+  if (loading || loadingScreenPermissions || !canAccessSettings) {
+    return null
+  }
 
   useEffect(() => {
     setActiveTheme(getSavedTheme())

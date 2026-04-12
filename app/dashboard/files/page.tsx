@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,8 @@ import { toast } from '@/hooks/use-toast'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 
 const FilePreviewModal = dynamic(() => import('@/components/file-preview-modal'), { ssr: false })
 const DirectLinkModal = dynamic(() => import('@/components/DirectLinkModal'), { ssr: false })
@@ -56,7 +58,10 @@ interface StoredFile {
   description?: string | null
 }
 export default function FilesPage() {
+  const router = useRouter()
   const { selectedIdentityId, selectedBucketId, selectedTeamId, handleTeamAccessFailure } = useDashboard()
+  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const canAccessFiles = canViewScreen(SCREENS.FILES_LIST)
   const [files, setFiles] = useState<StoredFile[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -90,6 +95,16 @@ export default function FilesPage() {
   const [totalFiles, setTotalFiles] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const PAGE_SIZE = 200
+
+  useEffect(() => {
+    if (!loading && !loadingScreenPermissions && !canAccessFiles) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessFiles, loading, loadingScreenPermissions, router])
+
+  if (loading || loadingScreenPermissions || !canAccessFiles) {
+    return null
+  }
 
   // CDN Configuration Modal State
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)

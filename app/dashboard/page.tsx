@@ -99,7 +99,7 @@ export default async function DashboardPage() {
   const [canViewFiles, canViewLinks, canViewTeams, canViewSettings] = await Promise.all([
     userCanViewScreen(session.user.id, activeTeamId, SCREENS.FILES_LIST),
     userCanViewScreen(session.user.id, activeTeamId, SCREENS.LINKS_LIST),
-    userCanViewScreen(session.user.id, activeTeamId, SCREENS.TEAM_MEMBERS),
+    canManageTeam(session.user.id, activeTeamId),
     userCanViewScreen(session.user.id, activeTeamId, SCREENS.CREDENTIALS_LIST),
   ])
 

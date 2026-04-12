@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff, Ban, Eye, HardDriveDownload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
 import { formatRelativeTime, formatFileSize } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { useRBAC } from '@/components/rbac-provider'
+import { SCREENS } from '@/lib/screen-permissions'
 
 interface Link {
   id: string
@@ -27,12 +30,25 @@ interface Link {
 }
 
 export default function LinksPage() {
+  const router = useRouter()
   const [links, setLinks] = useState<Link[]>([])
   const [personalScopeFallback, setPersonalScopeFallback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
+  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const canAccessLinks = canViewScreen(SCREENS.LINKS_LIST)
   const activeTeamId = selectedTeamId
+
+  useEffect(() => {
+    if (!loading && !loadingScreenPermissions && !canAccessLinks) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessLinks, loading, loadingScreenPermissions, router])
+
+  if (loading || loadingScreenPermissions || !canAccessLinks) {
+    return null
+  }
 
   useEffect(() => {
     fetchLinks()

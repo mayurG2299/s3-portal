@@ -82,7 +82,7 @@ export function Sidebar({
     setTeam,
     pendingInviteCount
   } = useDashboard()
-  const { canViewScreen } = useRBAC()
+  const { canViewScreen, isAdmin, isOwner } = useRBAC()
 
   const activeIdentity = identities.find(id => id.id === selectedIdentityId)
   const availableBuckets = activeIdentity?.buckets || []
@@ -91,15 +91,13 @@ export function Sidebar({
     () => {
       const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
       const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
-      const canViewTeams =
-        canViewScreen(SCREENS.TEAM_MEMBERS) ||
-        canViewScreen(SCREENS.TEAM_SETTINGS)
+      const canViewTeams = isAdmin
       const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
       const canViewSettings =
         canViewScreen(SCREENS.CREDENTIALS_LIST) ||
         canViewScreen(SCREENS.TEAM_SETTINGS)
-      const canViewPermissions = canViewScreen(SCREENS.ADMIN_SETTINGS)
-      const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
+      const canViewPermissions = isAdmin
+      const canViewAuditLogs = isOwner
 
       return [
         { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -118,7 +116,7 @@ export function Sidebar({
           : []),
       ]
     },
-    [canViewScreen, pendingInviteCount]
+    [canViewScreen, isAdmin, isOwner, pendingInviteCount]
   )
 
   const handleNavClick = useCallback(() => {
