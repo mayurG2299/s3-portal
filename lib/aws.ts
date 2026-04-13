@@ -161,9 +161,16 @@ export async function validateBucketAccess(
 
     return { valid: true }
   } catch (error: any) {
+    const rawMessage = (error?.message || '').toString()
+    const isUnknownError =
+      rawMessage === 'UnknownError' ||
+      rawMessage.toLowerCase().includes('unknownerror')
+
     return {
       valid: false,
-      error: error?.message || 'Bucket access denied',
+      error: isUnknownError
+        ? 'Unable to verify bucket access. Check bucket name, region, and IAM permissions (s3:HeadBucket/ListBucket).'
+        : rawMessage || 'Bucket access denied',
     }
   }
 }

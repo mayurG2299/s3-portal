@@ -21,6 +21,7 @@ import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
+import { translateAWSError } from '@/lib/error-translator'
 
 type Credential = {
   id: string
@@ -207,7 +208,8 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Failed to update credentials')
+        const translated = translateAWSError(error.message || 'Unknown error')
+        throw new Error(translated.message)
       }
 
       const updated = await response.json()
