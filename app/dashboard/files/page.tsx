@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { useKeyboardNav } from '@/hooks/use-keyboard-nav'
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -90,7 +91,10 @@ export default function FilesPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const [isTruncated, setIsTruncated] = useState(false)
+  // CDN Configuration Modal State (declared here to satisfy Rules of Hooks — must be above early return)
+  const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
   const [truncationDismissed, setTruncationDismissed] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -108,8 +112,7 @@ export default function FilesPage() {
     return null
   }
 
-  // CDN Configuration Modal State
-  const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
+  // CDN Configuration Modal State (additional config)
   const [cdnConfig, setCdnConfig] = useState({
     cloudfrontDomain: '',
     cloudfrontKeyPairId: '',
@@ -134,7 +137,7 @@ export default function FilesPage() {
 
   const isAnyModalOpen =
     isUploadOpen || isShareOpen || isFolderDialogOpen ||
-    !!editingTagsFile || isDirectLinkOpen
+    !!editingTagsFile || isDirectLinkOpen || isCdnDialogOpen || isShortcutsOpen
 
   const { focusedIndex, itemRefs } = useKeyboardNav({
     files,
@@ -151,6 +154,7 @@ export default function FilesPage() {
     onSelectAll: () => setSelectedFileIds(files.map((f) => f.id)),
     selectedFileIds,
     onSetSelectedFileIds: setSelectedFileIds,
+    onShowShortcuts: () => setIsShortcutsOpen(true),
   })
 
   useEffect(() => {
@@ -1540,6 +1544,19 @@ export default function FilesPage() {
           setDirectLinkFile(null)
         }} />
       )}
+
+      {/* Floating keyboard shortcuts button */}
+      <button
+        type="button"
+        onClick={() => setIsShortcutsOpen(true)}
+        title="Keyboard shortcuts"
+        className="fixed bottom-6 right-6 z-40 h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-sm font-bold hover:bg-primary/90 transition-colors"
+        aria-label="Keyboard shortcuts"
+      >
+        ?
+      </button>
+
+      <KeyboardShortcutsModal open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
     </div>
   )
 }
