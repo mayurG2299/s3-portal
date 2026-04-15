@@ -309,4 +309,52 @@ describe('useKeyboardNav', () => {
     fireKey('a', { metaKey: true })
     expect(onSelectAll).not.toHaveBeenCalled()
   })
+
+  test('Shift+ArrowDown adds next file to selection', () => {
+    const onSetSelectedFileIds = jest.fn()
+    const filesWithIds = [
+      makeFile('1', 'folder-a', true),
+      makeFile('2', 'file-b.txt'),
+      makeFile('3', 'file-c.png'),
+    ]
+    renderHook(() =>
+      useKeyboardNav({
+        ...baseOptions,
+        files: filesWithIds,
+        selectedFileIds: [],
+        onSetSelectedFileIds,
+      })
+    )
+    fireKey('ArrowDown') // focus 0
+    advanceThrottle()
+    fireKey('ArrowDown', { shiftKey: true }) // extend to 1
+    expect(onSetSelectedFileIds).toHaveBeenCalled()
+    const arg = onSetSelectedFileIds.mock.calls[0][0]
+    expect(arg).toContain('2') // file-b.txt id
+  })
+
+  test('Shift+ArrowUp adds previous file to selection', () => {
+    const onSetSelectedFileIds = jest.fn()
+    const filesWithIds = [
+      makeFile('1', 'folder-a', true),
+      makeFile('2', 'file-b.txt'),
+      makeFile('3', 'file-c.png'),
+    ]
+    renderHook(() =>
+      useKeyboardNav({
+        ...baseOptions,
+        files: filesWithIds,
+        selectedFileIds: [],
+        onSetSelectedFileIds,
+      })
+    )
+    fireKey('ArrowDown') // 0
+    advanceThrottle()
+    fireKey('ArrowDown') // 1
+    advanceThrottle()
+    fireKey('ArrowUp', { shiftKey: true }) // extend up to 0
+    expect(onSetSelectedFileIds).toHaveBeenCalled()
+    const arg = onSetSelectedFileIds.mock.calls[0][0]
+    expect(arg).toContain('1') // folder-a id
+  })
 })

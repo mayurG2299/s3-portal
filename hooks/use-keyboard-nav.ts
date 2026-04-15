@@ -18,6 +18,8 @@ interface UseKeyboardNavOptions {
   onClosePreview?: () => void
   onDelete?: (file: StoredFile) => void
   onSelectAll?: () => void
+  selectedFileIds?: string[]
+  onSetSelectedFileIds?: (ids: string[]) => void
 }
 
 interface UseKeyboardNavReturn {
@@ -56,6 +58,8 @@ export function useKeyboardNav({
   onClosePreview,
   onDelete,
   onSelectAll,
+  selectedFileIds = [],
+  onSetSelectedFileIds,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -142,6 +146,18 @@ export function useKeyboardNav({
             return
           }
           e.preventDefault()
+          if (e.shiftKey && onSetSelectedFileIds && focusedIndex !== null) {
+            const prevIndex = focusedIndex > 0 ? focusedIndex - 1 : focusedIndex
+            const file = files[prevIndex]
+            if (file) {
+              const alreadySelected = selectedFileIds.includes(file.id)
+              onSetSelectedFileIds(
+                alreadySelected
+                  ? selectedFileIds.filter((id) => id !== file.id)
+                  : [...selectedFileIds, file.id]
+              )
+            }
+          }
           moveFocusRef.current('up')
           break
         }
@@ -161,6 +177,18 @@ export function useKeyboardNav({
             return
           }
           e.preventDefault()
+          if (e.shiftKey && onSetSelectedFileIds && focusedIndex !== null) {
+            const nextIndex = focusedIndex < files.length - 1 ? focusedIndex + 1 : focusedIndex
+            const file = files[nextIndex]
+            if (file) {
+              const alreadySelected = selectedFileIds.includes(file.id)
+              onSetSelectedFileIds(
+                alreadySelected
+                  ? selectedFileIds.filter((id) => id !== file.id)
+                  : [...selectedFileIds, file.id]
+              )
+            }
+          }
           moveFocusRef.current('down')
           break
         }
@@ -211,7 +239,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }
