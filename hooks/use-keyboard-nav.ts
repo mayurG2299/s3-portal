@@ -111,6 +111,7 @@ export function useKeyboardNav({
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
+        if (isModalOpen) return
         if (isPreviewOpen) {
           onClosePreview?.()
         }

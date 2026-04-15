@@ -219,6 +219,15 @@ describe('useKeyboardNav', () => {
     expect(onClosePreview).toHaveBeenCalled()
   })
 
+  test('Escape does nothing when a modal is open', () => {
+    const onClosePreview = jest.fn()
+    renderHook(() =>
+      useKeyboardNav({ ...baseOptions, isModalOpen: true, onClosePreview })
+    )
+    fireKey('Escape')
+    expect(onClosePreview).not.toHaveBeenCalled()
+  })
+
   test('Escape does not call onClosePreview when preview is closed', () => {
     const onClosePreview = jest.fn()
     renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: false, onClosePreview }))
