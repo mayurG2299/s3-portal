@@ -86,6 +86,16 @@ export function useKeyboardNav({
   filesLengthRef.current = files.length
 
   // Single throttled moveFocus instance — created once, reads filesLengthRef for current length
+  const typeAheadRef = useRef('')
+  const typeAheadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up the type-ahead reset timer on unmount
+  useEffect(() => {
+    return () => {
+      if (typeAheadTimerRef.current) clearTimeout(typeAheadTimerRef.current)
+    }
+  }, [])
+
   const moveFocusRef = useRef(
     throttle((direction: 'up' | 'down') => {
       setFocusedIndex((prev) => {
@@ -233,6 +243,34 @@ export function useKeyboardNav({
           e.preventDefault()
           onSelectAll?.()
           break
+        }
+      }
+
+      // Type-ahead: single printable character, no modifier keys
+      if (
+        e.key.length === 1 &&
+        !e.metaKey && !e.ctrlKey && !e.altKey &&
+        !isEditableElement(document.activeElement)
+      ) {
+        e.preventDefault()
+        typeAheadRef.current += e.key.toLowerCase()
+
+        if (typeAheadTimerRef.current) clearTimeout(typeAheadTimerRef.current)
+        typeAheadTimerRef.current = setTimeout(() => {
+          typeAheadRef.current = ''
+        }, 500)
+
+        const query = typeAheadRef.current
+        const startIndex = focusedIndex === null ? 0 : focusedIndex + 1
+
+        // Search from current position forward, then wrap
+        const ordered = [
+          ...files.slice(startIndex),
+          ...files.slice(0, startIndex),
+        ]
+        const match = ordered.find((f) => f.name.toLowerCase().startsWith(query))
+        if (match) {
+          setFocusedIndex(files.indexOf(match))
         }
       }
     }

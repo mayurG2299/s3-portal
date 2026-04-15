@@ -333,6 +333,52 @@ describe('useKeyboardNav', () => {
     expect(arg).toContain('2') // file-b.txt id
   })
 
+  test('typing a letter jumps to first file starting with that letter', () => {
+    const filesForTypeAhead = [
+      makeFile('1', 'alpha.txt'),
+      makeFile('2', 'beta.txt'),
+      makeFile('3', 'gamma.txt'),
+    ]
+    const { result } = renderHook(() =>
+      useKeyboardNav({ ...baseOptions, files: filesForTypeAhead })
+    )
+    fireKey('b')
+    expect(result.current.focusedIndex).toBe(1) // beta.txt
+  })
+
+  test('pressing the same letter twice cycles to the next match', () => {
+    const filesForTypeAhead = [
+      makeFile('10', 'apple.txt'),
+      makeFile('11', 'avocado.txt'),
+      makeFile('12', 'banana.txt'),
+    ]
+    const { result } = renderHook(() =>
+      useKeyboardNav({ ...baseOptions, files: filesForTypeAhead })
+    )
+    fireKey('a') // jumps to index 0 (apple)
+    expect(result.current.focusedIndex).toBe(0)
+    // Advance past the 500ms reset timer so the query clears, then press 'a' again
+    act(() => { jest.advanceTimersByTime(600) })
+    fireKey('a') // fresh single-char search from position 1 forward — finds avocado
+    expect(result.current.focusedIndex).toBe(1)
+  })
+
+  test('type-ahead does not fire when modifier key is held', () => {
+    const { result } = renderHook(() => useKeyboardNav(baseOptions))
+    fireKey('f', { metaKey: true }) // Cmd+F should not type-ahead
+    expect(result.current.focusedIndex).toBeNull()
+  })
+
+  test('type-ahead does not fire when an input is focused', () => {
+    const { result } = renderHook(() => useKeyboardNav(baseOptions))
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    fireKey('f')
+    expect(result.current.focusedIndex).toBeNull()
+    document.body.removeChild(input)
+  })
+
   test('Shift+ArrowUp adds previous file to selection', () => {
     const onSetSelectedFileIds = jest.fn()
     const filesWithIds = [
