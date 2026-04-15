@@ -288,4 +288,25 @@ describe('useKeyboardNav', () => {
     fireKey('Delete')
     expect(onDelete).toHaveBeenCalledWith(files[0])
   })
+
+  test('Cmd+A calls onSelectAll', () => {
+    const onSelectAll = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onSelectAll }))
+    fireKey('a', { metaKey: true })
+    expect(onSelectAll).toHaveBeenCalled()
+  })
+
+  test('Cmd+A does not fire when modal is open', () => {
+    const onSelectAll = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isModalOpen: true, onSelectAll }))
+    fireKey('a', { metaKey: true })
+    expect(onSelectAll).not.toHaveBeenCalled()
+  })
+
+  test('Cmd+A does not fire when preview is open', () => {
+    const onSelectAll = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: true, onSelectAll }))
+    fireKey('a', { metaKey: true })
+    expect(onSelectAll).not.toHaveBeenCalled()
+  })
 })

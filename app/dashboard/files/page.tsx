@@ -148,6 +148,7 @@ export default function FilesPage() {
     },
     onClosePreview: () => setIsPreviewOpen(false),
     onDelete: (file) => handleDelete(file as StoredFile),
+    onSelectAll: () => setSelectedFileIds(files.map((f) => f.id)),
   })
 
   useEffect(() => {
