@@ -263,4 +263,29 @@ describe('useKeyboardNav', () => {
     fireKey('ArrowDown', { metaKey: true })
     expect(onPreview).toHaveBeenCalledWith(files[1])
   })
+
+  test('Delete calls onDelete with focused file', () => {
+    const onDelete = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onDelete }))
+    fireKey('ArrowDown') // 0 = folder-a
+    advanceThrottle()
+    fireKey('ArrowDown') // 1 = file-b.txt
+    fireKey('Delete')
+    expect(onDelete).toHaveBeenCalledWith(files[1])
+  })
+
+  test('Delete does nothing when no file is focused', () => {
+    const onDelete = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onDelete }))
+    fireKey('Delete')
+    expect(onDelete).not.toHaveBeenCalled()
+  })
+
+  test('Delete works on folders too', () => {
+    const onDelete = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onDelete }))
+    fireKey('ArrowDown') // 0 = folder-a
+    fireKey('Delete')
+    expect(onDelete).toHaveBeenCalledWith(files[0])
+  })
 })

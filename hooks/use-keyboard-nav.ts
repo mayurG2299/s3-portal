@@ -16,6 +16,7 @@ interface UseKeyboardNavOptions {
   onNavigateUp: () => void
   onPreview: (file: StoredFile) => void
   onClosePreview?: () => void
+  onDelete?: (file: StoredFile) => void
 }
 
 interface UseKeyboardNavReturn {
@@ -52,6 +53,7 @@ export function useKeyboardNav({
   onNavigateUp,
   onPreview,
   onClosePreview,
+  onDelete,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -187,12 +189,21 @@ export function useKeyboardNav({
           onNavigateUp()
           break
         }
+        case 'Delete': {
+          if (e.repeat) return
+          if (focusedIndex === null) return
+          e.preventDefault()
+          const file = files[focusedIndex]
+          if (!file || !onDelete) return
+          onDelete(file)
+          break
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }

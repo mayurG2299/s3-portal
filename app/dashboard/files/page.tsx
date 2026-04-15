@@ -147,6 +147,7 @@ export default function FilesPage() {
       setIsPreviewOpen(true)
     },
     onClosePreview: () => setIsPreviewOpen(false),
+    onDelete: (file) => handleDelete(file as StoredFile),
   })
 
   useEffect(() => {
