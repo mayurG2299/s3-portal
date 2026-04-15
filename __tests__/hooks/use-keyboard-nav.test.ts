@@ -391,6 +391,38 @@ describe('useKeyboardNav', () => {
     expect(result.current.focusedIndex).toBeNull()
   })
 
+  test('? calls onShowShortcuts', () => {
+    const onShowShortcuts = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onShowShortcuts }))
+    fireKey('?')
+    expect(onShowShortcuts).toHaveBeenCalled()
+  })
+
+  test('? does not fire when modal is open', () => {
+    const onShowShortcuts = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isModalOpen: true, onShowShortcuts }))
+    fireKey('?')
+    expect(onShowShortcuts).not.toHaveBeenCalled()
+  })
+
+  test('? fires when preview is open', () => {
+    const onShowShortcuts = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: true, onShowShortcuts }))
+    fireKey('?')
+    expect(onShowShortcuts).toHaveBeenCalled()
+  })
+
+  test('? does not fire when an input is focused', () => {
+    const onShowShortcuts = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onShowShortcuts }))
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    fireKey('?')
+    expect(onShowShortcuts).not.toHaveBeenCalled()
+    document.body.removeChild(input)
+  })
+
   test('Shift+ArrowUp adds previous file to selection', () => {
     const onSetSelectedFileIds = jest.fn()
     const filesWithIds = [

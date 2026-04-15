@@ -20,6 +20,7 @@ interface UseKeyboardNavOptions {
   onSelectAll?: () => void
   selectedFileIds?: string[]
   onSetSelectedFileIds?: (ids: string[]) => void
+  onShowShortcuts?: () => void
 }
 
 interface UseKeyboardNavReturn {
@@ -60,6 +61,7 @@ export function useKeyboardNav({
   onSelectAll,
   selectedFileIds = [],
   onSetSelectedFileIds,
+  onShowShortcuts,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -128,6 +130,12 @@ export function useKeyboardNav({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (!e.repeat && e.key === '?' && !isModalOpen && !isEditableElement(document.activeElement)) {
+        e.preventDefault()
+        onShowShortcuts?.()
+        return
+      }
+
       if (e.key === 'Escape') {
         if (isModalOpen) return
         if (isPreviewOpen) {
@@ -277,7 +285,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds, onShowShortcuts])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }
