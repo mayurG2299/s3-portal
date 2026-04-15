@@ -93,33 +93,14 @@ export default function FilesPage() {
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
   const [isTruncated, setIsTruncated] = useState(false)
-  // CDN Configuration Modal State (declared here to satisfy Rules of Hooks — must be above early return)
+  // All useState hooks must be above the early return guard (Rules of Hooks)
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
-  const [truncationDismissed, setTruncationDismissed] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalFiles, setTotalFiles] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const PAGE_SIZE = 200
-
-  useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessFiles) {
-      router.replace('/dashboard')
-    }
-  }, [canAccessFiles, loading, loadingScreenPermissions, router])
-
-  if (loading || loadingScreenPermissions || !canAccessFiles) {
-    return null
-  }
-
-  // CDN Configuration Modal State (additional config)
   const [cdnConfig, setCdnConfig] = useState({
     cloudfrontDomain: '',
     cloudfrontKeyPairId: '',
     cloudfrontPrivateKey: '',
   })
   const [isSavingCdn, setIsSavingCdn] = useState(false)
-
   const [shareSettings, setShareSettings] = useState({
     linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
     expiryMode: 'preset' as 'preset' | 'custom' | 'never',
@@ -131,6 +112,12 @@ export default function FilesPage() {
     allowPreview: true,
   })
   const [currentPath, setCurrentPath] = useState('/')
+  const [truncationDismissed, setTruncationDismissed] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalFiles, setTotalFiles] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const PAGE_SIZE = 200
   const abortControllerRef = useRef<AbortController | null>(null)
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
@@ -273,6 +260,12 @@ export default function FilesPage() {
   }, [files, isFolder])
 
   useEffect(() => {
+    if (!loading && !loadingScreenPermissions && !canAccessFiles) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessFiles, loading, loadingScreenPermissions, router])
+
+  useEffect(() => {
     if (!selectedBucketId) {
       return
     }
@@ -316,6 +309,10 @@ export default function FilesPage() {
       setUploadDescription('')
     }
   }, [isUploadOpen])
+
+  if (loading || loadingScreenPermissions || !canAccessFiles) {
+    return null
+  }
 
 
   async function handleUpload(uploadFiles: File[], onProgress?: (fileIndex: number, progress: number) => void) {
