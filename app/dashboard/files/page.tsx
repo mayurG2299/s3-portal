@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
@@ -83,6 +83,7 @@ export default function FilesPage() {
   const [descriptionInput, setDescriptionInput] = useState('')
   const [isSavingTags, setIsSavingTags] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDownloadingFolder, setIsDownloadingFolder] = useState(false)
   const [uploadTags, setUploadTags] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
@@ -145,6 +146,7 @@ export default function FilesPage() {
       setPreviewFile(file as StoredFile)
       setIsPreviewOpen(true)
     },
+    onClosePreview: () => setIsPreviewOpen(false),
   })
 
   useEffect(() => {
@@ -247,6 +249,20 @@ export default function FilesPage() {
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
+
+  const currentFolderSummary = useMemo(() => {
+    const foldersCount = files.filter((file) => isFolder(file)).length
+    const regularFiles = files.filter((file) => !isFolder(file))
+    const filesCount = regularFiles.length
+    const usedBytes = regularFiles.reduce((sum, file) => sum + Number(file.size || 0), 0)
+
+    return {
+      foldersCount,
+      filesCount,
+      usedBytes,
+      itemsCount: files.length,
+    }
+  }, [files, isFolder])
 
   useEffect(() => {
     if (!selectedBucketId) {
@@ -852,6 +868,38 @@ export default function FilesPage() {
     }
   }
 
+  async function handleDownloadFolder() {
+    if (!selectedBucketId || isDownloadingFolder) return
+
+    try {
+      setIsDownloadingFolder(true)
+      const params = new URLSearchParams({
+        bucketId: selectedBucketId,
+        path: currentPath,
+      })
+      const link = document.createElement('a')
+      link.href = `/api/files/download-folder?${params.toString()}`
+      link.setAttribute('download', '')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      toast({
+        title: 'Folder download started',
+        description: 'Preparing zip archive for download',
+      })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to start folder download'
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: message,
+      })
+    } finally {
+      window.setTimeout(() => setIsDownloadingFolder(false), 1200)
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <header className="mb-8">
@@ -906,11 +954,26 @@ export default function FilesPage() {
                 <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
               Refresh
               </Button>
+              <Button
+                onClick={handleDownloadFolder}
+                disabled={!selectedBucketId || isDownloadingFolder}
+                variant="outline"
+              >
+                <Download className={isDownloadingFolder ? 'mr-2 h-4 w-4 animate-pulse' : 'mr-2 h-4 w-4'} />
+                {isDownloadingFolder ? 'Preparing...' : 'Download Folder'}
+              </Button>
             </div>
         </div>
       </header>
 
       <main>
+        {selectedBucketId && (
+          <Card className="mb-4 p-3 bg-muted/20 border-border">
+            <p className="text-sm text-muted-foreground">
+              Folder details: {currentFolderSummary.itemsCount} items • {currentFolderSummary.foldersCount} folders • {currentFolderSummary.filesCount} files • {formatFileSize(currentFolderSummary.usedBytes)} used
+            </p>
+          </Card>
+        )}
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border">
             <Button

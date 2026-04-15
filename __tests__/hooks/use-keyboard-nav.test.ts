@@ -203,4 +203,55 @@ describe('useKeyboardNav', () => {
     fireKey('Enter')
     expect(onNavigateToFolder).not.toHaveBeenCalled()
   })
+
+  test('Escape clears focusedIndex', () => {
+    const { result } = renderHook(() => useKeyboardNav(baseOptions))
+    fireKey('ArrowDown') // index 0
+    expect(result.current.focusedIndex).toBe(0)
+    fireKey('Escape')
+    expect(result.current.focusedIndex).toBeNull()
+  })
+
+  test('Escape calls onClosePreview when preview is open', () => {
+    const onClosePreview = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: true, onClosePreview }))
+    fireKey('Escape')
+    expect(onClosePreview).toHaveBeenCalled()
+  })
+
+  test('Escape does not call onClosePreview when preview is closed', () => {
+    const onClosePreview = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: false, onClosePreview }))
+    fireKey('ArrowDown')
+    fireKey('Escape')
+    expect(onClosePreview).not.toHaveBeenCalled()
+  })
+
+  test('Cmd+ArrowUp calls onNavigateUp', () => {
+    const onNavigateUp = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onNavigateUp }))
+    fireKey('ArrowUp', { metaKey: true })
+    expect(onNavigateUp).toHaveBeenCalled()
+  })
+
+  test('Cmd+ArrowDown on folder calls onNavigateToFolder', () => {
+    const onNavigateToFolder = jest.fn()
+    const { result } = renderHook(() =>
+      useKeyboardNav({ ...baseOptions, onNavigateToFolder })
+    )
+    fireKey('ArrowDown') // focus index 0 = folder-a
+    fireKey('ArrowDown', { metaKey: true })
+    expect(onNavigateToFolder).toHaveBeenCalledWith(files[0])
+    expect(result.current.focusedIndex).toBeNull()
+  })
+
+  test('Cmd+ArrowDown on file calls onPreview', () => {
+    const onPreview = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onPreview }))
+    fireKey('ArrowDown') // 0 = folder
+    advanceThrottle()
+    fireKey('ArrowDown') // 1 = file-b.txt
+    fireKey('ArrowDown', { metaKey: true })
+    expect(onPreview).toHaveBeenCalledWith(files[1])
+  })
 })

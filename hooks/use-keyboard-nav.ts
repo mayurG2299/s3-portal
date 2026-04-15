@@ -15,6 +15,7 @@ interface UseKeyboardNavOptions {
   onNavigateToFolder: (file: StoredFile) => void
   onNavigateUp: () => void
   onPreview: (file: StoredFile) => void
+  onClosePreview?: () => void
 }
 
 interface UseKeyboardNavReturn {
@@ -50,6 +51,7 @@ export function useKeyboardNav({
   onNavigateToFolder,
   onNavigateUp,
   onPreview,
+  onClosePreview,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -108,6 +110,14 @@ export function useKeyboardNav({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (isPreviewOpen) {
+          onClosePreview?.()
+        }
+        setFocusedIndex(null)
+        return
+      }
+
       // While preview is open: only allow arrow keys to navigate between files
       if (isPreviewOpen) {
         if (e.key === 'ArrowDown') { e.preventDefault(); moveFocusRef.current('down') }
@@ -119,14 +129,36 @@ export function useKeyboardNav({
       if (isEditableElement(document.activeElement)) return
 
       switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          moveFocusRef.current('down')
-          break
-        case 'ArrowUp':
+        case 'ArrowUp': {
+          if (e.metaKey) {
+            if (e.repeat) return
+            e.preventDefault()
+            onNavigateUp()
+            return
+          }
           e.preventDefault()
           moveFocusRef.current('up')
           break
+        }
+        case 'ArrowDown': {
+          if (e.metaKey) {
+            if (e.repeat) return
+            if (focusedIndex === null) return
+            e.preventDefault()
+            const file = files[focusedIndex]
+            if (!file) return
+            if (isFolder(file)) {
+              onNavigateToFolder(file)
+              setFocusedIndex(null)
+            } else {
+              onPreview(file)
+            }
+            return
+          }
+          e.preventDefault()
+          moveFocusRef.current('down')
+          break
+        }
         case 'Enter': {
           if (e.repeat) return
           if (focusedIndex === null) return
@@ -159,7 +191,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }
