@@ -346,7 +346,7 @@ describe('useKeyboardNav', () => {
     expect(result.current.focusedIndex).toBe(1) // beta.txt
   })
 
-  test('pressing the same letter twice cycles to the next match', () => {
+  test('pressing the same letter after the reset timer clears jumps to next match', () => {
     const filesForTypeAhead = [
       makeFile('10', 'apple.txt'),
       makeFile('11', 'avocado.txt'),
@@ -377,6 +377,18 @@ describe('useKeyboardNav', () => {
     fireKey('f')
     expect(result.current.focusedIndex).toBeNull()
     document.body.removeChild(input)
+  })
+
+  test('type-ahead does not fire when preview is open', () => {
+    const filesForTypeAhead = [
+      makeFile('1', 'alpha.txt'),
+      makeFile('2', 'beta.txt'),
+    ]
+    const { result } = renderHook(() =>
+      useKeyboardNav({ ...baseOptions, files: filesForTypeAhead, isPreviewOpen: true })
+    )
+    fireKey('b')
+    expect(result.current.focusedIndex).toBeNull()
   })
 
   test('Shift+ArrowUp adds previous file to selection', () => {
