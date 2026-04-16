@@ -873,6 +873,47 @@ export default function FilesPage() {
     }
   }
 
+  async function handleDownloadSelected() {
+    if (!selectedBucketId || isDownloadingFolder) return
+
+    const selectedFiles = files.filter((f) => selectedFileIds.includes(f.id))
+    const keys = selectedFiles.map((f) => f.key)
+
+    if (keys.length === 0) return
+
+    try {
+      setIsDownloadingFolder(true)
+
+      const response = await fetch('/api/files/download-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucketId: selectedBucketId, keys }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || 'Failed to download selected files')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `selected-files-${Date.now()}.zip`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+
+      toast({ title: 'Download ready', description: `${keys.length} file(s) downloaded as zip` })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to download selected files'
+      toast({ variant: 'destructive', title: 'Error', description: message })
+    } finally {
+      window.setTimeout(() => setIsDownloadingFolder(false), 1200)
+    }
+  }
+
   async function handleDownloadFolder() {
     if (!selectedBucketId || isDownloadingFolder) return
 
@@ -946,6 +987,14 @@ export default function FilesPage() {
               >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Selected
+              </Button>
+              <Button
+                onClick={handleDownloadSelected}
+                disabled={!selectedBucketId || selectedFileIds.length === 0 || isDownloadingFolder}
+                variant="secondary"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download Selected
               </Button>
             <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucketId} variant="outline">
                 <Folder className="mr-2 h-4 w-4" />

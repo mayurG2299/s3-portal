@@ -64,11 +64,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validated = createLinkSchema.parse(body)
 
-    // Get file with credential
-    const file = await prisma.file.findUnique({
-      where: { id: validated.fileId },
-      include: { credential: true, bucket: true },
-    })
+    // Get file with credential — try by DB id first, fall back to S3 key
+    // (files not yet synced to the DB have id = their S3 key in the UI)
+    const file =
+      (await prisma.file.findUnique({
+        where: { id: validated.fileId },
+        include: { credential: true, bucket: true },
+      })) ??
+      (await prisma.file.findFirst({
+        where: { key: validated.fileId },
+        include: { credential: true, bucket: true },
+      }))
 
     if (!file) {
       await logUserAction({
