@@ -471,6 +471,67 @@ export async function copyS3Object(
 /**
  * Get object metadata from S3
  */
+/**
+ * List all objects under a prefix, paginating through all results (no page cap).
+ * Used for folder downloads where we need every file.
+ */
+export async function listAllS3Objects(
+  config: AWSConfig,
+  prefix: string = ''
+): Promise<S3Object[]> {
+  const client = createS3Client(config)
+  const objects: S3Object[] = []
+  let continuationToken: string | undefined
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: config.bucket,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    })
+
+    const response = await client.send(command)
+
+    response.Contents?.forEach((item) => {
+      if (!item.Key) return
+      objects.push({
+        key: item.Key,
+        size: item.Size || 0,
+        lastModified: item.LastModified || new Date(),
+        etag: item.ETag,
+      })
+    })
+
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
+  } while (continuationToken)
+
+  return objects
+}
+
+/**
+ * Get a Node.js Readable stream for an S3 object body. Used for streaming downloads.
+ */
+export async function getS3ObjectBody(
+  config: AWSConfig,
+  key: string
+): Promise<import('stream').Readable> {
+  const client = createS3Client(config)
+
+  const command = new GetObjectCommand({
+    Bucket: config.bucket,
+    Key: key,
+  })
+
+  const response = await client.send(command)
+
+  if (!response.Body) {
+    throw new Error(`No body returned for key: ${key}`)
+  }
+
+  // AWS SDK v3 with NodeHttpHandler returns a Node.js Readable
+  return response.Body as unknown as import('stream').Readable
+}
+
 export async function getS3ObjectMetadata(
   config: AWSConfig,
   key: string
