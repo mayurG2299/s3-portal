@@ -1178,26 +1178,6 @@ export async function POST(request: NextRequest) {
       const query = validated.query?.trim().toLowerCase()
       const tagFilter = validated.tag?.trim().toLowerCase()
 
-      const { config, errorResponse } = await decryptConfigOrError({
-        request,
-        action: "FILE_RECENTS_LIST",
-        userId: session.user.id,
-        teamId: bucket.credential.teamId,
-        resourceType: "bucket",
-        resourceId: validated.bucketId,
-        credential: bucket.credential,
-        bucket,
-      });
-      if (errorResponse) {
-        return errorResponse;
-      }
-      const { objects: s3Objects } = await listS3ObjectsWithPrefixes(
-        config,
-        normalizedPrefix,
-        '/'
-      )
-      const s3KeySet = new Set(s3Objects.map((obj) => obj.key))
-
       const logs = await prisma.accessLog.findMany({
         where: {
           userId: session.user.id,
@@ -1234,7 +1214,7 @@ export async function POST(request: NextRequest) {
 
       const objects = logs
         .map((log) => fileById.get(log.resourceId!) || fileByKey.get(log.resourceId!))
-        .filter((file) => file && s3KeySet.has(file.key))
+        .filter((file): file is NonNullable<typeof file> => file != null)
         .map((file) => ({
           id: file!.id,
           name: file!.name,

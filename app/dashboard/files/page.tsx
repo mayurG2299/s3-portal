@@ -922,13 +922,7 @@ export default function FilesPage() {
   }
 
   async function handleRefresh() {
-    if (isRefreshing) return
-    setIsRefreshing(true)
-    try {
-      await fetchFiles()
-    } finally {
-      setIsRefreshing(false)
-    }
+    await fetchFiles()
   }
 
   async function handleDownloadSelected() {

@@ -393,33 +393,6 @@ export async function getUserScreenPermissions(userId: string, teamId: string) {
 }
 
 /**
- * Get all users with a specific screen permission in a team
- */
-export async function getUsersWithScreenPermission(teamId: string, screenName: ScreenName) {
-  return prisma.screenPermission.findMany({
-    where: {
-      teamMember: {
-        teamId,
-      },
-      screenName,
-    },
-    include: {
-      teamMember: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  })
-}
-
-/**
  * Bulk set permissions for a user (grant multiple screens)
  */
 export async function setUserScreenPermissions(
