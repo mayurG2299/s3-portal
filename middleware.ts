@@ -61,14 +61,14 @@ export async function middleware(request: NextRequest) {
 
   // Check role-based access for protected routes
   if (token) {
-    // Get role level from token. Use null (not 1) when absent so stale JWTs
-    // are not falsely blocked — page-level auth will re-hydrate and decide.
-    const roleLevel = token.roleLevel != null ? (token.roleLevel as number) : null;
+    // Treat null roleLevel (stale JWT) as level 0 — no access to protected routes.
+    // Page-level requireUser() will redirect to login if the session is fully expired.
+    const effectiveLevel = token.roleLevel != null ? (token.roleLevel as number) : 0;
 
     // Check protected route requirements
     for (const route of PROTECTED_ROUTES) {
       if (route.pattern.test(pathname)) {
-        if (route.requiredLevel && roleLevel !== null && roleLevel < route.requiredLevel) {
+        if (route.requiredLevel && effectiveLevel < route.requiredLevel) {
           // Return 403 for API routes in production, redirect for pages
           if (isProduction && pathname.startsWith("/api/")) {
             return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -79,7 +79,6 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL("/dashboard", request.url));
           }
         }
-        // If roleLevel is null (stale token), allow through — page-level auth handles it
         break;
       }
     }
