@@ -885,6 +885,13 @@ export async function POST(request: NextRequest) {
           const trimmedKey = isFolder ? key.slice(0, -1) : key
           const name = trimmedKey.split('/').filter(Boolean).pop() || trimmedKey
 
+          // Derive parentPath from the S3 key itself, not the current browse path.
+          // This ensures files auto-synced from a parent folder listing get the correct path.
+          const keyForParent = isFolder ? trimmedKey : key
+          const keyParts = keyForParent.split('/').filter(Boolean)
+          const derivedParentPath =
+            keyParts.length <= 1 ? '/' : '/' + keyParts.slice(0, -1).join('/') + '/'
+
           return {
             key,
             name,
@@ -892,7 +899,7 @@ export async function POST(request: NextRequest) {
               ? 0
               : fileObjects.find((obj) => obj.key === key)?.size ?? 0,
             contentType: isFolder ? 'application/x-directory' : undefined,
-            parentPath: ensuredPath,
+            parentPath: derivedParentPath,
             userId: session.user.id,
             teamId: bucket.credential.teamId,
             credentialId: bucket.credentialId,
