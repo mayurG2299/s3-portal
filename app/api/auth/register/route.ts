@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword } from '@/lib/crypto'
 import { logUserAction } from '@/lib/audit'
+import { ensureSystemRoles } from '@/lib/system-roles'
+import { allowRequest } from '@/lib/rate-limiter'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -12,6 +14,19 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+      request.headers.get('x-real-ip') ??
+      '127.0.0.1'
+
+    const allowed = await allowRequest(`register:${ip}`, 5, 3600)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const validated = registerSchema.parse(body)
 
@@ -30,16 +45,21 @@ export async function POST(request: NextRequest) {
     // Hash password
     const passwordHash = await hashPassword(validated.password)
 
-    // Get the OWNER role
-    const ownerRole = await prisma.role.findUnique({
+    let ownerRole = await prisma.role.findUnique({
       where: { name: 'OWNER' },
     })
 
     if (!ownerRole) {
-      return NextResponse.json(
-        { message: 'System roles not initialized. Please run: npm run db:seed' },
-        { status: 500 }
-      )
+      try {
+        const roles = await ensureSystemRoles()
+        ownerRole = roles.owner
+      } catch (bootstrapError) {
+        console.error('Failed to bootstrap system roles during registration:', bootstrapError)
+        return NextResponse.json(
+          { message: 'Account creation is temporarily unavailable. Please contact your administrator.' },
+          { status: 500 }
+        )
+      }
     }
 
     // Create user, team, and team membership in a transaction
