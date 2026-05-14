@@ -18,6 +18,7 @@ import {
 } from "@/lib/aws";
 import { buildS3Key } from '@/lib/utils'
 import { canAccessBucket } from '@/lib/bucket-access'
+import { canAccessTeam } from '@/lib/permissions'
 import { z } from 'zod'
 import {
   checkQuotaBeforeUpload,
@@ -1252,18 +1253,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'File not found' }, { status: 404 })
       }
 
-      if (file.userId !== session.user.id) {
-        const teamMember = await prisma.teamMember.findFirst({
-          where: {
-            teamId: file.teamId!,
-            userId: session.user.id,
-            role: { name: { in: ['OWNER', 'ADMIN'] } },
-          },
-        })
-
-        if (!teamMember) {
-          return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
-        }
+      const isMember = await canAccessTeam(session.user.id, file.teamId!)
+      if (!isMember) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
       }
 
       const existing = await prismaAny.fileFavorite.findUnique({
@@ -1302,18 +1294,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'File not found' }, { status: 404 })
       }
 
-      if (file.userId !== session.user.id) {
-        const teamMember = await prisma.teamMember.findFirst({
-          where: {
-            teamId: file.teamId!,
-            userId: session.user.id,
-            role: { name: { in: ['OWNER', 'ADMIN'] } },
-          },
-        })
-
-        if (!teamMember) {
-          return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
-        }
+      const canEdit = await canAccessTeam(session.user.id, file.teamId!)
+      if (!canEdit) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
       }
 
       const normalizedTags = Array.from(
