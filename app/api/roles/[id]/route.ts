@@ -26,7 +26,7 @@ const getRoleLevel = (
   }>
 ) => {
   const editCount = permissions.filter(permission => permission.permissionLevel === 'EDIT').length
-  return Math.max(20, Math.min(80, 20 + editCount * 3))
+  return Math.max(20, Math.min(49, 20 + editCount * 3))
 }
 
 export async function GET(

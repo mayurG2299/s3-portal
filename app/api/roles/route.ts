@@ -103,18 +103,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate level (custom roles should be between 10-90 to avoid conflicts)
-    if (level < 10 || level > 90) {
+    // Validate level (custom roles must be 10-49 — below ADMIN=50 to prevent privilege escalation)
+    if (level < 10 || level > 49) {
       await logUserAction({
         request,
         action: "ROLE_CREATE",
         success: false,
         userId: session.user.id,
         teamId: targetTeamId,
-        errorMessage: "Custom role level must be between 10 and 90",
+        errorMessage: "Custom role level must be between 10 and 49",
       });
       return NextResponse.json(
-        { error: 'Custom role level must be between 10 and 90' },
+        { error: 'Custom role level must be between 10 and 49' },
         { status: 400 }
       )
     }
