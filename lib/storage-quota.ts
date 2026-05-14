@@ -1,6 +1,6 @@
 import { prisma } from './db'
 
-const DEFAULT_LIMIT_BYTES = BigInt(100) * BigInt(1024) * BigInt(1024) * BigInt(1024) // 100 GB
+const DEFAULT_LIMIT_BYTES = BigInt(1024) * BigInt(1024) * BigInt(1024) * BigInt(1024) // 1 TB — matches layout.tsx default
 
 export async function getQuotaForTeam(teamId: string) {
   const quota = await prisma.storageQuota.findUnique({ where: { teamId } })
