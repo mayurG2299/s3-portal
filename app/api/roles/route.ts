@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { canManageTeam } from '@/lib/permissions'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,22 +15,20 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const requestedTeamId =
-      searchParams.get("teamId")?.trim() ||
-      request.cookies.get("selectedTeamId")?.value?.trim() ||
-      session.user.teamId;
+    const { teamId: requestedTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: searchParams.get("teamId")?.trim(),
+      cookieTeamId: request.cookies.get("selectedTeamId")?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
-    if (requestedTeamId) {
-      const membership = await prisma.teamMember.findFirst({
-        where: {
-          teamId: requestedTeamId,
-          userId: session.user.id,
-        },
-      });
+    if (!requestedTeamId) {
+      return NextResponse.json({ error: 'No active team' }, { status: 400 })
+    }
 
-      if (!membership) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
+    const allowed = await canManageTeam(session.user.id, requestedTeamId)
+    if (!allowed) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Fetch all roles ordered by level descending
@@ -62,13 +61,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const selectedTeamFromCookie = request.cookies
-      .get("selectedTeamId")
-      ?.value?.trim();
-    const targetTeamId =
-      body?.teamId?.toString()?.trim() ||
-      selectedTeamFromCookie ||
-      session.user.teamId;
+    const { teamId: targetTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: body?.teamId?.toString()?.trim(),
+      cookieTeamId: request.cookies.get("selectedTeamId")?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
     if (!targetTeamId) {
       return NextResponse.json({ error: "Team not selected" }, { status: 400 });
