@@ -612,9 +612,8 @@ export default function FilesPage() {
     fetchFiles()
   }
 
-  const handleAbort = async (fileIndex: number) => {
-    // Stub for abort handling - can be extended to cancel partial multipart uploads
-    console.log(`Upload ${fileIndex} aborted by user`)
+  const handleAbort = async (_fileIndex: number) => {
+    // stub — can be extended to cancel partial multipart uploads
   }
 
   function handleDelete(file: StoredFile) {
