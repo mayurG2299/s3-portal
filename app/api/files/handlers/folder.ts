@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { createFolderMarkerObject } from '@/lib/aws'
 import { buildS3Key } from '@/lib/utils'
 import { type HandlerContext, createFolderSchema, getAccessibleBucket, decryptConfigOrError, normalizeTags } from './shared'
+import { publishFileChanged } from '@/lib/events/files'
 
 export async function handleCreateFolder({ request, session, body, activeTeamId }: HandlerContext) {
   const validated = createFolderSchema.parse(body)
@@ -43,6 +45,9 @@ export async function handleCreateFolder({ request, session, body, activeTeamId 
       description: normalizedDescription,
     },
   })
+
+  revalidateTag('dashboard-stats', 'max')
+  publishFileChanged(bucket.credential.teamId as string, { bucketId: validated.bucketId, action: 'folder-created', key: folderKey })
 
   await logUserAction({ request, action: 'FILE_CREATE_FOLDER', success: true, userId: session.user.id, teamId: bucket.credential.teamId, resourceType: 'file', resourceId: folderKey, metadata: { credentialId: bucket.credentialId, bucketId: validated.bucketId, path: validated.path, folderName: validated.folderName, tags: normalizedTags } })
 
