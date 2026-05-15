@@ -134,6 +134,7 @@ export default function FilesPage() {
   const [hasMore, setHasMore] = useState(false)
   const PAGE_SIZE = 200
   const abortControllerRef = useRef<AbortController | null>(null)
+  const uploadAbortControllers = useRef<Map<number, AbortController>>(new Map())
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
   const headerActionsRef = useRef<HTMLDivElement | null>(null)
@@ -392,10 +393,8 @@ export default function FilesPage() {
     const PART_SIZE = 10 * 1024 * 1024 // 10MB
     const MAX_CONCURRENT_PARTS = 3
 
-    const uploadAbortControllers = new Map<string, AbortController>()
-
     const uploadPart = async (
-      key: string,
+      signal: AbortSignal | undefined,
       uploadId: string,
       partNumber: number,
       blobPart: Blob,
@@ -405,7 +404,7 @@ export default function FilesPage() {
         const partUpload = await fetch(url, {
           method: 'PUT',
           body: blobPart,
-          signal: uploadAbortControllers.get(key)?.signal,
+          signal,
         })
         if (!partUpload.ok) {
           throw new Error(`Part ${partNumber} upload failed with status ${partUpload.status}`)
@@ -429,7 +428,7 @@ export default function FilesPage() {
     const uploadWithConcurrency = async (
       parts: Array<{ partNumber: number; blobPart: Blob; url: string }>,
       uploadId: string,
-      key: string
+      signal: AbortSignal | undefined
     ): Promise<Array<{ ETag: string; PartNumber: number }>> => {
       const results: Array<{ ETag: string; PartNumber: number } | null> = new Array(parts.length).fill(null)
       let index = 0
@@ -439,7 +438,7 @@ export default function FilesPage() {
           const currentIndex = index++
           const part = parts[currentIndex]
           try {
-            results[currentIndex] = await uploadPart(key, uploadId, part.partNumber, part.blobPart, part.url)
+            results[currentIndex] = await uploadPart(signal, uploadId, part.partNumber, part.blobPart, part.url)
           } catch (error) {
             throw error
           }
@@ -462,8 +461,8 @@ export default function FilesPage() {
 
     for (let fileIndex = 0; fileIndex < uploadFiles.length; fileIndex++) {
       const file = uploadFiles[fileIndex]
-      const progressKey = `${file.name}-${fileIndex}`
-      uploadAbortControllers.set(progressKey, new AbortController())
+      const controller = new AbortController()
+      uploadAbortControllers.current.set(fileIndex, controller)
 
       try {
         if (file.size < MULTIPART_THRESHOLD) {
@@ -492,7 +491,7 @@ export default function FilesPage() {
               method: 'PUT',
               headers: { 'Content-Type': file.type },
               body: file,
-              signal: uploadAbortControllers.get(progressKey)?.signal,
+              signal: controller.signal,
             })
             if (!uploadResponse.ok) {
               throw new Error(`Upload failed with status ${uploadResponse.status}`)
@@ -564,7 +563,7 @@ export default function FilesPage() {
           }
 
           // Upload parts in parallel with concurrency limit
-          const uploadedParts = await uploadWithConcurrency(parts, uploadId, key)
+          const uploadedParts = await uploadWithConcurrency(parts, uploadId, controller.signal)
           onProgress?.(fileIndex, 90)
 
           const completeRes = await fetch('/api/files', {
@@ -586,9 +585,8 @@ export default function FilesPage() {
           onProgress?.(fileIndex, 100)
         }
       } catch (error: any) {
-        // Abort on error: delete incomplete upload if multipart
-        uploadAbortControllers.delete(progressKey)
-        
+        uploadAbortControllers.current.delete(fileIndex)
+
         // Detect CORS errors
         if (error.message.includes('Failed to fetch') || 
             error.message.includes('NetworkError') ||
@@ -612,9 +610,13 @@ export default function FilesPage() {
     fetchFiles()
   }
 
-  const handleAbort = async (_fileIndex: number) => {
-    // stub — can be extended to cancel partial multipart uploads
-  }
+  const handleAbort = useCallback(async (fileIndex: number) => {
+    const controller = uploadAbortControllers.current.get(fileIndex)
+    if (controller) {
+      controller.abort()
+      uploadAbortControllers.current.delete(fileIndex)
+    }
+  }, [])
 
   function handleDelete(file: StoredFile) {
     setConfirmDelete({ open: true, file })
@@ -1659,6 +1661,7 @@ export default function FilesPage() {
               />
             </div>
             <FileUpload
+              onAbort={handleAbort}
               onUpload={async (files, onProgress) => {
                 try {
                   await handleUpload(files, onProgress)
