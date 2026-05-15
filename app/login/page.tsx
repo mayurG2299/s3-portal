@@ -167,7 +167,7 @@ function LoginPageContent() {
       </div>
 
       {/* Form panel */}
-      <div className="flex-1 flex items-start sm:items-center justify-center p-4 sm:p-8 py-6 sm:py-8 relative">
+      <div className="flex-1 flex items-start sm:items-center justify-center p-4 sm:p-8 py-6 sm:py-8 pb-10 sm:pb-12 relative">
         <div className="w-full max-w-md animate-slide-up">
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-6 sm:mb-10 lg:hidden">

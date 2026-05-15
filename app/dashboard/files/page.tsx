@@ -650,11 +650,9 @@ export default function FilesPage() {
     }
   }
 
-  function resolveExpirySeconds() {
-    if (shareSettings.expiryMode === 'preset') {
-      return Number(shareSettings.expiresIn)
-    }
-
+  function resolveExpirySeconds(): number | null | undefined {
+    if (shareSettings.expiryMode === 'never') return undefined
+    if (shareSettings.expiryMode === 'preset') return Number(shareSettings.expiresIn)
     if (!shareSettings.customExpiry) return null
     const customDate = new Date(shareSettings.customExpiry)
     if (isNaN(customDate.getTime()) || customDate <= new Date()) return null
@@ -666,7 +664,7 @@ export default function FilesPage() {
 
     const expiresIn = resolveExpirySeconds()
 
-    if (!expiresIn) {
+    if (expiresIn === null) {
       toast({
         variant: 'destructive',
         title: 'Invalid expiry',
@@ -1772,6 +1770,14 @@ export default function FilesPage() {
                     className="h-auto py-2 whitespace-normal text-xs"
                   >
                     Custom
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={shareSettings.expiryMode === 'never' ? 'default' : 'outline'}
+                    onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'never' }))}
+                    className="h-auto py-2 whitespace-normal text-xs"
+                  >
+                    Never
                   </Button>
                 </div>
                 {shareSettings.expiryMode === 'custom' && (
