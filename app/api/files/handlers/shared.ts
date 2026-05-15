@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { type AWSConfig, decryptAWSConfig } from '@/lib/aws'
@@ -192,6 +194,36 @@ export async function decryptConfigOrError(params: {
       ),
     }
   }
+}
+
+type FilesSession = Session & { user: { id: string; teamId?: string | null } }
+
+export async function buildHandlerContext(
+  request: NextRequest
+): Promise<{ ctx: HandlerContext; errorResponse: null } | { ctx: null; errorResponse: NextResponse }> {
+  const session = (await getServerSession(authOptions)) as FilesSession | null
+  if (!session?.user?.id) {
+    await logUserAction({ request, action: 'FILE_ACTION', success: false, errorMessage: 'Unauthorized' })
+    return { ctx: null, errorResponse: NextResponse.json({ message: 'Unauthorized' }, { status: 401 }) }
+  }
+
+  const body = await request.json()
+  const bodyTeamId = typeof body?.teamId === 'string' ? body.teamId.trim() : ''
+  const selectedTeamFromCookie = request.cookies.get('selectedTeamId')?.value?.trim() || null
+  const preferredTeamId = bodyTeamId || selectedTeamFromCookie
+
+  const activeTeamId = await resolveActiveTeamId({
+    requestedTeamId: preferredTeamId,
+    sessionTeamId: session.user.teamId || null,
+    userId: session.user.id,
+  })
+
+  if (preferredTeamId && activeTeamId !== preferredTeamId) {
+    await logUserAction({ request, action: 'FILE_ACTION', success: false, userId: session.user.id, teamId: preferredTeamId, errorMessage: 'Forbidden: User is not a member of selected team' })
+    return { ctx: null, errorResponse: NextResponse.json({ message: 'Forbidden' }, { status: 403 }) }
+  }
+
+  return { ctx: { request, session, body, activeTeamId }, errorResponse: null }
 }
 
 export function normalizeTags(tags: string[] | undefined): string[] {

@@ -63,7 +63,7 @@ jest.mock('@/lib/events/files', () => ({
 
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
-import { POST as filesPost } from '@/app/api/files/route';
+import { POST as filesPost } from '@/app/api/files/folder/route';
 
 const awsMocks = jest.requireMock('@/lib/aws') as {
   createFolderMarkerObject: jest.Mock;

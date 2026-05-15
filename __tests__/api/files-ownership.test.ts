@@ -26,7 +26,7 @@ jest.mock('@/lib/storage-quota', () => ({
   decrementUsage: jest.fn(),
 }))
 
-import { POST } from '@/app/api/files/route'
+import { POST } from '@/app/api/files/favorites/route'
 import { getServerSession } from 'next-auth'
 import { canAccessTeam } from '@/lib/permissions'
 import { prisma } from '@/lib/db'

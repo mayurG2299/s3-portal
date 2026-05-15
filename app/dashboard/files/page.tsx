@@ -215,6 +215,7 @@ export default function FilesPage() {
     }
 
     const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
+    const apiUrl = action === 'favorites' ? '/api/files/favorites' : action === 'recents' ? '/api/files/recents' : '/api/files'
     const requestPayload = {
       action,
       bucketId: selectedBucketId,
@@ -240,7 +241,7 @@ export default function FilesPage() {
     try {
       setIsRefreshing(true)
       setLoadError(null)
-      const response = await fetch('/api/files', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         signal: abortControllerRef.current.signal,
         headers: { 'Content-Type': 'application/json' },
@@ -467,7 +468,7 @@ export default function FilesPage() {
       try {
         if (file.size < MULTIPART_THRESHOLD) {
           // Simple PUT upload
-          const response = await fetch('/api/files', {
+          const response = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -518,7 +519,7 @@ export default function FilesPage() {
           onProgress?.(fileIndex, 100)
         } else {
           // Multipart upload
-          const initRes = await fetch('/api/files', {
+          const initRes = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -545,7 +546,7 @@ export default function FilesPage() {
             const end = Math.min(start + PART_SIZE, file.size)
             const blobPart = file.slice(start, end)
 
-            const presignRes = await fetch('/api/files', {
+            const presignRes = await fetch('/api/files/upload', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -566,7 +567,7 @@ export default function FilesPage() {
           const uploadedParts = await uploadWithConcurrency(parts, uploadId, controller.signal)
           onProgress?.(fileIndex, 90)
 
-          const completeRes = await fetch('/api/files', {
+          const completeRes = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -798,7 +799,7 @@ export default function FilesPage() {
       .filter((tag) => tag.length > 0)
 
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -875,7 +876,7 @@ export default function FilesPage() {
 
     setIsSavingTags(true)
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -913,7 +914,7 @@ export default function FilesPage() {
     if (isFolder(file)) return
 
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

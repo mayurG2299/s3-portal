@@ -8,11 +8,8 @@ import { copyS3Object, deleteS3Object } from '@/lib/aws'
 import { buildS3Key } from '@/lib/utils'
 import { decrementUsage } from '@/lib/storage-quota'
 import { z } from 'zod'
-import { resolveActiveTeamId, decryptConfigOrError, moveSchema } from './handlers/shared'
-import { handleUpload, handleMultipartInit, handleMultipartPresign, handleMultipartComplete } from './handlers/upload'
-import { handleList, handleFavorites, handleRecents } from './handlers/list'
-import { handleToggleFavorite, handleUpdateTags } from './handlers/metadata'
-import { handleCreateFolder } from './handlers/folder'
+import { buildHandlerContext, decryptConfigOrError, moveSchema } from './handlers/shared'
+import { handleList } from './handlers/list'
 import { publishFileChanged } from '@/lib/events/files'
 import type { Session } from 'next-auth'
 
@@ -20,47 +17,15 @@ type FilesSession = Session & { user: { id: string; teamId?: string | null } }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as FilesSession | null
-    if (!session?.user?.id) {
-      await logUserAction({ request, action: 'FILE_ACTION', success: false, errorMessage: 'Unauthorized' })
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { ctx, errorResponse } = await buildHandlerContext(request)
+    if (errorResponse) return errorResponse
+
+    if (ctx.body.action !== 'list') {
+      await logUserAction({ request: ctx.request, action: 'FILE_ACTION', success: false, userId: ctx.session.user.id, errorMessage: 'Invalid action', metadata: { action: ctx.body.action } })
+      return NextResponse.json({ message: 'Invalid action' }, { status: 400 })
     }
 
-    const body = await request.json()
-    const { action } = body
-
-    const bodyTeamId = typeof body?.teamId === 'string' ? body.teamId.trim() : ''
-    const selectedTeamFromCookie = request.cookies.get('selectedTeamId')?.value?.trim() || null
-    const preferredTeamId = bodyTeamId || selectedTeamFromCookie
-
-    const activeTeamId = await resolveActiveTeamId({
-      requestedTeamId: preferredTeamId,
-      sessionTeamId: session.user.teamId || null,
-      userId: session.user.id,
-    })
-
-    if (preferredTeamId && activeTeamId !== preferredTeamId) {
-      await logUserAction({ request, action: 'FILE_ACTION', success: false, userId: session.user.id, teamId: preferredTeamId, errorMessage: 'Forbidden: User is not a member of selected team' })
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
-    }
-
-    const ctx = { request, session, body, activeTeamId }
-
-    switch (action) {
-      case 'upload':            return await handleUpload(ctx)
-      case 'multipartInit':     return await handleMultipartInit(ctx)
-      case 'multipartPresign':  return await handleMultipartPresign(ctx)
-      case 'multipartComplete': return await handleMultipartComplete(ctx)
-      case 'list':              return await handleList(ctx)
-      case 'favorites':         return await handleFavorites(ctx)
-      case 'recents':           return await handleRecents(ctx)
-      case 'toggleFavorite':    return await handleToggleFavorite(ctx)
-      case 'updateTags':        return await handleUpdateTags(ctx)
-      case 'createFolder':      return await handleCreateFolder(ctx)
-      default:
-        await logUserAction({ request, action: 'FILE_ACTION', success: false, userId: session.user.id, errorMessage: 'Invalid action', metadata: { action } })
-        return NextResponse.json({ message: 'Invalid action' }, { status: 400 })
-    }
+    return await handleList(ctx)
   } catch (error: any) {
     console.error('Error in files API:', error)
     await logUserAction({ request, action: 'FILE_ACTION', success: false, errorMessage: error?.message ?? 'Internal server error' })
