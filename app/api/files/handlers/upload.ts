@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { generatePresignedUploadUrl } from '@/lib/aws'
 import { buildS3Key } from '@/lib/utils'
 import { checkQuotaBeforeUpload, incrementUsage } from '@/lib/storage-quota'
+import { publishFileChanged } from '@/lib/events/files'
 import {
   type HandlerContext,
   uploadSchema,
@@ -71,6 +73,9 @@ export async function handleUpload({ request, session, body, activeTeamId }: Han
     update: { name: validated.fileName, size: 0, contentType: validated.contentType, parentPath: validated.path, userId: session.user.id, teamId: validated.teamId, tags: normalizedTags, description: normalizedDescription },
     create: { key, name: validated.fileName, size: 0, contentType: validated.contentType, parentPath: validated.path, userId: session.user.id, teamId: validated.teamId, credentialId: bucket.credentialId, bucketId: validated.bucketId, tags: normalizedTags, description: normalizedDescription },
   })
+
+  revalidateTag('dashboard-stats', 'max')
+  publishFileChanged((validated.teamId ?? bucket.credential.teamId) as string, { bucketId: validated.bucketId, action: 'uploaded', key })
 
   await logUserAction({ request, action: 'FILE_UPLOAD_INIT', success: true, userId: session.user.id, teamId: validated.teamId, resourceType: 'file', resourceId: file.id, metadata: { key, credentialId: bucket.credentialId, bucketId: validated.bucketId, contentType: validated.contentType } })
 
@@ -202,6 +207,9 @@ export async function handleMultipartComplete({ request, session, body }: Handle
       console.error('Failed to increment usage:', err)
     }
   }
+
+  revalidateTag('dashboard-stats', 'max')
+  publishFileChanged((file.teamId ?? file.credential.teamId) as string, { bucketId: file.bucketId, action: 'uploaded', key: validated.key })
 
   await logUserAction({ request, action: 'FILE_MULTIPART_COMPLETE', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { key: validated.key, uploadId: validated.uploadId } })
 
