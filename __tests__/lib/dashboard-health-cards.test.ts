@@ -40,7 +40,7 @@ describe('buildDashboardHealthCards', () => {
 
     const fileOps = cards.find((card) => card.id === 'file-ops')
     expect(fileOps?.status).toBe('warning')
-    expect(fileOps?.ctaLabel).toBe('Select bucket')
+    expect(fileOps?.ctaLabel).toBe('Choose bucket')
   })
 
   it('marks sharing as warning when risky link ratio is high', () => {

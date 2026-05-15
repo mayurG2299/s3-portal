@@ -19,6 +19,7 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => ({
     get: (name: string) => (name === 'path' ? mockSearchPath : null),
   }),
+  usePathname: () => '/dashboard/files',
 }))
 
 jest.mock('next/dynamic', () => {

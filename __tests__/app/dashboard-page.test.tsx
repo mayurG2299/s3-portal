@@ -2,6 +2,11 @@ import '@testing-library/jest-dom'
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 
+jest.mock('next/cache', () => ({
+  unstable_cache: (fn: any) => fn,
+  revalidateTag: jest.fn(),
+}))
+
 jest.mock('next/link', () => ({
   __esModule: true,
   default: ({ href, children }: { href: string; children: React.ReactNode }) => (
