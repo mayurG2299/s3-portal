@@ -86,3 +86,9 @@ utilScripts/
 .superpowers/
 # playwright mcp screenshots and snapshots
 .playwright-mcp/
+
+# local screenshots generated in repository root during testing
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
