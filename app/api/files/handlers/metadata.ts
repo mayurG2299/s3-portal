@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { logUserAction } from '@/lib/audit'
 import { canAccessTeam } from '@/lib/permissions'
 import { type HandlerContext, toggleFavoriteSchema, updateTagsSchema, normalizeTags } from './shared'
+import { publishFileChanged } from '@/lib/events/files'
 
 const prismaAny = prisma as any
 
@@ -53,6 +54,8 @@ export async function handleUpdateTags({ request, session, body }: HandlerContex
     data: { tags: normalizedTags, description: normalizedDescription },
     select: { id: true, tags: true, description: true },
   } as any)
+
+  publishFileChanged(file.teamId!, { bucketId: file.bucketId, action: 'metadata-updated', key: file.key })
 
   await logUserAction({ request, action: 'FILE_TAG_UPDATE', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { tags: normalizedTags } })
 
