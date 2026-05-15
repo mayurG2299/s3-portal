@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
@@ -12,6 +13,7 @@ import { handleUpload, handleMultipartInit, handleMultipartPresign, handleMultip
 import { handleList, handleFavorites, handleRecents } from './handlers/list'
 import { handleToggleFavorite, handleUpdateTags } from './handlers/metadata'
 import { handleCreateFolder } from './handlers/folder'
+import { publishFileChanged } from '@/lib/events/files'
 import type { Session } from 'next-auth'
 
 type FilesSession = Session & { user: { id: string; teamId?: string | null } }
@@ -112,6 +114,9 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.file.delete({ where: { id } })
 
+    revalidateTag('dashboard-stats', 'max')
+    publishFileChanged(file.teamId!, { bucketId: file.bucketId, action: 'deleted', key: file.key })
+
     await logUserAction({ request, action: 'FILE_DELETE', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { key: file.key } })
     return NextResponse.json({ success: true })
   } catch (error: any) {
@@ -153,6 +158,8 @@ export async function PATCH(request: NextRequest) {
     await copyS3Object(config, file.key, newKey, true)
 
     await prisma.file.update({ where: { id: validated.id }, data: { key: newKey, parentPath: validated.newPath } })
+
+    publishFileChanged(file.teamId!, { bucketId: file.bucketId, action: 'moved', key: newKey })
 
     await logUserAction({ request, action: 'FILE_MOVE', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { oldKey: file.key, newKey, newPath: validated.newPath } })
     return NextResponse.json({ success: true })
