@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu } from 'lucide-react'
 import { Sidebar } from './sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { GlobalSearch } from '@/components/dashboard/global-search'
@@ -10,14 +9,6 @@ import { cn } from '@/lib/utils'
 import { useDashboard, useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { TeamRemovedModal } from '@/components/dashboard/TeamRemovedModal'
 import { RBACProvider } from '@/components/rbac-provider'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Database, Shield, Users } from 'lucide-react'
 
 
 interface Team {
@@ -40,20 +31,13 @@ interface DashboardChromeProps {
 
 export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, storageLimitBytes, initialTeams, currentTeamId, children, pendingInviteCount = 0 }: DashboardChromeProps) {
   // initialTeams is available if needed for fallback or initialization
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const {
-    selectedIdentityId,
-    selectedBucketId,
-    identities,
-    isLoading,
-    setIdentity,
-    setBucket,
     selectedTeamId,
-    setTeam,
     teams
   } = useDashboard()
   const { teamRemoved, setTeamRemoved } = useTeamRemoved()
@@ -61,8 +45,6 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
     setTeamRemoved(false)
     router.refresh()
   }
-  const activeIdentity = identities.find(id => id.id === selectedIdentityId)
-  const availableBuckets = activeIdentity?.buckets || []
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
@@ -73,7 +55,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         setSidebarOpen(false)
       } else {
         setIsMobile(false)
-        setSidebarOpen(true)
+        setSidebarOpen(false)
       }
     }
     update(mq)
@@ -125,69 +107,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
             >
               {/* Top Navigation Bar */}
               <header className="h-16 flex-shrink-0 glass-navbar flex items-center justify-between px-4 lg:px-8 gap-4">
-                <div className="flex-1 flex items-center min-w-0 gap-3">
-                  <button
-                    onClick={handleToggle}
-                    className="md:hidden p-2 shrink-0 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all focus:outline-none"
-                    aria-label="Open menu"
-                  >
-                    <Menu size={20} />
-                  </button>
-                  {/* Context Selectors (AWS Credentials & Storage Bucket) - Desktop Only in Header */}
-                  {!isMobile && (
-                    <div className={cn(
-                      "flex items-center gap-2 max-w-xl",
-                      "transition-all duration-500 ease-out",
-                      isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
-                    )}>
-                      <div className="flex items-center gap-2">
-                        <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
-                          <SelectTrigger className={cn(
-                            "w-[180px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20",
-                            isLoading && "animate-pulse opacity-50 pointer-events-none"
-                          )}>
-                            <div className="flex items-center gap-2 truncate">
-                              <Shield size={14} className="text-purple-400 shrink-0" />
-                              <SelectValue placeholder={isLoading ? "..." : "AWS Credentials"} />
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
-                            <SelectItem value="all" className="text-xs">All Identities</SelectItem>
-                            {identities.map((id) => (
-                              <SelectItem key={id.id} value={id.id} className="text-xs">
-                                {id.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={selectedBucketId || 'all'}
-                          onValueChange={(val) => setBucket(val === 'all' ? null : val)}
-                          disabled={!selectedIdentityId}
-                        >
-                          <SelectTrigger className={cn(
-                            "w-[200px] h-9 bg-white/5 border-white/10 text-xs font-semibold rounded-xl focus:ring-purple-500/20",
-                            isLoading && "animate-pulse opacity-50 pointer-events-none"
-                          )}>
-                            <div className="flex items-center gap-2 truncate">
-                              <Database size={14} className="text-blue-400 shrink-0" />
-                              <SelectValue placeholder={isLoading ? "..." : "Storage Bucket"} />
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
-                            <SelectItem value="all" className="text-xs">All Buckets</SelectItem>
-                            {availableBuckets.map((bucket) => (
-                              <SelectItem key={bucket.id} value={bucket.id} className="text-xs">
-                                {bucket.bucket}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex-1 flex items-center min-w-0">
                   <GlobalSearch onFocusChange={(focused: boolean) => {
                     setIsSearchActive(focused)
                     if (focused && isMobile) {
@@ -200,42 +120,16 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                   "transition-all duration-500 ease-out origin-right",
                   isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
                 )}>
-                  {/* Team Selector - Global Header */}
-                  {!isMobile && (
-                    <Select value={selectedTeamId || currentTeamId || undefined} onValueChange={setTeam}>
-                      <SelectTrigger className={cn(
-                        "w-[160px] h-9 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20",
-                        isLoading && "animate-pulse opacity-50 pointer-events-none"
-                      )}>
-                        <div className="flex items-center gap-2 truncate">
-                          <Users size={14} className="shrink-0" />
-                          <SelectValue placeholder={isLoading ? "..." : "Select Team"} />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover text-popover-foreground border-border backdrop-blur-xl">
-                        {teams.map((t) => (
-                          <SelectItem key={t.id} value={t.id} className="text-xs font-semibold">
-                            {t.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <div className={cn(
-                    "flex items-center gap-3 transition-all duration-500 ease-out origin-right",
-                    isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
-                  )}>
-                    <ThemeToggle />
-                    <div className="h-8 w-px bg-border hidden sm:block" />
-                    <div className="flex items-center gap-3">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
-                        <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
-                      </div>
-                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand to-brand-dark p-[1px] shrink-0">
-                        <div className="h-full w-full rounded-[10px] bg-card flex items-center justify-center text-[10px] font-black text-brand">
-                          {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
-                        </div>
+                  <ThemeToggle />
+                  <div className="h-8 w-px bg-border hidden sm:block" />
+                  <div className="flex items-center gap-3">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
+                      <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
+                    </div>
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand to-brand-dark p-[1px] shrink-0">
+                      <div className="h-full w-full rounded-[10px] bg-card flex items-center justify-center text-[10px] font-black text-brand">
+                        {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
                       </div>
                     </div>
                   </div>

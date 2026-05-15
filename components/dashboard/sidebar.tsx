@@ -15,8 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Mail,
-  Database
+  Mail
 } from 'lucide-react'
 import { ProfileActions } from './profile-actions'
 import { cn } from '@/lib/utils'
@@ -73,26 +72,33 @@ export function Sidebar({
   const pathname = usePathname()
   const {
     selectedTeamId,
-    selectedIdentityId,
-    selectedBucketId,
-    identities,
     isLoading,
-    setIdentity,
-    setBucket,
     setTeam,
     pendingInviteCount
   } = useDashboard()
-  const { canViewScreen, isAdmin, isOwner } = useRBAC()
+  const { canViewScreen, isAdmin } = useRBAC()
 
-  const activeIdentity = identities.find(id => id.id === selectedIdentityId)
-  const availableBuckets = activeIdentity?.buckets || []
-
-  const navItems = useMemo(
+  const mainNavItems = useMemo(
     () => {
       const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
       const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
-      const canViewTeams = isAdmin
       const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
+
+      return [
+        { href: '/dashboard', label: 'Dashboard', icon: Home },
+        ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
+        ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
+        ...(canViewInvitations
+          ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
+          : []),
+      ]
+    },
+    [canViewScreen, pendingInviteCount]
+  )
+
+  const adminNavItems = useMemo(
+    () => {
+      const canViewTeams = isAdmin
       const canViewSettings =
         canViewScreen(SCREENS.CREDENTIALS_LIST) ||
         canViewScreen(SCREENS.TEAM_SETTINGS)
@@ -100,13 +106,7 @@ export function Sidebar({
       const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
 
       return [
-        { href: '/dashboard', label: 'Dashboard', icon: Home },
-        ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
-        ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
         ...(canViewTeams ? [{ href: '/dashboard/teams', label: 'Teams', icon: Users }] : []),
-        ...(canViewInvitations
-          ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
-          : []),
         ...(canViewSettings ? [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }] : []),
         ...(canViewPermissions
           ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
@@ -116,12 +116,22 @@ export function Sidebar({
           : []),
       ]
     },
-    [canViewScreen, isAdmin, isOwner, pendingInviteCount]
+    [canViewScreen, isAdmin]
   )
 
   const handleNavClick = useCallback(() => {
-    if (isMobile) onClose()
-  }, [isMobile, onClose])
+    onClose()
+  }, [onClose])
+
+  const handleLogoClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isMobile) {
+      onClose()
+      return
+    }
+
+    event.preventDefault()
+    onToggle()
+  }, [isMobile, onClose, onToggle])
 
   // On mobile: always render for transitions, but translate off-screen when closed
   const sidebarExpanded = isMobile ? true : isOpen
@@ -150,7 +160,7 @@ export function Sidebar({
         <div className="relative px-4 py-6 md:px-6 md:py-8">
           {sidebarExpanded ? (
             <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleNavClick}>
+              <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleLogoClick}>
                 <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20 group-hover:scale-110 transition-transform duration-500">
                   <span className="text-white font-black text-sm tracking-tighter">S3</span>
                 </div>
@@ -164,7 +174,7 @@ export function Sidebar({
             </div>
           ) : (
               <div className="flex justify-center">
-                <Link href="/dashboard" onClick={handleNavClick}>
+                <Link href="/dashboard" onClick={handleLogoClick}>
                   <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
                     <span className="text-white font-black text-sm tracking-tighter">S3</span>
                   </div>
@@ -173,19 +183,19 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Mobile Context Selectors */}
-        {isMobile && (
-          <div className="px-4 mb-8 space-y-4">
+        {/* Team Selector - compact and always right below the logo when expanded */}
+        {sidebarExpanded && (
+          <div className="px-4 pb-5">
             <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Team</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Team</p>
               <Select value={selectedTeamId || currentTeamId || undefined} onValueChange={setTeam}>
                 <SelectTrigger className={cn(
-                  "w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                  'w-full h-10 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20',
+                  isLoading && 'animate-pulse opacity-50 pointer-events-none'
                 )}>
                   <div className="flex items-center gap-2 truncate">
                     <UsersIcon size={14} className="shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "Select Team"} />
+                    <SelectValue placeholder={isLoading ? 'Loading...' : 'Select Team'} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
@@ -197,61 +207,11 @@ export function Sidebar({
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">AWS Credentials</p>
-              <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
-                <SelectTrigger className={cn(
-                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
-                )}>
-                  <div className="flex items-center gap-2 truncate">
-                    <Shield size={14} className="text-purple-400 shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "AWS Credentials"} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
-                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Identities</SelectItem>
-                  {identities.map((id) => (
-                    <SelectItem key={id.id} value={id.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
-                      <span className="whitespace-normal break-words leading-tight text-left">{id.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Storage Bucket</p>
-              <Select
-                value={selectedBucketId || 'all'}
-                onValueChange={(val) => setBucket(val === 'all' ? null : val)}
-                disabled={!selectedIdentityId}
-              >
-                <SelectTrigger className={cn(
-                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20 disabled:opacity-50",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
-                )}>
-                  <div className="flex items-center gap-2 truncate">
-                    <Database size={14} className="text-blue-400 shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "Storage Bucket"} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
-                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Buckets</SelectItem>
-                  {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
-                      <span className="whitespace-normal break-words leading-tight text-left">{bucket.bucket}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         )}
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-2 py-4" aria-label="Main navigation">
-          {navItems.map(({ href, label, icon: Icon, badge }: any) => {
+          {mainNavItems.map(({ href, label, icon: Icon, badge }: any) => {
             const isActive = pathname === href
 
             return (
@@ -299,6 +259,53 @@ export function Sidebar({
               </Link>
             )
           })}
+
+          {adminNavItems.length > 0 && (
+            <>
+              <div className={cn(
+                'pt-2 pb-1',
+                sidebarExpanded ? 'px-1' : 'px-0'
+              )}>
+                <div className="border-t border-slate-200 dark:border-white/5" />
+                {sidebarExpanded && (
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 px-3">Admin</p>
+                )}
+              </div>
+              {adminNavItems.map(({ href, label, icon: Icon }: any) => {
+                const isActive = pathname === href
+
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={handleNavClick}
+                    className={cn(
+                      'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
+                      isActive
+                        ? 'bg-slate-100 text-brand shadow-xl dark:bg-white/[0.05] dark:text-white'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
+                      sidebarExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
+                    )}
+                    aria-label={label}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full shadow-[0_0_15px_hsl(var(--brand))]" />
+                    )}
+                    <Icon
+                      className={cn(
+                        'h-5 w-5 transition-all duration-500',
+                        isActive ? 'text-brand scale-110' : 'text-slate-600 group-hover:text-slate-400'
+                      )}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                    {sidebarExpanded && (
+                      <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+                    )}
+                  </Link>
+                )
+              })}
+            </>
+          )}
         </nav>
 
         {/* Storage Metrics - New Section */}

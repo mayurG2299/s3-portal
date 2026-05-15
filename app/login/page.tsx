@@ -7,9 +7,36 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/hooks/use-toast'
 import { Eye, EyeOff, Cloud, Shield, Zap, ArrowRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+
+type AuthNotice = {
+  title: string
+  description: string
+  ctaHref?: string
+  ctaLabel?: string
+}
+
+const unauthorizedNotice: AuthNotice = {
+  title: 'Login required',
+  description: 'Please sign in to continue to that page.',
+}
+
+const userNotFoundNotice: AuthNotice = {
+  title: 'No account found for this email',
+  description: 'Check the email you entered, or create a new account to get started.',
+  ctaHref: '/register',
+  ctaLabel: 'Create account',
+}
+
+const invalidPasswordNotice: AuthNotice = {
+  title: 'Incorrect password',
+  description: 'Check your password and try again.',
+}
+
+const genericErrorNotice: AuthNotice = {
+  title: 'Could not sign you in',
+  description: 'Something went wrong. Please try again.',
+}
 
 export default function LoginPage() {
   return (
@@ -24,41 +51,67 @@ function LoginPageContent() {
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [authNotice, setAuthNotice] = useState<AuthNotice | null>(
+    searchParams.get('error') === 'unauthorized' ? unauthorizedNotice : null
+  )
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
-  const errorParam = searchParams.get('error')
+
+  function clearAuthNotice() {
+    setAuthNotice(null)
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
+    setAuthNotice(null)
 
     const formData = new FormData(e.currentTarget)
+    const email = String(formData.get('email') || '')
+    const password = String(formData.get('password') || '')
 
     try {
+      const preflightResponse = await fetch('/api/auth/login-state', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!preflightResponse.ok) {
+        setAuthNotice(genericErrorNotice)
+        return
+      }
+
+      const preflight = await preflightResponse.json()
+
+      if (preflight.status === 'user-not-found') {
+        setAuthNotice(userNotFoundNotice)
+        return
+      }
+
+      if (preflight.status === 'invalid-password') {
+        setAuthNotice(invalidPasswordNotice)
+        return
+      }
+
       const result = await signIn('credentials', {
-        email: formData.get('email'),
-        password: formData.get('password'),
+        email,
+        password,
         redirect: false,
         callbackUrl,
       })
 
       if (result?.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Invalid email or password',
-        })
+        setAuthNotice(genericErrorNotice)
         return
       }
 
       const destination = result?.url || callbackUrl
       router.replace(destination)
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'An error occurred. Please try again.',
-      })
+      setAuthNotice(genericErrorNotice)
     } finally {
       setIsLoading(false)
     }
@@ -128,9 +181,20 @@ function LoginPageContent() {
             <div className="mb-6 sm:mb-10 text-center sm:text-left">
               <h3 className="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h3>
               <p className="text-slate-400">Please enter your credentials to access the portal.</p>
-              {errorParam === 'unauthorized' && (
-                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500 font-medium animate-fade-in">
-                  You must be logged in to access that page.
+              {authNotice && (
+                <div className="mt-4 rounded-2xl border border-brand/20 bg-white/[0.06] px-4 py-4 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)] animate-fade-in">
+                  <p className="text-sm font-bold text-white">{authNotice.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-300">{authNotice.description}</p>
+                  {authNotice.ctaHref && authNotice.ctaLabel && (
+                    <div className="mt-4">
+                      <Link
+                        href={authNotice.ctaHref}
+                        className="inline-flex h-10 items-center rounded-xl bg-white/90 px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-white"
+                      >
+                        {authNotice.ctaLabel}
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -146,6 +210,7 @@ function LoginPageContent() {
                   required
                   disabled={isLoading}
                   autoComplete="email"
+                  onChange={clearAuthNotice}
                   className="h-12 bg-white/5 border-white/10 focus:border-brand/50 focus:ring-brand/20 transition-all duration-300 text-white placeholder:text-slate-600 rounded-xl"
                 />
               </div>
@@ -164,6 +229,7 @@ function LoginPageContent() {
                     required
                     disabled={isLoading}
                     autoComplete="current-password"
+                    onChange={clearAuthNotice}
                     className="h-12 bg-white/5 border-white/10 focus:border-brand/50 focus:ring-brand/20 transition-all duration-300 text-white placeholder:text-slate-600 pr-12 rounded-xl"
                   />
                   <button
