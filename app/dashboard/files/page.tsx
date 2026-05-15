@@ -32,6 +32,7 @@ import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import type { FileChangedPayload } from '@/lib/events/types'
 
 const FilePreviewModal = dynamic(() => import('@/components/file-preview-modal'), { ssr: false })
 const DirectLinkModal = dynamic(() => import('@/components/DirectLinkModal'), { ssr: false })
@@ -136,6 +137,7 @@ export default function FilesPage() {
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
   const headerActionsRef = useRef<HTMLDivElement | null>(null)
+  const fetchFilesRef = useRef<() => void>(() => {})
   const activeIdentity = identities.find((identity) => identity.id === selectedIdentityId)
   const availableBuckets = activeIdentity?.buckets || []
 
@@ -283,6 +285,8 @@ export default function FilesPage() {
     }
   }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage, handleTeamAccessFailure])
 
+  useEffect(() => { fetchFilesRef.current = fetchFiles }, [fetchFiles])
+
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
@@ -328,6 +332,19 @@ export default function FilesPage() {
     lastEffectRequestKeyRef.current = effectKey
     fetchFiles()
   }, [fetchFiles, selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage])
+
+  useEffect(() => {
+    if (!selectedTeamId || !selectedBucketId) return
+    const evtSource = new EventSource(`/api/events/files?teamId=${selectedTeamId}`)
+    evtSource.addEventListener('file-changed', (e: MessageEvent) => {
+      const payload = JSON.parse(e.data) as FileChangedPayload
+      if (payload.bucketId !== selectedBucketId) return
+      // Clear dedup guard so SSE-triggered fetch always issues a fresh request.
+      inFlightRequestKeyRef.current = null
+      fetchFilesRef.current()
+    })
+    return () => evtSource.close()
+  }, [selectedTeamId, selectedBucketId])  // fetchFiles intentionally excluded — stable via ref
 
   useEffect(() => {
     setSelectedFileIds([])
@@ -1651,7 +1668,6 @@ export default function FilesPage() {
                   setIsUploadOpen(false)
                   setUploadTags('')
                   setUploadDescription('')
-                  fetchFiles()
                 } catch (error: any) {
                   toast({
                     variant: 'destructive',
@@ -1659,6 +1675,8 @@ export default function FilesPage() {
                     description: error.message || 'Failed to upload files',
                   })
                   throw error
+                } finally {
+                  fetchFiles()
                 }
               }}
             />
