@@ -68,7 +68,7 @@ const getDashboardStats = unstable_cache(
     }
   },
   ['dashboard-stats'],
-  { revalidate: 30 }
+  { revalidate: 30, tags: ['dashboard-stats'] }
 )
 
 export default async function DashboardPage() {
