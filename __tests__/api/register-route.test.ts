@@ -108,6 +108,7 @@ describe('register route', () => {
         email: 'mayur@fitpage.in',
         password: 'Password@123',
       }),
+      headers: { get: jest.fn().mockReturnValue(null) },
     }
 
     const response = await POST(request as any)

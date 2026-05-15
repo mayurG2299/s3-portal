@@ -29,6 +29,10 @@ jest.mock('@/lib/permissions', () => ({
   canManageTeam: jest.fn(),
 }))
 
+jest.mock('@/lib/team-selection', () => ({
+  getResolvedUserTeamScope: jest.fn().mockResolvedValue({ teamId: 'team-1', teams: [] }),
+}))
+
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { canManageTeam } from '@/lib/permissions'
