@@ -12,8 +12,9 @@ import { InviteUserForm } from '@/components/admin/invite-user-form'
 import { PendingInvitesList } from '@/components/dashboard/PendingInvitesList'
 import { UserRoleManagement } from '@/components/admin/user-role-management'
 import { cn } from '@/lib/utils'
-import { Users, Info, UserPlus, PlusCircle, Pencil, Trash2 } from 'lucide-react'
+import { Users, Info, UserPlus, PlusCircle, Pencil } from 'lucide-react'
 import { getResolvedUserTeamScope } from '@/lib/team-selection'
+import { DeleteTeamButton } from '@/components/dashboard/DeleteTeamButton'
 
 async function updateTeamAction(formData: FormData) {
   'use server'
@@ -45,16 +46,19 @@ async function updateTeamAction(formData: FormData) {
   revalidatePath('/dashboard/teams')
 }
 
-async function deleteTeamAction(formData: FormData) {
+async function deleteTeamAction(
+  _prevState: { error?: string },
+  formData: FormData
+): Promise<{ error?: string }> {
   'use server'
 
   const session = await requireUser()
   const teamId = String(formData.get('teamId') || '')
 
-  if (!teamId) return
+  if (!teamId) return { error: 'Team ID is missing.' }
 
   const team = await prisma.team.findUnique({ where: { id: teamId } })
-  if (!team || team.ownerId !== session.user.id) return
+  if (!team || team.ownerId !== session.user.id) return { error: 'You do not own this team.' }
 
   const [memberCount, credentialCount, fileCount] = await Promise.all([
     prisma.teamMember.count({ where: { teamId } }),
@@ -62,9 +66,15 @@ async function deleteTeamAction(formData: FormData) {
     prisma.file.count({ where: { teamId } }),
   ])
 
-  // Safety check: avoid destructive cascades when team still has active data.
   if (memberCount > 1 || credentialCount > 0 || fileCount > 0) {
-    return
+    const reasons = [
+      memberCount > 1 && `${memberCount} active members`,
+      credentialCount > 0 && `${credentialCount} credentials`,
+      fileCount > 0 && `${fileCount} files`,
+    ]
+      .filter(Boolean)
+      .join(', ')
+    return { error: `Cannot delete: team still has ${reasons}. Remove these first.` }
   }
 
   await prisma.team.delete({ where: { id: teamId } })
@@ -80,6 +90,7 @@ async function deleteTeamAction(formData: FormData) {
   })
 
   revalidatePath('/dashboard/teams')
+  return {}
 }
 
 export default async function TeamsPage({
@@ -295,13 +306,7 @@ export default async function TeamsPage({
                     </Button>
                   </form>
 
-                  <form action={deleteTeamAction}>
-                    <input type="hidden" name="teamId" value={team.id} />
-                    <Button type="submit" variant="destructive" className="h-8 w-full text-[10px] font-black uppercase tracking-widest">
-                      <Trash2 className="mr-2 h-3 w-3" />
-                      Delete Empty Team
-                    </Button>
-                  </form>
+                  <DeleteTeamButton teamId={team.id} action={deleteTeamAction} />
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
                     Team delete is allowed only when this team has no files, no credentials, and no other members.
                   </p>
