@@ -4,16 +4,23 @@ import { authOptions } from '@/lib/auth'
 import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
 import { prisma } from '@/lib/db'
 import { getQuotaForTeam, setQuotaLimit } from '@/lib/storage-quota'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
-  const teamId =
-    searchParams.get('teamId') ||
-    request.cookies.get('selectedTeamId')?.value?.trim() ||
-    session.user.teamId!
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    requestedTeamId: searchParams.get('teamId'),
+    cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
+
+  if (!teamId) {
+    return NextResponse.json({ message: 'Team not selected' }, { status: 400 })
+  }
 
   try {
     await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'VIEW')
@@ -33,10 +40,16 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const teamId =
-    body.teamId ||
-    request.cookies.get('selectedTeamId')?.value?.trim() ||
-    session.user.teamId!
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    requestedTeamId: body.teamId,
+    cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
+
+  if (!teamId) {
+    return NextResponse.json({ message: 'Team not selected' }, { status: 400 })
+  }
 
   try {
     await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'EDIT')

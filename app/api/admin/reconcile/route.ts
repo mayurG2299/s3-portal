@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { requireScreenPermission, ApiResponse } from '@/lib/api-utils'
 import { prisma } from '@/lib/db'
 import { reconcileTeam, reconcileBucket } from '@/lib/s3-sync'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -12,11 +13,16 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { teamId, bucketId } = body as { teamId?: string; bucketId?: string }
 
-  // Require admin settings permission for the target team (body.teamId if provided)
-  const targetTeamId =
-    teamId ||
-    request.cookies.get('selectedTeamId')?.value?.trim() ||
-    session.user.teamId!
+  const { teamId: targetTeamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    requestedTeamId: teamId,
+    cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
+
+  if (!targetTeamId) {
+    return NextResponse.json({ message: 'Team not selected' }, { status: 400 })
+  }
   try {
     await requireScreenPermission(session, targetTeamId, 'ADMIN_SETTINGS', 'EDIT')
   } catch (err) {

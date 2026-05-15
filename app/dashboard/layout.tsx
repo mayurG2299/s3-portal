@@ -2,6 +2,7 @@ import { TeamRemovedModalClient } from '@/components/TeamRemovedModalClient'
 import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { resolveActiveTeamId } from '@/lib/active-team'
 import { DashboardChrome } from '@/components/dashboard/dashboard-chrome'
 import { DashboardProvider } from '@/lib/contexts/dashboard-context'
 import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary'
@@ -38,10 +39,7 @@ export default async function DashboardLayout({
 
   // Get selections from cookies or defaults
   const cookieTeamId = cookieStore.get('selectedTeamId')?.value
-  const validCookieTeamId = teams.some((team) => team.id === cookieTeamId)
-    ? cookieTeamId
-    : null
-  const currentTeamId = validCookieTeamId || session.user.teamId || teams[0]?.id
+  const currentTeamId = resolveActiveTeamId(teams, cookieTeamId, session.user.teamId)
   const initialIdentityId = cookieStore.get('selectedIdentityId')?.value
   const initialBucketId = cookieStore.get('selectedBucketId')?.value
 

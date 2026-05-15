@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 import { Prisma } from '@prisma/client'
 import { getUserRoleInTeam, isOwner } from '@/lib/permissions'
 import { Clock, User, Activity, Shield, CheckCircle2, XCircle } from 'lucide-react'
@@ -10,8 +11,11 @@ import { cn } from '@/lib/utils'
 export default async function AuditLogPage() {
   const session = await requireUser('admin/audit')
   const cookieStore = await cookies()
-  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
-  const teamId = selectedTeamId || session.user.teamId
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    cookieTeamId: cookieStore.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
 
   if (!teamId) {
     redirect('/dashboard')

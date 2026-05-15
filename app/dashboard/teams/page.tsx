@@ -13,6 +13,7 @@ import { PendingInvitesList } from '@/components/dashboard/PendingInvitesList'
 import { UserRoleManagement } from '@/components/admin/user-role-management'
 import { cn } from '@/lib/utils'
 import { Users, Info, UserPlus, PlusCircle, Pencil, Trash2 } from 'lucide-react'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 async function updateTeamAction(formData: FormData) {
   'use server'
@@ -90,8 +91,12 @@ export default async function TeamsPage({
   const cookieStore = await cookies()
   const resolvedSearchParams = (await searchParams) || {}
   const queryTeamId = resolvedSearchParams.teamId?.trim()
-  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
-  const teamId = queryTeamId || selectedTeamId || session.user.teamId
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    requestedTeamId: queryTeamId,
+    cookieTeamId: cookieStore.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
 
   if (!teamId) {
     redirect('/dashboard')

@@ -3,12 +3,16 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { canManageTeam } from '@/lib/permissions'
 import { PermissionManagement } from '@/components/admin/permission-management'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export default async function PermissionsPage() {
   const session = await requireUser('admin/permissions')
   const cookieStore = await cookies()
-  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
-  const teamId = selectedTeamId || session.user.teamId
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    cookieTeamId: cookieStore.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
 
   if (!teamId) {
     redirect('/dashboard')
