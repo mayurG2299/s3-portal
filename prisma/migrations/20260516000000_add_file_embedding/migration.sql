@@ -10,7 +10,7 @@ CREATE TABLE "FileEmbedding" (
     "fileId" TEXT NOT NULL,
     "status" "IndexingStatus" NOT NULL DEFAULT 'PENDING',
     "summary" TEXT,
-    "errorMsg" TEXT,
+    "errorMessage" TEXT,
     "processedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

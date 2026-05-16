@@ -6,6 +6,7 @@ import { generatePresignedUploadUrl } from '@/lib/aws'
 import { buildS3Key } from '@/lib/utils'
 import { checkQuotaBeforeUpload, incrementUsage } from '@/lib/storage-quota'
 import { publishFileChanged } from '@/lib/events/files'
+import { enqueueFileIndexing } from '@/lib/indexing/queue'
 import {
   type HandlerContext,
   uploadSchema,
@@ -210,6 +211,7 @@ export async function handleMultipartComplete({ request, session, body }: Handle
 
   revalidateTag('dashboard-stats', 'max')
   publishFileChanged((file.teamId ?? file.credential.teamId) as string, { bucketId: file.bucketId, action: 'uploaded', key: validated.key })
+  await enqueueFileIndexing(file.id, 1)
 
   await logUserAction({ request, action: 'FILE_MULTIPART_COMPLETE', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { key: validated.key, uploadId: validated.uploadId } })
 

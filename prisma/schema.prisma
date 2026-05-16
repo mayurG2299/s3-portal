@@ -342,7 +342,7 @@ model FileEmbedding {
   status      IndexingStatus @default(PENDING)
   summary     String?
   // embedding vector(1536) added via raw SQL migration (pgvector not in Prisma DSL)
-  errorMsg    String?
+  errorMessage String?
   processedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

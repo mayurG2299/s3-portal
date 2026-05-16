@@ -3,6 +3,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const docsBase = (process.env.NEXT_PUBLIC_DOCS_URL || '/documentation').replace(/\/$/, '')
 
 const nextConfig = {
+  serverExternalPackages: ['fluent-ffmpeg', 'ffmpeg-static', '@ffmpeg-installer/ffmpeg'],
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
