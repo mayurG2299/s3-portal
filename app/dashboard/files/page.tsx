@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { useKeyboardNav } from '@/hooks/use-keyboard-nav'
-import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
+import { useShortcutsModal } from '@/lib/contexts/shortcuts-modal-context'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -103,7 +103,7 @@ export default function FilesPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
-  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
+  const { isShortcutsOpen } = useShortcutsModal()
   const [isTruncated, setIsTruncated] = useState(false)
   const [isHeaderActionsOpen, setIsHeaderActionsOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; file: StoredFile | null }>({ open: false, file: null })
@@ -161,7 +161,11 @@ export default function FilesPage() {
     onSelectAll: () => setSelectedFileIds(files.map((f) => f.id)),
     selectedFileIds,
     onSetSelectedFileIds: setSelectedFileIds,
-    onShowShortcuts: () => setIsShortcutsOpen(true),
+    onFavorite: (file) => handleToggleFavorite(file as StoredFile),
+    onDirectLink: (file) => { setDirectLinkFile(file as StoredFile); setIsDirectLinkOpen(true) },
+    onShare: (file) => { setShareTargets([file as StoredFile]); setIsShareOpen(true) },
+    onUpload: () => setIsUploadOpen(true),
+    onNewFolder: () => setIsFolderDialogOpen(true),
   })
 
   useEffect(() => {
@@ -1949,19 +1953,6 @@ export default function FilesPage() {
           setDirectLinkFile(null)
         }} />
       )}
-
-      {/* Floating keyboard shortcuts button */}
-      <button
-        type="button"
-        onClick={() => setIsShortcutsOpen(true)}
-        title="Keyboard shortcuts"
-        className="fixed bottom-6 right-6 z-40 h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-sm font-bold hover:bg-primary/90 transition-colors"
-        aria-label="Keyboard shortcuts"
-      >
-        ?
-      </button>
-
-      <KeyboardShortcutsModal open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
 
       <ConfirmDialog
         open={confirmDelete.open}
