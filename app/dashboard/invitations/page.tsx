@@ -7,7 +7,8 @@ import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
-import { formatRelativeTime } from '@/lib/utils'
+import { formatRelativeTime, cn } from '@/lib/utils'
+import { useListNav } from '@/hooks/use-list-nav'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
 
@@ -44,6 +45,16 @@ export default function InvitationsPage() {
   if (loading || loadingScreenPermissions || !canAccessInvitations) {
     return null
   }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { focusedIndex, itemRefs } = useListNav({
+    items: invites,
+    isModalOpen: false,
+    keyActions: {
+      onAccept: (invite) => handleAction(invite.id, 'accept'),
+      onDecline: (invite) => handleAction(invite.id, 'decline'),
+    },
+  })
 
   async function handleAction(inviteId: string, action: 'accept' | 'decline') {
     setProcessing(inviteId)
@@ -114,7 +125,12 @@ export default function InvitationsPage() {
           {invites.map((invite, idx) => (
             <div
               key={invite.id}
-              className="glass-card !p-0 overflow-hidden animate-slide-up hover:border-primary/50 transition-all duration-300"
+              ref={itemRefs[idx]}
+              tabIndex={0}
+              className={cn(
+                "glass-card !p-0 overflow-hidden animate-slide-up hover:border-primary/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary",
+                focusedIndex === idx && "ring-2 ring-primary"
+              )}
               style={{ animationDelay: `${idx * 60}ms` }}
             >
               <div className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
