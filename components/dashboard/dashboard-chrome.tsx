@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils'
 import { useDashboard, useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { TeamRemovedModal } from '@/components/dashboard/TeamRemovedModal'
 import { RBACProvider } from '@/components/rbac-provider'
+import { useGlobalShortcuts } from '@/hooks/use-global-shortcuts'
+import { KeyboardShortcutsModal } from '@/components/keyboard-shortcuts-modal'
+import { ShortcutsModalContext } from '@/lib/contexts/shortcuts-modal-context'
+import type { GlobalSearchHandle } from '@/components/dashboard/global-search'
 
 
 interface Team {
@@ -34,6 +38,13 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
+  const searchRef = useRef<GlobalSearchHandle>(null)
+
+  useGlobalShortcuts({
+    onOpenSearch: () => searchRef.current?.focus(),
+    onOpenShortcuts: () => setIsShortcutsOpen(true),
+  })
   const pathname = usePathname()
   const router = useRouter()
   const {
@@ -86,6 +97,8 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         </div>
       ) : (
         <RBACProvider>
+          <ShortcutsModalContext.Provider value={{ isShortcutsOpen }}>
+          <KeyboardShortcutsModal open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
           <div className="flex overflow-hidden min-h-screen">
             <Sidebar
               email={email}
@@ -108,7 +121,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               {/* Top Navigation Bar */}
               <header className="h-16 flex-shrink-0 glass-navbar flex items-center justify-between px-4 lg:px-8 gap-4">
                 <div className="flex-1 flex items-center min-w-0">
-                  <GlobalSearch onFocusChange={(focused: boolean) => {
+                  <GlobalSearch ref={searchRef} onFocusChange={(focused: boolean) => {
                     setIsSearchActive(focused)
                     if (focused && isMobile) {
                       setSidebarOpen(false)
@@ -145,6 +158,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               </main>
             </div>
           </div>
+          </ShortcutsModalContext.Provider>
         </RBACProvider>
       )}
     </div>
