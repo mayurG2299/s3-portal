@@ -20,7 +20,11 @@ interface UseKeyboardNavOptions {
   onSelectAll?: () => void
   selectedFileIds?: string[]
   onSetSelectedFileIds?: (ids: string[]) => void
-  onShowShortcuts?: () => void
+  onFavorite?: (file: StoredFile) => void
+  onDirectLink?: (file: StoredFile) => void
+  onShare?: (file: StoredFile) => void
+  onUpload?: () => void
+  onNewFolder?: () => void
 }
 
 interface UseKeyboardNavReturn {
@@ -61,7 +65,11 @@ export function useKeyboardNav({
   onSelectAll,
   selectedFileIds = [],
   onSetSelectedFileIds,
-  onShowShortcuts,
+  onFavorite,
+  onDirectLink,
+  onShare,
+  onUpload,
+  onNewFolder,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -130,12 +138,6 @@ export function useKeyboardNav({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (!e.repeat && e.key === '?' && !isModalOpen && !isEditableElement(document.activeElement)) {
-        e.preventDefault()
-        onShowShortcuts?.()
-        return
-      }
-
       if (e.key === 'Escape') {
         if (isModalOpen) return
         if (isPreviewOpen) {
@@ -252,6 +254,47 @@ export function useKeyboardNav({
           onSelectAll?.()
           break
         }
+        case 'f': {
+          if (e.repeat) break
+          // Cmd+Shift+F = new folder (no file focus needed)
+          if (e.metaKey && e.shiftKey) {
+            e.preventDefault()
+            onNewFolder?.()
+            return
+          }
+          // Plain F = favorite (no modifier allowed)
+          if (e.metaKey || e.shiftKey || e.altKey) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const filef = files[focusedIndex]
+          if (!filef || isFolder(filef)) break
+          onFavorite?.(filef)
+          return // prevents type-ahead
+        }
+        case 'l': {
+          if (!e.metaKey || e.shiftKey || e.repeat) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const filel = files[focusedIndex]
+          if (!filel || isFolder(filel)) break
+          onDirectLink?.(filel)
+          return
+        }
+        case 's': {
+          if (!e.metaKey || !e.shiftKey || e.repeat) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const files_ = files[focusedIndex]
+          if (!files_) break
+          onShare?.(files_)
+          return
+        }
+        case 'u': {
+          if (!e.metaKey || e.shiftKey || e.repeat) break
+          e.preventDefault()
+          onUpload?.()
+          return
+        }
       }
 
       // Type-ahead: single printable character, no modifier keys
@@ -285,7 +328,7 @@ export function useKeyboardNav({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds, onShowShortcuts])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds, onFavorite, onDirectLink, onShare, onUpload, onNewFolder])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }

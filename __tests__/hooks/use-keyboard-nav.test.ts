@@ -391,36 +391,103 @@ describe('useKeyboardNav', () => {
     expect(result.current.focusedIndex).toBeNull()
   })
 
-  test('? calls onShowShortcuts', () => {
-    const onShowShortcuts = jest.fn()
-    renderHook(() => useKeyboardNav({ ...baseOptions, onShowShortcuts }))
-    fireKey('?')
-    expect(onShowShortcuts).toHaveBeenCalled()
+  // ? shortcut moved to use-global-shortcuts — tested in use-global-shortcuts.test.ts
+
+  // --- New file action shortcuts ---
+
+  test('F on a focused file calls onFavorite', () => {
+    const onFavorite = jest.fn()
+    const { result } = renderHook(() => useKeyboardNav({ ...baseOptions, onFavorite }))
+    fireKey('ArrowDown')       // index 0: folder-a
+    advanceThrottle()
+    fireKey('ArrowDown')       // index 1: file-b.txt
+    advanceThrottle()
+    fireKey('f')
+    expect(onFavorite).toHaveBeenCalledWith(files[1])
   })
 
-  test('? does not fire when modal is open', () => {
-    const onShowShortcuts = jest.fn()
-    renderHook(() => useKeyboardNav({ ...baseOptions, isModalOpen: true, onShowShortcuts }))
-    fireKey('?')
-    expect(onShowShortcuts).not.toHaveBeenCalled()
+  test('F on a focused folder does NOT call onFavorite', () => {
+    const onFavorite = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onFavorite }))
+    fireKey('ArrowDown')       // index 0: folder-a
+    fireKey('f')
+    expect(onFavorite).not.toHaveBeenCalled()
   })
 
-  test('? fires when preview is open', () => {
-    const onShowShortcuts = jest.fn()
-    renderHook(() => useKeyboardNav({ ...baseOptions, isPreviewOpen: true, onShowShortcuts }))
-    fireKey('?')
-    expect(onShowShortcuts).toHaveBeenCalled()
+  test('F does NOT trigger type-ahead (return not break)', () => {
+    const onFavorite = jest.fn()
+    const { result } = renderHook(() => useKeyboardNav({ ...baseOptions, onFavorite }))
+    fireKey('ArrowDown'); advanceThrottle()
+    fireKey('ArrowDown'); advanceThrottle() // index 1: file-b.txt
+    const indexBefore = result.current.focusedIndex
+    fireKey('f')
+    expect(result.current.focusedIndex).toBe(indexBefore)
+    expect(onFavorite).toHaveBeenCalledTimes(1)
   })
 
-  test('? does not fire when an input is focused', () => {
-    const onShowShortcuts = jest.fn()
-    renderHook(() => useKeyboardNav({ ...baseOptions, onShowShortcuts }))
-    const input = document.createElement('input')
-    document.body.appendChild(input)
-    input.focus()
-    fireKey('?')
-    expect(onShowShortcuts).not.toHaveBeenCalled()
-    document.body.removeChild(input)
+  test('Cmd+Shift+F calls onNewFolder', () => {
+    const onNewFolder = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onNewFolder }))
+    fireKey('f', { metaKey: true, shiftKey: true })
+    expect(onNewFolder).toHaveBeenCalledTimes(1)
+  })
+
+  test('Cmd+Shift+F does not call onFavorite', () => {
+    const onFavorite = jest.fn()
+    const onNewFolder = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onFavorite, onNewFolder }))
+    fireKey('ArrowDown'); advanceThrottle()
+    fireKey('ArrowDown'); advanceThrottle()
+    fireKey('f', { metaKey: true, shiftKey: true })
+    expect(onFavorite).not.toHaveBeenCalled()
+    expect(onNewFolder).toHaveBeenCalledTimes(1)
+  })
+
+  test('Cmd+L on a focused file calls onDirectLink', () => {
+    const onDirectLink = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onDirectLink }))
+    fireKey('ArrowDown'); advanceThrottle()
+    fireKey('ArrowDown'); advanceThrottle() // index 1: file-b.txt
+    fireKey('l', { metaKey: true })
+    expect(onDirectLink).toHaveBeenCalledWith(files[1])
+  })
+
+  test('Cmd+Shift+S on a focused file calls onShare', () => {
+    const onShare = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onShare }))
+    fireKey('ArrowDown')
+    fireKey('s', { metaKey: true, shiftKey: true })
+    expect(onShare).toHaveBeenCalledWith(files[0])
+  })
+
+  test('Cmd+U calls onUpload regardless of focus', () => {
+    const onUpload = jest.fn()
+    renderHook(() => useKeyboardNav({ ...baseOptions, onUpload }))
+    fireKey('u', { metaKey: true })
+    expect(onUpload).toHaveBeenCalledTimes(1)
+  })
+
+  test('none of the new shortcuts fire when isModalOpen is true', () => {
+    const onFavorite = jest.fn()
+    const onDirectLink = jest.fn()
+    const onShare = jest.fn()
+    const onUpload = jest.fn()
+    const onNewFolder = jest.fn()
+    renderHook(() => useKeyboardNav({
+      ...baseOptions,
+      isModalOpen: true,
+      onFavorite, onDirectLink, onShare, onUpload, onNewFolder,
+    }))
+    fireKey('f')
+    fireKey('l', { metaKey: true })
+    fireKey('s', { metaKey: true, shiftKey: true })
+    fireKey('u', { metaKey: true })
+    fireKey('f', { metaKey: true, shiftKey: true })
+    expect(onFavorite).not.toHaveBeenCalled()
+    expect(onDirectLink).not.toHaveBeenCalled()
+    expect(onShare).not.toHaveBeenCalled()
+    expect(onUpload).not.toHaveBeenCalled()
+    expect(onNewFolder).not.toHaveBeenCalled()
   })
 
   test('Shift+ArrowUp adds previous file to selection', () => {
