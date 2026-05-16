@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { AiCredentialsTab } from '@/components/dashboard/ai-credentials-tab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,6 +43,8 @@ type BucketInput = {
 
 export default function SettingsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'config'
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null)
   const [isAddCredentialOpen, setIsAddCredentialOpen] = useState(false)
@@ -322,6 +325,29 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {/* Tab navigation */}
+      <div className="flex gap-1 p-1 bg-muted/50 border border-border rounded-2xl w-fit mb-8">
+        {[
+          { id: 'config', label: 'Configuration' },
+          { id: 'ai', label: 'AI & Indexing' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => router.push(`/dashboard/settings?tab=${tab.id}`)}
+            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+              activeTab === tab.id
+                ? 'bg-brand text-white shadow-lg'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'ai' && <AiCredentialsTab />}
+
+      {activeTab !== 'ai' && <>
       {/* Appearance Section */}
       <div className="glass-card mb-10 animate-slide-up">
         <div className="flex items-center gap-4 mb-8">
@@ -738,6 +764,7 @@ export default function SettingsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      </>}
     </div>
   )
 }
