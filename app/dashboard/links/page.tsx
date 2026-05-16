@@ -10,6 +10,7 @@ import { formatRelativeTime, formatFileSize } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
+import { useListNav } from '@/hooks/use-list-nav'
 
 interface Link {
   id: string
@@ -49,6 +50,17 @@ export default function LinksPage() {
   if (loading || loadingScreenPermissions || !canAccessLinks) {
     return null
   }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { focusedIndex, itemRefs } = useListNav({
+    items: links,
+    isModalOpen: false,
+    keyActions: {
+      onCopy: (link) => handleCopyLink(link.hash),
+      onDelete: (link) => handleDelete(link.id, !link.expiresAt),
+    },
+    onRefresh: fetchLinks,
+  })
 
   useEffect(() => {
     fetchLinks()
@@ -198,9 +210,12 @@ export default function LinksPage() {
               return (
                 <div
                   key={link.id}
+                  ref={itemRefs[idx]}
+                  tabIndex={0}
                   className={cn(
-                    "glass-card !p-0 overflow-hidden flex flex-col transition-all group hover:scale-[1.02] hover:-translate-y-1",
-                    isInactive && "opacity-60 grayscale-[0.5]"
+                    "glass-card !p-0 overflow-hidden flex flex-col transition-all group hover:scale-[1.02] hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary",
+                    isInactive && "opacity-60 grayscale-[0.5]",
+                    focusedIndex === idx && "ring-2 ring-primary"
                   )}
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
