@@ -30,10 +30,8 @@ export function useGlobalShortcuts({ onOpenSearch, onOpenShortcuts }: UseGlobalS
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Cmd+K — focus search (never blocked, even when input focused)
+      // Cmd+K is handled by AiSearchPalette — skip here to avoid double-firing
       if (e.key === 'k' && e.metaKey && !e.shiftKey && !e.repeat) {
-        e.preventDefault()
-        onOpenSearch()
         return
       }
 

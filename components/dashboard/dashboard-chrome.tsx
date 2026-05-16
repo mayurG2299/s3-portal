@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { GlobalSearch } from '@/components/dashboard/global-search'
+import { AiSearchPalette } from '@/components/dashboard/ai-search-palette'
 import { cn } from '@/lib/utils'
 import { useDashboard, useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { TeamRemovedModal } from '@/components/dashboard/TeamRemovedModal'
@@ -99,6 +100,7 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
         <RBACProvider>
           <ShortcutsModalContext.Provider value={{ isShortcutsOpen }}>
           <KeyboardShortcutsModal open={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
+          <AiSearchPalette />
           <div className="flex overflow-hidden min-h-screen">
             <Sidebar
               email={email}
