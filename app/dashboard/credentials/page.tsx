@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
 import { useTeamRemoved } from '@/lib/contexts/dashboard-context'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
+import { useListNav } from '@/hooks/use-list-nav'
+import { cn } from '@/lib/utils'
 
 interface Credential {
   id: string
@@ -28,6 +30,14 @@ export default function CredentialsPage() {
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
   const activeTeamId = selectedTeamId
+
+  const { focusedIndex, itemRefs } = useListNav({
+    items: credentials,
+    isModalOpen: false,
+    keyActions: {
+      onDelete: (cred) => handleDelete(cred.id),
+    },
+  })
 
   useEffect(() => {
     let isActive = true
@@ -158,8 +168,14 @@ export default function CredentialsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                credentials.map((cred) => (
-                  <Card key={cred.id}>
+                credentials.map((cred, idx) => (
+                  <div
+                    key={cred.id}
+                    ref={itemRefs[idx]}
+                    tabIndex={0}
+                    className={cn("rounded-lg focus:outline-none focus:ring-2 focus:ring-primary", focusedIndex === idx && "ring-2 ring-primary")}
+                  >
+                  <Card>
                     <CardHeader className="flex flex-row items-start justify-between">
                       <div>
                         <CardTitle>{cred.name}</CardTitle>
@@ -192,6 +208,7 @@ export default function CredentialsPage() {
                       </Button>
                     </CardHeader>
                   </Card>
+                  </div>
                 ))
               )}
             </div>
