@@ -9,12 +9,27 @@ Redesign the sidebar navigation and add four new AI-powered screens (Credential 
 ## Design Principles (apply to every screen)
 
 ### Visual consistency
-- Background: `#09090b` (zinc-950)
-- Primary accent: `#6366f1` / `#8b5cf6` (indigo-to-violet gradient)
 - Icon library: **Lucide** exclusively — no emojis, no other icon packs
-- Glass cards: `background: #111113`, `border: 1px solid rgba(255,255,255,0.05)`
-- Gradient buttons: `background: linear-gradient(135deg, #6366f1, #8b5cf6)`
 - Typography scale unchanged from existing app
+
+### Theme system — mandatory constraint
+The app ships with **6 themes × 2 modes = 12 combinations**: Nebula (default), Catppuccin, Tokyo Night, Dracula, Nord, Rosé Pine — each with dark and light variants. Themes are applied via `data-theme="[id]"` + `.dark` class on `<html>`, controlled by `next-themes`.
+
+**Every new component must use CSS variables, never hardcoded colours.** The visual companion mockups showed Nebula-dark hex values for illustration only — do not copy those into code.
+
+| What you want | Use this — not a hex |
+|---|---|
+| Page background | `hsl(var(--background))` |
+| Card / panel background | `hsl(var(--card))` |
+| Primary / brand colour | `hsl(var(--primary))` or `hsl(var(--brand))` |
+| Muted text | `hsl(var(--muted-foreground))` |
+| Subtle border | `hsl(var(--border))` |
+| Gradient button | `.btn-primary-gradient` utility class |
+| Glass card | `.glass-card` or `.glass-panel` utility class |
+| Brand gradient text | `.gradient-text` utility class |
+| Destructive red | `hsl(var(--destructive))` |
+
+The existing utility classes in `app/globals.css` (`.glass-card`, `.glass-panel`, `.btn-primary-gradient`, `.gradient-text`, `.glass-morphic`) already adapt to all themes — use them as the first option before writing new styles. Only write new CSS custom-property-based styles when none of the existing utilities fit.
 
 ### Keyboard shortcuts (symmetric — all pages)
 Every page that lists files or navigable rows must respond to these shortcuts. They are registered via the existing global keyboard handler pattern.
