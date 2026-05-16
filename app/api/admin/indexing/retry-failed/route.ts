@@ -21,6 +21,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'EDIT')
 
+  const body = await request.json().catch(() => ({}))
+  const { fileId } = body as { fileId?: string }
+
+  if (fileId) {
+    await prisma.fileEmbedding.update({
+      where: { fileId },
+      data: { status: 'PENDING', errorMessage: null },
+    })
+    await enqueueFileIndexing(fileId, 5)
+    return NextResponse.json({ ok: true, requeued: 1 })
+  }
+
   const failed = await prisma.fileEmbedding.findMany({
     where: { status: 'FAILED' },
     select: { fileId: true },
@@ -31,8 +43,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     data: { status: 'PENDING', errorMessage: null },
   })
 
-  for (const { fileId } of failed) {
-    await enqueueFileIndexing(fileId, 5)
+  for (const { fileId: fid } of failed) {
+    await enqueueFileIndexing(fid, 5)
   }
 
   return NextResponse.json({ ok: true, requeued: failed.length })
