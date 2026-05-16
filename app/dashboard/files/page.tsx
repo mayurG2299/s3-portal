@@ -33,6 +33,7 @@ import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { FileChangedPayload } from '@/lib/events/types'
+import { IndexingBadge, type IndexingStatus } from '@/components/dashboard/indexing-badge'
 
 const FilePreviewModal = dynamic(() => import('@/components/file-preview-modal'), { ssr: false })
 const DirectLinkModal = dynamic(() => import('@/components/DirectLinkModal'), { ssr: false })
@@ -73,9 +74,10 @@ export default function FilesPage() {
     setBucket,
     handleTeamAccessFailure,
   } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, isAdmin } = useRBAC()
   const canAccessFiles = canViewScreen(SCREENS.FILES_LIST)
   const [files, setFiles] = useState<StoredFile[]>([])
+  const [indexingStatuses, setIndexingStatuses] = useState<Record<string, IndexingStatus>>({})
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -345,12 +347,36 @@ export default function FilesPage() {
     evtSource.addEventListener('file-changed', (e: MessageEvent) => {
       const payload = JSON.parse(e.data) as FileChangedPayload
       if (payload.bucketId !== selectedBucketId) return
+      if (payload.action === 'indexing-status-changed' && payload.indexingStatus) {
+        // Find fileId by key and update badge in place — no full refetch needed
+        setFiles((prev) => {
+          const file = prev.find((f) => f.key === payload.key)
+          if (file) {
+            setIndexingStatuses((s) => ({ ...s, [file.id]: payload.indexingStatus as IndexingStatus }))
+          }
+          return prev
+        })
+        return
+      }
       // Clear dedup guard so SSE-triggered fetch always issues a fresh request.
       inFlightRequestKeyRef.current = null
       fetchFilesRef.current()
     })
     return () => evtSource.close()
   }, [selectedTeamId, selectedBucketId])  // fetchFiles intentionally excluded — stable via ref
+
+  // Batch-fetch indexing statuses for visible files (admin/owner only)
+  useEffect(() => {
+    if (!isAdmin || files.length === 0) return
+    const fileIds = files.filter((f) => !f.key.endsWith('/')).map((f) => f.id)
+    if (fileIds.length === 0) return
+    const url = new URL('/api/admin/indexing/file-statuses', window.location.origin)
+    url.searchParams.set('ids', fileIds.join(','))
+    if (selectedTeamId) url.searchParams.set('teamId', selectedTeamId)
+    fetch(url).then((res) => res.json()).then((data: Record<string, IndexingStatus>) => {
+      setIndexingStatuses((prev) => ({ ...prev, ...data }))
+    }).catch(() => { /* non-fatal */ })
+  }, [files, isAdmin, selectedTeamId])
 
   useEffect(() => {
     setSelectedFileIds([])
@@ -1479,7 +1505,7 @@ export default function FilesPage() {
                           }}
                         />
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
                             <button
                               type="button"
@@ -1496,6 +1522,20 @@ export default function FilesPage() {
                             >
                               {file.name}
                             </button>
+                            {isAdmin && !isFolder(file) && indexingStatuses[file.id] !== undefined && (
+                              <IndexingBadge
+                                fileId={file.id}
+                                initialStatus={indexingStatuses[file.id]}
+                                onRetry={async (fid) => {
+                                  await fetch('/api/admin/indexing/retry-failed', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ fileId: fid }),
+                                  })
+                                  setIndexingStatuses((s) => ({ ...s, [fid]: 'PENDING' }))
+                                }}
+                              />
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {isFolder(file)
