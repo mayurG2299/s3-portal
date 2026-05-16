@@ -9,6 +9,7 @@ import { processDocument } from '@/lib/indexing/processors/document'
 import { processImage } from '@/lib/indexing/processors/image'
 import { processAudio } from '@/lib/indexing/processors/audio'
 import { processVideo } from '@/lib/indexing/processors/video'
+import { publishFileChanged } from '@/lib/events/files'
 
 const CONCURRENCY = parseInt(process.env.INDEXING_CONCURRENCY || '3', 10)
 
@@ -54,6 +55,16 @@ export function startIndexingWorker() {
 
       const embedding = await embedText(summary)
       await setDone(fileId, summary, embedding)
+      try {
+        if (file.teamId && file.bucketId) {
+          publishFileChanged(file.teamId, {
+            bucketId: file.bucketId,
+            action: 'indexing-status-changed',
+            key: file.key,
+            indexingStatus: 'DONE',
+          })
+        }
+      } catch { /* non-fatal */ }
     },
     {
       connection: { url: process.env.REDIS_URL },
@@ -64,6 +75,20 @@ export function startIndexingWorker() {
   worker.on('failed', async (job, err) => {
     if (job && job.attemptsMade >= 3) {
       await setFailed(job.data.fileId, err.message).catch(() => {})
+      try {
+        const f = await prisma.file.findUnique({
+          where: { id: job.data.fileId },
+          select: { teamId: true, bucketId: true, key: true },
+        })
+        if (f?.teamId && f.bucketId) {
+          publishFileChanged(f.teamId, {
+            bucketId: f.bucketId,
+            action: 'indexing-status-changed',
+            key: f.key,
+            indexingStatus: 'FAILED',
+          })
+        }
+      } catch { /* non-fatal */ }
     }
   })
 
