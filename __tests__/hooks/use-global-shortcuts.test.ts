@@ -21,19 +21,19 @@ const baseOptions = {
 beforeEach(() => jest.clearAllMocks())
 
 describe('useGlobalShortcuts', () => {
-  test('Cmd+K calls onOpenSearch when no input is focused', () => {
+  test('Cmd+K is handled by AiSearchPalette — useGlobalShortcuts does NOT call onOpenSearch', () => {
     renderHook(() => useGlobalShortcuts(baseOptions))
     fireKey('k', { metaKey: true })
-    expect(baseOptions.onOpenSearch).toHaveBeenCalledTimes(1)
+    expect(baseOptions.onOpenSearch).not.toHaveBeenCalled()
   })
 
-  test('Cmd+K calls onOpenSearch even when an input IS focused', () => {
+  test('Cmd+K with input focused — still does NOT call onOpenSearch', () => {
     const input = document.createElement('input')
     document.body.appendChild(input)
     input.focus()
     renderHook(() => useGlobalShortcuts(baseOptions))
     fireKey('k', { metaKey: true })
-    expect(baseOptions.onOpenSearch).toHaveBeenCalledTimes(1)
+    expect(baseOptions.onOpenSearch).not.toHaveBeenCalled()
     document.body.removeChild(input)
   })
 

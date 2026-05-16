@@ -25,7 +25,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const teamId = await getTeamIdOrFail(session, request)
   if (!teamId) return NextResponse.json({ message: 'Team not selected' }, { status: 400 })
 
-  await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'READ')
+  await requireScreenPermission(session, teamId, 'ADMIN_SETTINGS', 'VIEW')
 
   const openaiKey = process.env.OPENAI_API_KEY
   const anthropicKey = process.env.ANTHROPIC_API_KEY
