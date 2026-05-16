@@ -76,6 +76,16 @@ export function KeyboardShortcutsModal({ open, onClose }: KeyboardShortcutsModal
       ],
     },
     {
+      heading: 'Search Palette',
+      rows: [
+        { label: 'Open / close palette', keys: ['⌘K'] },
+        { label: 'Navigate results', keys: ['↑', '↓'] },
+        { label: 'Open file preview', keys: ['↵'] },
+        { label: 'Full results page', keys: ['⌘↵'] },
+        { label: 'Close palette', keys: ['Esc'] },
+      ],
+    },
+    {
       heading: 'Links Page',
       rows: [
         { label: 'Copy URL', keys: ['C'] },
