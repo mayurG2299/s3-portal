@@ -430,7 +430,7 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="px-4 py-6 border-t border-slate-200 dark:border-white/5">
-          <ProfileActions isCollapsed={!sidebarExpanded} />
+          <ProfileActions isCollapsed={!sidebarExpanded} email={email} />
         </div>
       </aside>
     </>
