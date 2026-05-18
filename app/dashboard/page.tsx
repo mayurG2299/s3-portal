@@ -6,7 +6,7 @@ import { SCREENS } from '@/lib/screen-permissions'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import { FolderOpen, HardDrives, UsersThree, LinkSimple, ArrowRight } from '@phosphor-icons/react/dist/ssr'
-import { LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ActionCenter } from '@/components/dashboard/action-center'
 import { FirstTimeWizard } from '@/components/onboarding/FirstTimeWizard'
@@ -113,22 +113,17 @@ export default async function DashboardPage() {
   // If user has no teams, show a special UI state
   if (!activeTeamId || !stats || stats.teamsCount === 0) {
     return (
-      <div className="max-w-2xl mx-auto py-24 px-4 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
-        <div className="w-24 h-24 mb-8 flex items-center justify-center rounded-3xl bg-muted border-2 border-dashed border-border">
-          <UsersThree className="w-12 h-12 text-muted-foreground" />
+      <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+          <Users size={28} className="text-primary/60" strokeWidth={1.5} />
         </div>
-        <h2 className="text-2xl font-black text-foreground mb-2 text-center">No Teams Found</h2>
-        <p className="text-muted-foreground text-center mb-6 max-w-md">
-          You are not a member of any team, or your last team was removed. To get started, join a team or create a new one.
+        <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Teams Yet</h2>
+        <p className="text-sm text-muted-foreground max-w-xs mb-6">
+          Create a team to get started with your storage workspace.
         </p>
-        <div className="flex gap-4">
-          <Link href="/dashboard/teams/new">
-            <Button className="btn-primary-gradient font-bold px-6 py-3 rounded-xl">Create Team</Button>
-          </Link>
-          <Link href="/dashboard/teams">
-            <Button variant="outline" className="font-bold px-6 py-3 rounded-xl">Join Team</Button>
-          </Link>
-        </div>
+        <Button asChild className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+          <Link href="/dashboard/teams">Create Team</Link>
+        </Button>
       </div>
     )
   }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown, MoreHorizontal } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -74,7 +74,7 @@ export default function FilesPage() {
     setBucket,
     handleTeamAccessFailure,
   } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions, isAdmin } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions, isAdmin } = useRBAC()
   const canAccessFiles = canViewScreen(SCREENS.FILES_LIST)
   const [files, setFiles] = useState<StoredFile[]>([])
   const [indexingStatuses, setIndexingStatuses] = useState<Record<string, IndexingStatus>>({})
@@ -314,10 +314,10 @@ export default function FilesPage() {
   }, [files, isFolder])
 
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessFiles) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessFiles) {
       router.replace('/dashboard')
     }
-  }, [canAccessFiles, loading, loadingScreenPermissions, router])
+  }, [canAccessFiles, loading, loadingScreenPermissions, screenPermissions, router])
 
   useEffect(() => {
     if (!selectedBucketId) {
@@ -401,7 +401,15 @@ export default function FilesPage() {
     }
   }, [isUploadOpen])
 
-  if (loading || loadingScreenPermissions || !canAccessFiles) {
+  const handleAbort = useCallback(async (fileIndex: number) => {
+    const controller = uploadAbortControllers.current.get(fileIndex)
+    if (controller) {
+      controller.abort()
+      uploadAbortControllers.current.delete(fileIndex)
+    }
+  }, [])
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessFiles) {
     return null
   }
 
@@ -640,14 +648,6 @@ export default function FilesPage() {
     setIsUploadOpen(false)
     fetchFiles()
   }
-
-  const handleAbort = useCallback(async (fileIndex: number) => {
-    const controller = uploadAbortControllers.current.get(fileIndex)
-    if (controller) {
-      controller.abort()
-      uploadAbortControllers.current.delete(fileIndex)
-    }
-  }, [])
 
   function handleDelete(file: StoredFile) {
     setConfirmDelete({ open: true, file })
@@ -1411,24 +1411,15 @@ export default function FilesPage() {
           </div>
         )}
         {!selectedBucketId ? (
-          <Card className="p-12 text-center bg-muted/30 border-border">
-            <p className="text-muted-foreground mb-3">
-              Select AWS Credentials and a Storage Bucket to browse files
+          <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+              <FolderOpen size={28} className="text-primary/60" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Bucket Selected</h2>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Select a credential and bucket from the sidebar to browse your files.
             </p>
-            <p className="text-xs text-muted-foreground/80 mb-5">
-              Credentials: {activeIdentity ? activeIdentity.name : 'Not selected'} | Bucket: {availableBuckets.find((bucket) => bucket.id === selectedBucketId)?.bucket || 'Not selected'}
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsContextExpanded(true)
-                window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-              className="lg:hidden"
-            >
-              Choose Context
-            </Button>
-          </Card>
+          </div>
         ) : loadError ? (
           <Card className="p-12 text-center bg-destructive/10 border-destructive/30">
             <Folder className="mx-auto h-12 w-12 text-destructive mb-4" />
@@ -1440,18 +1431,18 @@ export default function FilesPage() {
             </Button>
           </Card>
           ) : files.length === 0 && !isRefreshing ? (
-            <Card className="p-12 text-center bg-muted/30 border-border">
-              <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery.trim().length >= 3 ? `No results found for "${searchQuery}"` : 'No files yet'}
-                </p>
-                {!searchQuery && (
-                  <Button onClick={() => setIsUploadOpen(true)}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Files
-                  </Button>
-                )}
-            </Card>
+            <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <FolderOpen size={28} className="text-primary/60" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-lg font-black text-foreground tracking-tight mb-2">This Folder Is Empty</h2>
+              <p className="text-sm text-muted-foreground max-w-xs mb-6">
+                Upload files to populate this folder.
+              </p>
+              <Button onClick={() => setIsUploadOpen(true)} className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+                Upload Files
+              </Button>
+            </div>
         ) : (
                 <>
                   {isTruncated && !truncationDismissed && (
