@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
-import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye } from 'lucide-react'
+import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { formatRelativeTime, cn } from '@/lib/utils'
@@ -170,11 +170,9 @@ export default function InvitationsPage() {
                     disabled={processing === invite.id}
                     className="h-9 px-4 rounded-xl text-xs font-bold border-rose-500/30 text-rose-500 hover:bg-rose-500/5 hover:border-rose-500/50 dark:border-rose-500/20 transition-all"
                   >
-                    {processing === invite.id ? (
-                      <div className="h-3.5 w-3.5 border-2 border-rose-400/40 border-t-rose-400 rounded-full animate-spin" />
-                    ) : (
-                      <><XCircle size={14} className="mr-1.5" /> Decline</>
-                    )}
+                    {processing === invite.id && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                    <XCircle size={14} className="mr-1.5" />
+                    Decline
                   </Button>
                   <Button
                     size="sm"
@@ -182,11 +180,9 @@ export default function InvitationsPage() {
                     disabled={processing === invite.id}
                     className="h-9 px-5 rounded-xl text-xs font-black bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 transition-all"
                   >
-                    {processing === invite.id ? (
-                      <div className="h-3.5 w-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <><CheckCircle size={14} className="mr-1.5" /> Accept</>
-                    )}
+                    {processing === invite.id && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                    <CheckCircle size={14} className="mr-1.5" />
+                    Accept
                   </Button>
                 </div>
               </div>

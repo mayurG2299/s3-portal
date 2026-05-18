@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette, Settings as SettingsIcon } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette, Settings as SettingsIcon, Loader2 } from 'lucide-react'
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -762,7 +762,8 @@ export default function SettingsPage() {
                     disabled={isUpdatingCredential}
                     className="h-11 px-8 rounded-xl bg-brand hover:bg-brand text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand/20"
                   >
-                    {isUpdatingCredential ? 'Applying Changes...' : 'Save Configuration'}
+                    {isUpdatingCredential && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Configuration
                   </Button>
                 </div>
               </form>
