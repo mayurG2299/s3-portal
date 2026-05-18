@@ -18,7 +18,6 @@ import {
   Star,
   Activity,
 } from 'lucide-react'
-import { ProfileActions } from './profile-actions'
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
@@ -428,10 +427,6 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Footer */}
-        <div className="px-4 py-6 border-t border-slate-200 dark:border-white/5">
-          <ProfileActions isCollapsed={!sidebarExpanded} email={email} />
-        </div>
       </aside>
     </>
   )

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import {
   LogOut,
+  Loader2,
   Trash2,
   User,
   Database,
@@ -33,8 +33,7 @@ import {
   Moon,
   HelpCircle,
   Keyboard,
-  ChevronRight,
-  MoreHorizontal,
+  ChevronDown,
 } from 'lucide-react'
 
 type Member = {
@@ -43,10 +42,10 @@ type Member = {
   name: string | null
 }
 
-type ProfileActionsProps = {
-  isCollapsed?: boolean
-  name?: string
-  email?: string
+interface HeaderProfileMenuProps {
+  name: string
+  email: string
+  roleTitle: string
 }
 
 function MenuItem({
@@ -90,11 +89,9 @@ function Separator() {
   return <DropdownMenu.Separator className="my-1 border-t border-white/[0.06]" />
 }
 
-export function ProfileActions({ isCollapsed = false, name, email }: ProfileActionsProps) {
-  const pathname = usePathname()
+export function HeaderProfileMenu({ name, email, roleTitle }: HeaderProfileMenuProps) {
   const { selectedTeamId } = useDashboard()
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const [members, setMembers] = useState<Member[]>([])
   const [isOwner, setIsOwner] = useState(false)
@@ -161,8 +158,7 @@ export function ProfileActions({ isCollapsed = false, name, email }: ProfileActi
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', metaKey: true, bubbles: true }))
   }
 
-  const displayName = name || email?.split('@')[0] || 'User'
-  const initials = displayName.substring(0, 2).toUpperCase()
+  const initials = name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()
 
   return (
     <>
@@ -170,42 +166,35 @@ export function ProfileActions({ isCollapsed = false, name, email }: ProfileActi
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
-            className={cn(
-              'w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-slate-300 hover:bg-white/[0.05] hover:text-white transition-colors duration-200 outline-none group',
-              isCollapsed && 'justify-center px-0'
-            )}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-border hover:bg-accent transition-colors duration-200 outline-none"
             aria-label="Profile menu"
           >
-            <div className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white text-[10px] font-black">
+            <div className="text-right hidden sm:block">
+              <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[80px]">{name}</p>
+              <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
+            </div>
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-[10px] font-black text-white shrink-0">
               {initials}
             </div>
-            {!isCollapsed && (
-              <>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-xs font-bold text-slate-200 truncate">{displayName}</p>
-                  {email && <p className="text-[10px] text-slate-500 truncate">{email}</p>}
-                </div>
-                <MoreHorizontal className="h-4 w-4 text-slate-600 group-hover:text-slate-400 shrink-0 transition-colors" />
-              </>
-            )}
+            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
           </button>
         </DropdownMenu.Trigger>
 
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            className="z-[200] min-w-[220px] bg-slate-900 border border-white/10 rounded-2xl p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
-            side="top"
-            align="start"
+            className="z-[200] min-w-[220px] bg-slate-900 border border-white/10 rounded-2xl p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.8)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
+            side="bottom"
+            align="end"
             sideOffset={8}
           >
             <div className="px-3 py-2 mb-1">
-              <p className="text-xs font-bold text-slate-200 truncate">{displayName}</p>
+              <p className="text-xs font-bold text-slate-200 truncate">{name}</p>
               {email && <p className="text-[10px] text-slate-500 truncate">{email}</p>}
             </div>
             <Separator />
 
             <MenuItem icon={User} label="Account" href="/dashboard/account" />
-            <MenuItem icon={Database} label="AI &amp; Indexing" href="/dashboard/settings?tab=ai" />
+            <MenuItem icon={Database} label="AI & Indexing" href="/dashboard/settings?tab=ai" />
 
             <Separator />
 
@@ -239,7 +228,6 @@ export function ProfileActions({ isCollapsed = false, name, email }: ProfileActi
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
 
-      {/* Delete account confirmation dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
@@ -287,7 +275,8 @@ export function ProfileActions({ isCollapsed = false, name, email }: ProfileActi
               disabled={!canDelete || isDeleting}
               onClick={handleDelete}
             >
-              {isDeleting ? 'Deleting...' : 'Delete account'}
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete account
             </Button>
           </div>
         </DialogContent>

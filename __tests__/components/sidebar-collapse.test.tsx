@@ -7,10 +7,6 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/dashboard',
 }))
 
-jest.mock('@/components/dashboard/profile-actions', () => ({
-  ProfileActions: () => <div>profile-actions</div>,
-}))
-
 jest.mock('@/lib/contexts/dashboard-context', () => ({
   useDashboard: () => ({
     selectedTeamId: 'team-1',

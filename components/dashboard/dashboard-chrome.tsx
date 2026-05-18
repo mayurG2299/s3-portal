@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { HeaderProfileMenu } from './header-profile-menu'
 import { GlobalSearch } from '@/components/dashboard/global-search'
 import { AiSearchPalette } from '@/components/dashboard/ai-search-palette'
 import { cn } from '@/lib/utils'
@@ -131,23 +131,11 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
                   }} />
                 </div>
                 <div className={cn(
-                  "flex items-center gap-3",
+                  "flex items-center",
                   "transition-all duration-500 ease-out origin-right",
                   isSearchActive ? "opacity-0 w-0 overflow-hidden scale-95" : "opacity-100 scale-100"
                 )}>
-                  <ThemeToggle />
-                  <div className="h-8 w-px bg-border hidden sm:block" />
-                  <div className="flex items-center gap-3">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[80px]">{name}</p>
-                      <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
-                    </div>
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-brand to-brand-dark p-[1px] shrink-0">
-                      <div className="h-full w-full rounded-[10px] bg-card flex items-center justify-center text-[10px] font-black text-brand">
-                        {name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
+                  <HeaderProfileMenu name={name} email={email} roleTitle={roleTitle} />
                 </div>
               </header>
               <main
