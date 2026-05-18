@@ -79,11 +79,24 @@ function NavLink({
   isActive,
   isExpanded,
   onClick,
-}: NavItem & { isActive: boolean; isExpanded: boolean; onClick: () => void }) {
+  onShowTooltip,
+  onHideTooltip,
+}: NavItem & {
+  isActive: boolean
+  isExpanded: boolean
+  onClick: () => void
+  onShowTooltip?: (label: string, y: number) => void
+  onHideTooltip?: () => void
+}) {
   return (
     <Link
       href={href}
       onClick={onClick}
+      aria-label={label}
+      onMouseEnter={!isExpanded && onShowTooltip
+        ? (e) => onShowTooltip(label, e.currentTarget.getBoundingClientRect().top + e.currentTarget.getBoundingClientRect().height / 2)
+        : undefined}
+      onMouseLeave={!isExpanded ? onHideTooltip : undefined}
       className={cn(
         'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
         isActive
@@ -91,7 +104,6 @@ function NavLink({
           : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
         isExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
       )}
-      aria-label={label}
     >
       {isActive && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full shadow-[0_0_15px_hsl(var(--brand))]" />
@@ -172,6 +184,10 @@ export function Sidebar({
 
   const storageKey = `sidebar-groups:${email}`
 
+  const [tooltip, setTooltip] = useState<{ label: string; top: number } | null>(null)
+  const showTooltip = useCallback((label: string, top: number) => setTooltip({ label, top }), [])
+  const hideTooltip = useCallback(() => setTooltip(null), [])
+
   const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return { files: true, workspace: true, admin: true }
     try {
@@ -217,7 +233,7 @@ export function Sidebar({
       label: 'Workspace',
       items: [
         ...(canViewFiles ? [{ href: '/dashboard/search', label: 'AI Search', icon: Search }] : []),
-        ...(canViewFiles ? [{ href: '/dashboard/recents', label: 'Recents', icon: Star }] : []),
+        ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Recents', icon: Star }] : []),
       ],
     }
   }, [canViewScreen])
@@ -284,6 +300,8 @@ export function Sidebar({
                 isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                 isExpanded={sidebarExpanded}
                 onClick={handleNavClick}
+                onShowTooltip={showTooltip}
+                onHideTooltip={hideTooltip}
               />
             ))}
           </div>
@@ -378,6 +396,8 @@ export function Sidebar({
           ) : (
             <button
               onClick={openSearchPalette}
+              onMouseEnter={(e) => showTooltip('AI Search ⌘K', e.currentTarget.getBoundingClientRect().top + e.currentTarget.getBoundingClientRect().height / 2)}
+              onMouseLeave={hideTooltip}
               className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 hover:border-brand/40 hover:text-brand transition-all duration-200"
               aria-label="Open AI search (⌘K)"
             >
@@ -392,14 +412,14 @@ export function Sidebar({
 
           {workspaceGroup.items.length > 0 && (
             <>
-              {sidebarExpanded && <div className="border-t border-slate-200 dark:border-white/5 my-2" />}
+              <div className="border-t border-slate-200 dark:border-white/5 my-2" />
               {renderGroup(workspaceGroup)}
             </>
           )}
 
           {adminGroup.items.length > 0 && (
             <>
-              {sidebarExpanded && <div className="border-t border-slate-200 dark:border-white/5 my-2" />}
+              <div className="border-t border-slate-200 dark:border-white/5 my-2" />
               {renderGroup(adminGroup)}
             </>
           )}
@@ -428,6 +448,17 @@ export function Sidebar({
         )}
 
       </aside>
+
+      {!sidebarExpanded && tooltip && (
+        <div
+          className="fixed z-[200] pointer-events-none"
+          style={{ left: 88, top: tooltip.top, transform: 'translateY(-50%)' }}
+        >
+          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest whitespace-nowrap shadow-xl">
+            {tooltip.label}
+          </div>
+        </div>
+      )}
     </>
   )
 }

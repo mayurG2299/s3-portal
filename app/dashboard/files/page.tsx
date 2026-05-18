@@ -1070,7 +1070,15 @@ export default function FilesPage() {
       <header className="mb-5">
         <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Files</h1>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <FolderOpen size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
+                <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
+              </div>
+            </div>
             {selectedBucketId && (() => {
               const breadcrumbs = getBreadcrumbs()
               const currentFolderName = breadcrumbs[breadcrumbs.length - 1]?.name || 'Root'
@@ -1241,7 +1249,7 @@ export default function FilesPage() {
         </div>
       </header>
 
-      <main>
+      <div>
         {/* Sticky context bar — collapses to a single summary pill on small screens */}
         <div className="sticky top-0 z-20 mb-4">
           <Card className="border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur overflow-hidden">
@@ -1283,9 +1291,9 @@ export default function FilesPage() {
               isContextExpanded ? 'block' : 'hidden lg:grid'
             )}>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">AWS Credentials</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AWS Credentials</Label>
                 <Select value={selectedIdentityId || 'all'} onValueChange={(val) => { setIdentity(val === 'all' ? null : val); setIsContextExpanded(false) }}>
-                  <SelectTrigger className={cn(
+                  <SelectTrigger aria-label="AWS Credentials" className={cn(
                     'h-9 bg-card border-border text-sm',
                     isDashboardLoading && 'animate-pulse opacity-50 pointer-events-none'
                   )}>
@@ -1305,13 +1313,13 @@ export default function FilesPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Storage Bucket</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Storage Bucket</Label>
                 <Select
                   value={selectedBucketId || 'all'}
                   onValueChange={(val) => { setBucket(val === 'all' ? null : val); setIsContextExpanded(false) }}
                   disabled={!selectedIdentityId}
                 >
-                  <SelectTrigger className={cn(
+                  <SelectTrigger aria-label="Storage Bucket" className={cn(
                     'h-9 bg-card border-border text-sm disabled:opacity-50',
                     isDashboardLoading && 'animate-pulse opacity-50 pointer-events-none'
                   )}>
@@ -1342,31 +1350,40 @@ export default function FilesPage() {
           </Card>
         )}
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border">
-            <Button
-              variant={viewMode === 'all' ? 'default' : 'ghost'}
-              size="sm"
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-2xl">
+            <button
               onClick={() => setViewMode('all')}
-              className={viewMode === 'all' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'all'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               All
-            </Button>
-            <Button
-              variant={viewMode === 'favorites' ? 'default' : 'ghost'}
-              size="sm"
+            </button>
+            <button
               onClick={() => setViewMode('favorites')}
-              className={viewMode === 'favorites' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'favorites'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               Favorites
-            </Button>
-            <Button
-              variant={viewMode === 'recents' ? 'default' : 'ghost'}
-              size="sm"
+            </button>
+            <button
               onClick={() => setViewMode('recents')}
-              className={viewMode === 'recents' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'recents'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               Recents
-            </Button>
+            </button>
           </div>
           <Input
             placeholder="Filter by tag"
@@ -1667,7 +1684,7 @@ export default function FilesPage() {
                   )}
                 </>
         )}
-      </main>
+      </div>
 
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
         <DialogContent className="max-w-2xl">
@@ -1679,7 +1696,7 @@ export default function FilesPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="upload-tags">Tags (optional)</Label>
+              <Label htmlFor="upload-tags" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tags (optional)</Label>
               <Input
                 id="upload-tags"
                 value={uploadTags}
@@ -1753,7 +1770,7 @@ export default function FilesPage() {
               )}
 
               <div className="space-y-2">
-                <Label>Link Type</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Link Type</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { label: 'Preview Page', value: 'preview' },
@@ -1779,7 +1796,7 @@ export default function FilesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Expiration</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Expiration</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: '1 hour', value: '3600' },

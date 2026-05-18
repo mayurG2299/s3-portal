@@ -225,7 +225,7 @@ export function AiCredentialsTab() {
           </div>
           <div className="flex items-start gap-3">
             <div className="h-5 w-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-[9px] font-black text-brand shrink-0 mt-0.5">2</div>
-            <p><span className="font-semibold text-foreground">Extract</span> — OpenAI Whisper (audio/video), GPT-4o Vision (images), or direct text extraction for documents.</p>
+            <p><span className="font-semibold text-foreground">Extract</span> — OpenAI Whisper (audio/video), Claude Vision (images), or direct text extraction for documents.</p>
           </div>
           <div className="flex items-start gap-3">
             <div className="h-5 w-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-[9px] font-black text-brand shrink-0 mt-0.5">3</div>

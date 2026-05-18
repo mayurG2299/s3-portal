@@ -17,7 +17,7 @@ export function ActionCenter({ actions }: ActionCenterProps) {
           Action Center
         </h4>
         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">
-          Priority Queue
+          Status
         </span>
       </div>
 

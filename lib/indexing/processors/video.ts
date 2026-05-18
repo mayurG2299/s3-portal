@@ -8,7 +8,8 @@ import type { AWSConfig } from '@/lib/aws'
 ffmpeg.setFfmpegPath(ffmpegStatic as string)
 
 const MAX_VIDEO_BYTES = (parseInt(process.env.INDEXING_MAX_VIDEO_MB || '500', 10)) * 1024 * 1024
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+let _openai: OpenAI | null = null
+const getOpenAI = () => { if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY }); return _openai }
 
 interface FileRecord {
   name: string
@@ -41,8 +42,8 @@ export async function processVideo(file: FileRecord, awsConfig: AWSConfig): Prom
     const audioBuffer = await extractAudio(videoStream)
     if (!audioBuffer || audioBuffer.length === 0) return null
 
-    const audioFile = new File([audioBuffer], `${file.name}.mp3`, { type: 'audio/mpeg' })
-    const transcription = await openai.audio.transcriptions.create({
+    const audioFile = new File([new Uint8Array(audioBuffer)], `${file.name}.mp3`, { type: 'audio/mpeg' })
+    const transcription = await getOpenAI().audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
     })

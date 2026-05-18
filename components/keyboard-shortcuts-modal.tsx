@@ -114,8 +114,8 @@ export function KeyboardShortcutsModal({ open, onClose }: KeyboardShortcutsModal
                 {section.heading}
               </p>
               <div className="space-y-1">
-                {section.rows.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between text-sm">
+                {section.rows.map((row, i) => (
+                  <div key={`${row.label}-${i}`} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{row.label}</span>
                     <div className="flex gap-1">
                       {row.keys.map((key) => (

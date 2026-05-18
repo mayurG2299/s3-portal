@@ -1,4 +1,3 @@
-import pdfParse from 'pdf-parse'
 import mammoth from 'mammoth'
 import { getS3ObjectBody } from '@/lib/aws'
 import type { AWSConfig } from '@/lib/aws'
@@ -27,6 +26,8 @@ export async function processDocument(file: FileRecord, awsConfig: AWSConfig): P
     const ct = (file.contentType || '').toLowerCase()
 
     if (ct === 'application/pdf') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
       const parsed = await pdfParse(buffer)
       return parsed.text.slice(0, MAX_CHARS) || null
     }

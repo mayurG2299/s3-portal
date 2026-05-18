@@ -3,7 +3,8 @@ import { generatePresignedDownloadUrl } from '@/lib/aws'
 import type { AWSConfig } from '@/lib/aws'
 
 const MAX_IMAGE_BYTES = (parseInt(process.env.INDEXING_MAX_IMAGE_MB || '20', 10)) * 1024 * 1024
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+let _anthropic: Anthropic | null = null
+const getAnthropic = () => { if (!_anthropic) _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }); return _anthropic }
 
 interface FileRecord {
   name: string
@@ -17,7 +18,7 @@ export async function processImage(file: FileRecord, awsConfig: AWSConfig): Prom
 
   try {
     const url = await generatePresignedDownloadUrl(awsConfig, file.key, 900) // 15 min
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
       messages: [

@@ -289,8 +289,8 @@ export default async function TeamsPage({
 
               {team.ownerId === session.user.id && (
                 <div className="pt-4 border-t border-border space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team CRUD</h4>
-                  <form action={updateTeamAction} className="space-y-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Manage Team</h4>
+                  <form action={updateTeamAction} className="space-y-2" key={`crud-${team.id}`}>
                     <input type="hidden" name="teamId" value={team.id} />
                     <input
                       name="name"

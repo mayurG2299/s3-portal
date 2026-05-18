@@ -155,7 +155,7 @@ export function HeaderProfileMenu({ name, email, roleTitle }: HeaderProfileMenuP
   }
 
   const openKeyboardShortcuts = () => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: ',', metaKey: true, bubbles: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
   }
 
   const initials = name ? name.substring(0, 2).toUpperCase() : email.substring(0, 2).toUpperCase()
@@ -171,7 +171,7 @@ export function HeaderProfileMenu({ name, email, roleTitle }: HeaderProfileMenuP
           >
             <div className="text-right hidden sm:block">
               <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[80px]">{name}</p>
-              <p className="text-[8px] font-bold text-brand uppercase tracking-widest">{roleTitle}</p>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{roleTitle}</p>
             </div>
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-[10px] font-black text-white shrink-0">
               {initials}
