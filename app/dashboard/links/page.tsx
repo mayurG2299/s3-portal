@@ -189,19 +189,16 @@ export default function LinksPage() {
             <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Synchronizing Link Data...</p>
           </div>
         ) : links.length === 0 ? (
-            <div className="glass-card p-20 text-center">
-              <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 mb-6">
-                <LinkIcon className="h-10 w-10 text-primary/60" />
+            <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <Link2 size={28} className="text-primary/60" strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2 tracking-tight">No Active Links</h3>
-              <p className="text-muted-foreground max-w-xs mx-auto font-medium mb-8">
+              <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Active Links</h2>
+              <p className="text-sm text-muted-foreground max-w-xs mb-6">
                 You haven&apos;t shared any files yet. Go to your Files Explorer to generate secure links.
-            </p>
-              <Button
-                asChild
-                className="btn-primary-gradient h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs"
-              >
-                <a href="/dashboard/files">Go to Explorer</a>
+              </p>
+              <Button asChild className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+                <a href="/dashboard/files">Go to Files</a>
               </Button>
             </div>
         ) : (

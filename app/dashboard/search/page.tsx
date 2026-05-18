@@ -143,6 +143,23 @@ export default function SearchPage() {
 
   return (
     <div className="flex flex-col h-full -m-6 lg:-m-8">
+      {/* Page heading */}
+      <div className="px-6 lg:px-8 pt-6 pb-0 shrink-0">
+        <div className="mb-6 animate-slide-up">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Search size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                AI <span className="text-gradient">Search</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Search your files with natural language.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Search header */}
       <div className="px-6 lg:px-8 py-5 border-b border-border bg-card/40 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3 max-w-2xl">
@@ -221,10 +238,14 @@ export default function SearchPage() {
           )}
 
           {query && !loading && filteredResults.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <File className="h-10 w-10 text-muted-foreground mb-3 opacity-40" />
-              <p className="text-sm font-semibold text-foreground">No results</p>
-              <p className="text-xs text-muted-foreground mt-1">Try different keywords or a broader query</p>
+            <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <Search size={28} className="text-primary/60" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Results Found</h2>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Try different keywords or a broader natural-language query.
+              </p>
             </div>
           )}
 

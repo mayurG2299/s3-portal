@@ -31,22 +31,17 @@ function RoleIcon({ name, level }: { name: string; level?: number }) {
 export default function InvitationsPage() {
   const router = useRouter()
   const { invitations, acceptInvitation, rejectInvitation, isLoading } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions } = useRBAC()
   const invites = useMemo(() => invitations as Invite[], [invitations])
   const [processing, setProcessing] = useState<string | null>(null)
   const canAccessInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
 
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessInvitations) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessInvitations) {
       router.replace('/dashboard')
     }
-  }, [canAccessInvitations, loading, loadingScreenPermissions, router])
+  }, [canAccessInvitations, loading, loadingScreenPermissions, screenPermissions, router])
 
-  if (loading || loadingScreenPermissions || !canAccessInvitations) {
-    return null
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { focusedIndex, itemRefs } = useListNav({
     items: invites,
     isModalOpen: false,
@@ -55,6 +50,10 @@ export default function InvitationsPage() {
       onDecline: (invite) => handleAction(invite.id, 'decline'),
     },
   })
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessInvitations) {
+    return null
+  }
 
   async function handleAction(inviteId: string, action: 'accept' | 'decline') {
     setProcessing(inviteId)
@@ -97,7 +96,7 @@ export default function InvitationsPage() {
     <div className="max-w-3xl">
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
             <Mail size={20} strokeWidth={2.5} />
           </div>
@@ -105,19 +104,19 @@ export default function InvitationsPage() {
             <h1 className="text-2xl font-black tracking-tight text-foreground">
               Team <span className="text-gradient">Invitations</span>
             </h1>
-            <p className="text-sm text-muted-foreground">Accept or decline pending workspace invitations</p>
+            <p className="text-sm text-muted-foreground">Accept or decline pending workspace invitations.</p>
           </div>
         </div>
       </div>
 
       {invites.length === 0 ? (
-        <div className="glass-card flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-          <div className="h-20 w-20 rounded-3xl bg-muted flex items-center justify-center mb-6">
-            <Mail size={36} className="text-muted-foreground/80" strokeWidth={1.5} />
+        <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Mail size={28} className="text-primary/60" strokeWidth={1.5} />
           </div>
-          <h2 className="text-lg font-black text-foreground tracking-tight mb-1">No Pending Invitations</h2>
+          <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Pending Invitations</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            You&apos;re all caught up! When someone invites you to their workspace, it will appear here.
+            You&apos;re all caught up. When someone invites you to their workspace, it will appear here.
           </p>
         </div>
       ) : (
