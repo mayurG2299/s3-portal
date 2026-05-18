@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Link as LinkIcon, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff, Ban, Eye, HardDriveDownload } from 'lucide-react'
+import { Link as LinkIcon, Link2, Copy, Trash2, Clock, Download, ExternalLink, Shield, Lock, EyeOff, Ban, Eye, HardDriveDownload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from '@/hooks/use-toast'
@@ -37,21 +37,16 @@ export default function LinksPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions } = useRBAC()
   const canAccessLinks = canViewScreen(SCREENS.LINKS_LIST)
   const activeTeamId = selectedTeamId
 
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessLinks) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessLinks) {
       router.replace('/dashboard')
     }
-  }, [canAccessLinks, loading, loadingScreenPermissions, router])
+  }, [canAccessLinks, loading, loadingScreenPermissions, screenPermissions, router])
 
-  if (loading || loadingScreenPermissions || !canAccessLinks) {
-    return null
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const { focusedIndex, itemRefs } = useListNav({
     items: links,
     isModalOpen: false,
@@ -66,6 +61,10 @@ export default function LinksPage() {
     fetchLinks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId])
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessLinks) {
+    return null
+  }
 
   async function fetchLinks() {
     try {
@@ -167,13 +166,18 @@ export default function LinksPage() {
         </div>
       )}
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Shared <span className="gradient-text">Links</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Manage and monitor your active file sharing endpoints.
-        </p>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Link2 size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Shared <span className="text-gradient">Links</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Manage and monitor your active file sharing endpoints.</p>
+          </div>
+        </div>
       </div>
 
       <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>

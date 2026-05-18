@@ -154,20 +154,19 @@ export default async function TeamsPage({
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Team <span className="gradient-text">Management</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Organize your workspace, manage roles and collaborate securely.
-        </p>
-        <div className="mt-4 flex items-center gap-2 justify-center lg:justify-start">
-          <Button asChild className="h-9 rounded-xl">
-            <Link href="/dashboard/teams/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Team
-            </Link>
-          </Button>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Users size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Manage <span className="text-gradient">Teams</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Organize and manage your workspaces.</p>
+            </div>
+          </div>
         </div>
       </div>
 

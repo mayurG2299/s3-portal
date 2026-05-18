@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/hooks/use-toast'
@@ -145,11 +145,19 @@ export default function CredentialsPage() {
         </div>
       ) : (
         <>
-          <header className="bg-white/80 dark:bg-slate-950/50 backdrop-blur-md border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <h1 className="text-2xl font-bold">AWS Credentials</h1>
+          <div className="mb-8 animate-slide-up">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <KeyRound size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-foreground">
+                  AWS <span className="text-gradient">Credentials</span>
+                </h1>
+                <p className="text-sm text-muted-foreground">Manage your AWS access keys and storage identities.</p>
+              </div>
             </div>
-          </header>
+          </div>
 
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {personalScopeFallback && (

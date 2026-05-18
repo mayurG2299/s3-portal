@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette, Settings as SettingsIcon } from 'lucide-react'
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -54,20 +54,18 @@ export default function SettingsPage() {
   const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions } = useRBAC()
   const canAccessSettings =
     canViewScreen(SCREENS.CREDENTIALS_LIST) ||
     canViewScreen(SCREENS.TEAM_SETTINGS)
 
+  const activeTeamId = selectedTeamId
+
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessSettings) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessSettings) {
       router.replace('/dashboard')
     }
-  }, [canAccessSettings, loading, loadingScreenPermissions, router])
-
-  if (loading || loadingScreenPermissions || !canAccessSettings) {
-    return null
-  }
+  }, [canAccessSettings, loading, loadingScreenPermissions, screenPermissions, router])
 
   useEffect(() => {
     setActiveTheme(getSavedTheme())
@@ -83,7 +81,6 @@ export default function SettingsPage() {
     setActiveMode(mode)
     applyThemeAndMode(activeTheme, mode)
   }, [activeTheme])
-  const activeTeamId = selectedTeamId
 
   const fetchCredentials = useCallback(async () => {
     try {
@@ -125,6 +122,10 @@ export default function SettingsPage() {
       )
     }
   }, [editingCredential])
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessSettings) {
+    return null
+  }
 
   async function handleDeleteCredential(id: string) {
     if (!confirm('Are you sure you want to delete this credential?')) return
@@ -316,13 +317,18 @@ export default function SettingsPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Platform <span className="gradient-text">Configuration</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Connect and manage your cloud infrastructure integrations.
-        </p>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <SettingsIcon size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Platform <span className="text-gradient">Settings</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Configure appearance, credentials, and AI integrations.</p>
+          </div>
+        </div>
       </div>
 
       {/* Tab navigation */}

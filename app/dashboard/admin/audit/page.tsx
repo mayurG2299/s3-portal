@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 import { getResolvedUserTeamScope } from '@/lib/team-selection'
 import { Prisma } from '@prisma/client'
 import { getUserRoleInTeam, isOwner } from '@/lib/permissions'
-import { Clock, User, Activity, Shield, CheckCircle2, XCircle } from 'lucide-react'
+import { Clock, User, Activity, Shield, CheckCircle2, XCircle, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default async function AuditLogPage() {
@@ -45,13 +45,18 @@ export default async function AuditLogPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Security <span className="gradient-text">Audit Logs</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Comprehensive timeline of user activities and system events.
-        </p>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <ClipboardList size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Security <span className="text-gradient">Audit Logs</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Comprehensive timeline of all team actions.</p>
+          </div>
+        </div>
       </div>
 
       <div className="glass-card !p-0 overflow-hidden animate-slide-up shadow-2xl">

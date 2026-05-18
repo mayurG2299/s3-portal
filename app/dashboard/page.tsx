@@ -6,6 +6,7 @@ import { SCREENS } from '@/lib/screen-permissions'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import { FolderOpen, HardDrives, UsersThree, LinkSimple, ArrowRight } from '@phosphor-icons/react/dist/ssr'
+import { LayoutDashboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ActionCenter } from '@/components/dashboard/action-center'
 import { FirstTimeWizard } from '@/components/onboarding/FirstTimeWizard'
@@ -185,26 +186,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mb-10 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="hidden md:block">
-            <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-              Welcome back, <span className="gradient-text">{session.user.name || 'Admin'}</span>
-            </h2>
-            <p className="text-muted-foreground font-medium">
-              Manage your S3 storage, upload files, and share with your team.
-            </p>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <LayoutDashboard size={20} strokeWidth={2.5} />
           </div>
-          {heroPrimaryAction && (
-            <div className="flex items-center">
-              <Link href={heroPrimaryAction.href}>
-                <Button className="rounded-xl h-12 btn-primary-gradient font-bold text-sm px-6 gap-2">
-                  {heroPrimaryAction.label}
-                  <ArrowRight size={16} weight="bold" />
-                </Button>
-              </Link>
-            </div>
-          )}
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              My <span className="text-gradient">Dashboard</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Your storage workspace overview.</p>
+          </div>
         </div>
       </div>
 

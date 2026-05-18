@@ -58,7 +58,7 @@ function StatCard({ label, value, icon: Icon, color, bgColor, borderColor, subti
 
 export default function IndexingDashboardPage() {
   const router = useRouter()
-  const { isAdmin } = useRBAC()
+  const { isAdmin, loading: sessionLoading, loadingRole, role } = useRBAC()
   const { selectedTeamId } = useDashboard()
   const [stats, setStats] = useState<IndexingStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,12 +67,12 @@ export default function IndexingDashboardPage() {
   const [retrying, setRetrying] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // RBAC guard — redirect non-admin
+  // RBAC guard — redirect non-admin only after role has loaded
   useEffect(() => {
-    if (isAdmin === false) {
+    if (!sessionLoading && !loadingRole && role !== null && !isAdmin) {
       router.replace('/dashboard')
     }
-  }, [isAdmin, router])
+  }, [isAdmin, sessionLoading, loadingRole, role, router])
 
   const fetchStats = useCallback(async () => {
     try {
@@ -126,25 +126,26 @@ export default function IndexingDashboardPage() {
     }
   }, [fetchStats])
 
-  if (!isAdmin) return null
+  if (sessionLoading || loadingRole || role === null || !isAdmin) return null
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand border border-brand/20">
-            <Activity size={24} strokeWidth={2} />
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Activity size={20} strokeWidth={2.5} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-foreground tracking-tight">Indexing Pipeline</h2>
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-              Monitor and control the AI indexing queue
-            </p>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Indexing <span className="text-gradient">Pipeline</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Monitor and control the AI indexing queue.</p>
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3">
           {/* Pipeline status badge */}
           <div className={cn(
             'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold',
@@ -181,7 +182,6 @@ export default function IndexingDashboardPage() {
             <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
             Refresh
           </button>
-        </div>
       </div>
 
       {/* Stat cards */}
