@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { canManageTeam } from '@/lib/permissions'
+import { isTeamOwner } from '@/lib/permissions'
 import { logUserAction } from '@/lib/audit'
 import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
-    if (!(await canManageTeam(session.user.id, targetTeamId))) {
+    // Only OWNER can modify role permissions
+    if (!(await isTeamOwner(session.user.id, targetTeamId))) {
       await logUserAction({
         request,
         action: "ROLE_PERMISSION_UPDATE",
