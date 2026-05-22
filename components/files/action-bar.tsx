@@ -50,7 +50,7 @@ export function FilesActionBar({
         <>
           <Button
             onClick={onShare}
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={disabled}
           >
@@ -59,7 +59,7 @@ export function FilesActionBar({
           </Button>
           <Button
             onClick={onDownload}
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={disabled || isDownloading}
           >

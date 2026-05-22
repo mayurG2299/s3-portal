@@ -75,7 +75,7 @@ export function MobileFilesFAB({
               <>
                 <Button
                   onClick={() => closeAndExecute(onShare)}
-                  variant="secondary"
+                  variant="outline"
                   className="w-full justify-start"
                   disabled={disabled}
                 >
@@ -84,7 +84,7 @@ export function MobileFilesFAB({
                 </Button>
                 <Button
                   onClick={() => closeAndExecute(onDownload)}
-                  variant="secondary"
+                  variant="outline"
                   className="w-full justify-start"
                   disabled={disabled || isDownloading}
                 >
