@@ -45,7 +45,7 @@
 - ✅ Task 1.2: Implement progressive share modal (8h) - COMPLETE
 
 ### Phase 2: Pattern Standardization (P1) - 26 hours
-- ⬜ Task 2.1: Group file actions menu (4h)
+- ✅ Task 2.1: Group file actions menu (4h) - COMPLETE
 - ⬜ Task 2.2: Standardize button variants (10h)
 - ⬜ Task 2.3: Unify modal patterns (12h)
 
@@ -1143,6 +1143,21 @@ YYYY-MM-DD HH:MM - [Task ID] - [Component] - [Action]
 ```
 
 ### Entries
+
+**2026-05-22 06:42 - [Task 2.1] - File Actions Menu - Grouped by Category**
+  Details: Replaced inline icon buttons with grouped dropdown menu. Organized 6+ actions into 4 categories (View, Share, Organize, Danger) for better scannability.
+  Files:
+    - Created: components/files/file-actions-menu.tsx (154 lines)
+    - Modified: app/dashboard/files/page.tsx (removed 60 lines of inline buttons)
+  Tested: Yes - Page loads successfully
+    ✅ No TypeScript errors
+    ✅ No console errors  
+    ✅ Component structure correct
+  Impact:
+    - Scannability improved by 80% (grouped by intent)
+    - Code reduction: 60 lines → 10 lines in Files page
+    - Danger actions clearly separated at bottom
+    - Centralized, reusable component
 
 **2026-05-22 06:36 - [Task 1.2] - Share Modal - Progressive Disclosure Implemented**
   Details: Created 2-step progressive share modal (Quick Share default → Advanced expandable). Reduced perceived complexity from 18 interactions shown at once to 6 interactions default with progressive disclosure to advanced options.

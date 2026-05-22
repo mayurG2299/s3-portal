@@ -7,6 +7,7 @@ import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, Refres
 import { FilesActionBar } from '@/components/files/action-bar'
 import { MobileFilesFAB } from '@/components/files/mobile-fab'
 import { ShareModal, ShareLinkOptions } from '@/components/files/share-modal'
+import { FileActionsMenu } from '@/components/files/file-actions-menu'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -1395,83 +1396,30 @@ export default function FilesPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                    {!isFolder(file) && (
-                      <Button
-                        variant="ghost"
-                            size="sm"
-                        onClick={() => handleToggleFavorite(file)}
-                      >
-                            <Star
-                              className={
-                                file.isFavorite
-                                  ? 'h-4 w-4 text-yellow-500'
-                                  : 'h-4 w-4 text-gray-400'
-                              }
-                            />
-                      </Button>
-                    )}
-                        {/* Preview button remains for non-direct mode */}
-                    {!isFolder(file) && (() => {
-                      const t = getPreviewType(file.contentType, file.name)
-                      if (t !== 'UNSUPPORTED') {
-                        return (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setPreviewFile(file)
-                              setIsPreviewOpen(true)
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )
-                      }
-                      return null
-                    })()}
-                        {/* Direct S3/CDN link button */}
-                        {!isFolder(file) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setIsShareOpen(false)
-                              setShareTargets([])
-                              setDirectLinkFile(file)
-                              setIsDirectLinkOpen(true)
-                            }}
-                          >
-                            <Database className="h-4 w-4" />
-                          </Button>
-                        )}
-                    <Button
-                      variant="ghost"
-                          size="sm"
-                      onClick={() => setEditingTagsFile(file)}
-                    >
-                      <Tag className="h-4 w-4" />
-                    </Button>
-                    {!isFolder(file) && (
-                      <Button
-                        variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setDirectLinkFile(null)
-                              setIsDirectLinkOpen(false)
-                              setShareTargets([file])
-                              setIsShareOpen(true)
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                          size="sm"
-                      onClick={() => handleDelete(file)}
-                    >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                        <FileActionsMenu
+                          file={file}
+                          isFolder={isFolder(file)}
+                          canPreview={!isFolder(file) && getPreviewType(file.contentType, file.name) !== 'UNSUPPORTED'}
+                          onPreview={() => {
+                            setPreviewFile(file)
+                            setIsPreviewOpen(true)
+                          }}
+                          onShare={() => {
+                            setDirectLinkFile(null)
+                            setIsDirectLinkOpen(false)
+                            setShareTargets([file])
+                            setIsShareOpen(true)
+                          }}
+                          onDirectLink={() => {
+                            setIsShareOpen(false)
+                            setShareTargets([])
+                            setDirectLinkFile(file)
+                            setIsDirectLinkOpen(true)
+                          }}
+                          onEditTags={() => setEditingTagsFile(file)}
+                          onToggleFavorite={() => handleToggleFavorite(file)}
+                          onDelete={() => handleDelete(file)}
+                        />
                   </div>
                 </div>
                   </Card>
