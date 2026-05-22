@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import {
   Search,
   FileText,
@@ -243,9 +244,17 @@ export default function SearchPage() {
                 <Search size={28} className="text-primary/60" strokeWidth={1.5} />
               </div>
               <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Results Found</h2>
-              <p className="text-sm text-muted-foreground max-w-xs">
+              <p className="text-sm text-muted-foreground max-w-xs mb-6">
                 Try different keywords or a broader natural-language query.
               </p>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setQuery('')} className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+                  Clear Search
+                </Button>
+                <Button asChild className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+                  <a href="/dashboard/files">Browse Files</a>
+                </Button>
+              </div>
             </div>
           )}
 
