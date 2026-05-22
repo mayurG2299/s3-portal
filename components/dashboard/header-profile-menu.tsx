@@ -193,11 +193,6 @@ export function HeaderProfileMenu({ name, email, roleTitle }: HeaderProfileMenuP
             </div>
             <Separator />
 
-            <MenuItem icon={User} label="Account" href="/dashboard/account" />
-            <MenuItem icon={Database} label="AI & Indexing" href="/dashboard/settings?tab=ai" />
-
-            <Separator />
-
             <DropdownMenu.Item
               className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold rounded-lg transition-colors duration-150 cursor-pointer outline-none select-none text-slate-300 hover:bg-white/[0.06] data-[highlighted]:bg-white/[0.06]"
               onSelect={toggleTheme}
