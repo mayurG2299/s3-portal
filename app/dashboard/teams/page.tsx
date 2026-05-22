@@ -113,19 +113,6 @@ export default async function TeamsPage({
     redirect('/dashboard')
   }
 
-  const userTeams = await prisma.teamMember.findMany({
-    where: { userId: session.user.id },
-    include: {
-      team: {
-        select: { id: true, name: true, slug: true, ownerId: true },
-      },
-      role: {
-        select: { name: true, level: true },
-      },
-    },
-    orderBy: { createdAt: 'asc' },
-  })
-
   const hasAccess = await canManageTeam(session.user.id, teamId)
   if (!hasAccess) {
     redirect('/dashboard')
@@ -256,34 +243,6 @@ export default async function TeamsPage({
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Team Members</span>
                   <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{team.members.length} member{team.members.length === 1 ? '' : 's'}</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border space-y-3">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your Teams</h4>
-                <div className="space-y-2">
-                  {userTeams.map((membership) => {
-                    const isActive = membership.team.id === team.id
-                    return (
-                      <div
-                        key={membership.id}
-                        className={cn(
-                          'rounded-lg border px-3 py-2 flex items-center justify-between gap-2',
-                          isActive ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/20'
-                        )}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-foreground truncate">{membership.team.name}</p>
-                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{membership.role.name}</p>
-                        </div>
-                        {!isActive && (
-                          <Button variant="outline" size="sm" asChild className="h-7 px-2 text-[10px]">
-                            <Link href={`/dashboard/teams?teamId=${membership.team.id}`}>Manage</Link>
-                          </Button>
-                        )}
-                      </div>
-                    )
-                  })}
                 </div>
               </div>
 
