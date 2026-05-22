@@ -460,3 +460,11 @@
   --accent:           29 45% 92%;
   --accent-foreground:246 21% 40%;
 }
+
+
+/* Safe area for mobile devices */
+@layer utilities {
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

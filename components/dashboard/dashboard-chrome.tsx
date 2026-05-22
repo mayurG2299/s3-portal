@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
+import { MobileBottomNav } from './mobile-bottom-nav'
 import { HeaderProfileMenu } from './header-profile-menu'
 import { GlobalSearch } from '@/components/dashboard/global-search'
 import { AiSearchPalette } from '@/components/dashboard/ai-search-palette'
@@ -141,12 +142,14 @@ export function DashboardChrome({ name, email, roleTitle, storageUsedBytes, stor
               <main
                 className={cn(
                   'flex-1 overflow-y-auto no-scrollbar transition-all duration-300 ease-in-out',
-                  'p-6 lg:p-8'
+                  'p-6 lg:p-8',
+                  'pb-20 md:pb-6'
                 )}
               >
                 {children}
               </main>
             </div>
+            <MobileBottomNav pendingInviteCount={pendingInviteCount} />
           </div>
           </ShortcutsModalContext.Provider>
         </RBACProvider>
