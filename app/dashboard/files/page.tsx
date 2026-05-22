@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -1558,15 +1559,15 @@ export default function FilesPage() {
                 placeholder="Short note for this folder"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
-                Create Folder
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
+              Create Folder
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1600,15 +1601,15 @@ export default function FilesPage() {
                 placeholder="Short note about this item"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingTagsFile(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveTags} disabled={isSavingTags}>
-                {isSavingTags ? 'Saving...' : 'Save Details'}
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTagsFile(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTags} disabled={isSavingTags}>
+              {isSavingTags ? 'Saving...' : 'Save Details'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

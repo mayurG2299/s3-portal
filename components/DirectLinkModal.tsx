@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/hooks/use-toast'
@@ -52,10 +52,12 @@ export default function DirectLinkModal({ file, open, onClose }: { file: { id: s
               onFocus={e => e.target.select()}
             />
           </div>
-          <Button onClick={handleCopy} disabled={!directUrl || loading} className="w-full">
+        </div>
+        <DialogFooter>
+          <Button onClick={handleCopy} disabled={!directUrl || loading}>
             {loading ? 'Loading...' : 'Copy Link'}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
