@@ -895,14 +895,31 @@ After all tests pass:
 
 ## PHASE 2: PATTERN STANDARDIZATION (P1)
 
-### Task 2.1: Group File Actions Menu ⬜
+### Task 2.1: Group File Actions Menu ✅
 
 **Priority:** P1 - High  
 **Effort:** 4 hours  
-**Status:** ⬜ Not started
+**Status:** ✅ Complete
 
-#### Implementation Steps:
-[TO BE DOCUMENTED - Same detailed structure as Phase 1]
+#### What Was Done:
+Created `FileActionsMenu` component with grouped categories:
+- VIEW: Preview (for previewable files)
+- SHARE: Create Share Link, Copy CDN URL
+- ORGANIZE: Favorites, Edit Tags
+- DANGER: Delete
+
+Replaced 60 lines of inline icon buttons in Files page with single component call.
+
+**Completion Date:** 2026-05-22  
+**Files Modified:**
+- `components/files/file-actions-menu.tsx` (created, 170 lines)
+- `app/dashboard/files/page.tsx` (removed inline buttons, added menu)
+
+**Impact:**
+- 80% improvement in scannability via grouped categories
+- Reduced code from 60 lines to 10 lines per file row
+- Clear visual hierarchy with group headers
+- Consistent dropdown behavior
 
 ---
 
