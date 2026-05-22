@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown } from 'lucide-react'
 import { FilesActionBar } from '@/components/files/action-bar'
 import { MobileFilesFAB } from '@/components/files/mobile-fab'
+import { ShareModal, ShareLinkOptions } from '@/components/files/share-modal'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -119,16 +120,6 @@ export default function FilesPage() {
   })
   const [isSavingCdn, setIsSavingCdn] = useState(false)
   const [isContextExpanded, setIsContextExpanded] = useState(false)
-  const [shareSettings, setShareSettings] = useState({
-    linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
-    expiryMode: 'preset' as 'preset' | 'custom' | 'never',
-    expiresIn: '86400',
-    customExpiry: '',
-    password: '',
-    maxDownloads: '',
-    previewOnly: false,
-    allowPreview: true,
-  })
   const [currentPath, setCurrentPath] = useState(() => searchParams.get('path') ?? '/')
   const [truncationDismissed, setTruncationDismissed] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
@@ -658,43 +649,39 @@ export default function FilesPage() {
     }
   }
 
-  function resolveExpirySeconds(): number | null | undefined {
-    if (shareSettings.expiryMode === 'never') return undefined
-    if (shareSettings.expiryMode === 'preset') return Number(shareSettings.expiresIn)
-    if (!shareSettings.customExpiry) return null
-    const customDate = new Date(shareSettings.customExpiry)
-    if (isNaN(customDate.getTime()) || customDate <= new Date()) return null
-    return Math.floor((customDate.getTime() - Date.now()) / 1000)
-  }
-
-  async function handleShare() {
+  async function handleShare(options: ShareLinkOptions) {
     if (shareTargets.length === 0) return
 
-    const expiresIn = resolveExpirySeconds()
+    // Calculate expiry seconds based on options
+    let expiresIn: number | undefined
 
-    if (expiresIn === null) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid expiry',
-        description: shareSettings.expiryMode === 'custom'
-          ? 'Please pick a future date and time for the custom expiry.'
-          : 'Choose a preset or pick a future date/time',
-      })
-      return
+    if (options.expiryMode === 'never') {
+      expiresIn = undefined
+    } else if (options.expiryMode === 'preset' && options.expiresIn) {
+      expiresIn = Number(options.expiresIn)
+    } else if (options.expiryMode === 'custom' && options.customExpiry) {
+      const customDate = new Date(options.customExpiry)
+      if (isNaN(customDate.getTime()) || customDate <= new Date()) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid expiry',
+          description: 'Please pick a future date and time for the custom expiry.',
+        })
+        return
+      }
+      expiresIn = Math.floor((customDate.getTime() - Date.now()) / 1000)
     }
 
     setIsSharing(true)
 
     const payloadBase = {
       type: 'PRESIGNED',
-      expiresIn: expiresIn || undefined,
-      mode: shareSettings.linkMode,
-      password: shareSettings.password || undefined,
-      maxDownloads: shareSettings.maxDownloads
-        ? Number(shareSettings.maxDownloads)
-        : undefined,
-      allowDownload: shareSettings.linkMode !== 'preview',
-      allowPreview: shareSettings.allowPreview ?? true,
+      expiresIn,
+      mode: options.mode,
+      password: options.password || undefined,
+      maxDownloads: options.maxDownloads ? Number(options.maxDownloads) : undefined,
+      allowDownload: options.mode !== 'preview',
+      allowPreview: true,
     }
 
     try {
@@ -744,7 +731,6 @@ export default function FilesPage() {
       setIsShareOpen(false)
       setShareTargets([])
       setSelectedFileIds([])
-      setShareSettings((prev) => ({ ...prev, password: '', maxDownloads: '' }))
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -1574,168 +1560,16 @@ export default function FilesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <ShareModal
         open={isShareOpen}
         onOpenChange={(open) => {
           setIsShareOpen(open)
           if (!open) setShareTargets([])
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {shareTargets.length === 1 ? 'Share File' : `Share ${shareTargets.length} Files`}
-            </DialogTitle>
-            <DialogDescription>
-              {shareTargets.length === 0
-                ? 'Select at least one file to share'
-                : `Generate a shareable link for ${shareTargets.length === 1 ? shareTargets[0].name : `${shareTargets.length} files`}`}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleShare()
-            }}
-          >
-            <div className="space-y-6">
-              {shareTargets.length > 1 && (
-                <Card className="p-3 text-sm text-muted-foreground bg-muted/50 border-border">
-                  {shareTargets.slice(0, 3).map((file) => file.name).join(', ')}
-                  {shareTargets.length > 3 && ` +${shareTargets.length - 3} more`}
-                </Card>
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Link Type</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Preview Page', value: 'preview' },
-                    { label: 'Auto Download', value: 'download' },
-                    { label: 'Direct S3/CDN', value: 'direct' },
-                  ].map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
-                      onClick={() => {
-                        setShareSettings((prev) => ({
-                          ...prev,
-                          linkMode: option.value as 'preview' | 'download' | 'direct',
-                        }))
-                      }}
-                      className="h-auto py-2 whitespace-normal text-xs"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Expiration</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: '1 hour', value: '3600' },
-                    { label: '1 day', value: '86400' },
-                    { label: '1 week', value: '604800' },
-                    { label: '30 days', value: '2592000' },
-                  ].map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={
-                        shareSettings.expiryMode === 'preset' && shareSettings.expiresIn === option.value
-                          ? 'default'
-                          : 'outline'
-                      }
-                      onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'preset', expiresIn: option.value }))}
-                      className="h-auto py-2 whitespace-normal text-xs"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                  <Button
-                    type="button"
-                    variant={shareSettings.expiryMode === 'custom' ? 'default' : 'outline'}
-                    onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'custom' }))}
-                    className="h-auto py-2 whitespace-normal text-xs"
-                  >
-                    Custom
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={shareSettings.expiryMode === 'never' ? 'default' : 'outline'}
-                    onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'never' }))}
-                    className="h-auto py-2 whitespace-normal text-xs"
-                  >
-                    Never
-                  </Button>
-                </div>
-                {shareSettings.expiryMode === 'custom' && (
-                  <div className="mt-2">
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      Pick expiry date and time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
-                      value={shareSettings.customExpiry}
-                      onChange={(e) => setShareSettings((prev) => ({ ...prev, customExpiry: e.target.value }))}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {shareSettings.linkMode !== 'direct' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="share-password">Password (optional)</Label>
-                    <Input
-                      id="share-password"
-                      type="password"
-                      value={shareSettings.password}
-                      onChange={(e) => setShareSettings((prev) => ({ ...prev, password: e.target.value }))}
-                      placeholder="Set a password for this link"
-                      autoComplete="new-password"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="share-max-downloads">Download Limit (optional)</Label>
-                    <Input
-                      id="share-max-downloads"
-                      type="number"
-                      value={shareSettings.maxDownloads}
-                      onChange={(e) => setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))}
-                      placeholder="Max downloads allowed"
-                      autoComplete="off"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  type="button"
-                  onClick={() => setIsShareOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSharing || shareTargets.length === 0}
-                  className="btn-primary-gradient"
-                >
-                  {isSharing ? 'Generating...' : 'Generate Link'}
-                </Button>
-              </div>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        shareTargets={shareTargets}
+        onCreateLink={handleShare}
+        isCreating={isSharing}
+      />
 
       <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
         <DialogContent>
