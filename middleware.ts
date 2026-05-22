@@ -12,9 +12,8 @@ const PROTECTED_ROUTES: Array<{
   // Admin-only routes (level 50+)
   { pattern: /^\/dashboard\/admin\/.*/, requiredLevel: 50 },
   { pattern: /^\/dashboard\/teams\/.*/, requiredLevel: 50 },
-  { pattern: /^\/dashboard\/credentials\/.*/, requiredLevel: 50 },
   { pattern: /^\/dashboard\/settings\/.*/, requiredLevel: 10 },
-  
+
   // Viewer can access files and links (level 10+)
   { pattern: /^\/dashboard\/files\/.*/, requiredLevel: 10 },
   { pattern: /^\/dashboard\/links\/.*/, requiredLevel: 10 },

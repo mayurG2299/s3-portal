@@ -31,6 +31,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/dashboard/credentials',
+        destination: '/dashboard/settings',
+        permanent: true,
+      },
+      {
         source: '/setup',
         destination: `${docsBase}/self-hosting`,
         permanent: true,
