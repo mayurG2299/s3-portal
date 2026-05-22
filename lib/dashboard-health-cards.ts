@@ -94,7 +94,7 @@ export function buildDashboardHealthCards(input: DashboardHealthInput): Dashboar
       value: input.teamsCount,
       description: 'Team members',
       status: accessStatus,
-      statusLabel: accessStatus === 'warning' ? 'Add another admin' : 'All good',
+      statusLabel: accessStatus === 'warning' ? (input.teamsCount === 1 ? 'Invite team members' : 'Add another admin') : 'All good',
       ctaHref: input.canViewTeams ? '/dashboard/teams' : '/dashboard/profile',
       ctaLabel: input.canViewTeams ? 'Manage team' : 'Open profile',
     },

@@ -85,6 +85,19 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/30;
   }
+
+  /* Minimum touch target sizes for accessibility (WCAG 2.1 Level AAA) */
+  @media (max-width: 768px) {
+    button, a[role="button"], [role="button"] {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Exception for icon-only buttons that need padding */
+    button:not(:has(span)), a[role="button"]:not(:has(span)) {
+      padding: 12px;
+    }
+  }
 }
 
 @layer utilities {

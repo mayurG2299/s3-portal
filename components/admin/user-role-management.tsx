@@ -248,7 +248,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                       {member.user.email}
                     </span>
                     {isCurrentUser && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-widest text-primary">
+                      <span className="px-1.5 py-0.5 rounded-md bg-primary/25 border border-primary/40 text-[9px] font-black uppercase tracking-widest text-primary">
                         You
                       </span>
                     )}
@@ -274,7 +274,7 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8">
                 <div className="hidden lg:block text-right max-w-[240px]">
-                  <p className="text-[10px] italic font-medium text-muted-foreground/80 leading-relaxed">
+                  <p className="text-[10px] italic font-medium text-muted-foreground leading-relaxed">
                     {member.role.description || "No security constraints defined."}
                   </p>
                 </div>
@@ -292,8 +292,11 @@ export function UserRoleManagement({ teamMembers, currentUserId, teamId, ownerId
                         onValueChange={(value) => updateUserRole(member.userId, member.id, value)}
                         disabled={isLocked || updating === member.id || loadingRoles}
                       >
-                        <SelectTrigger className="w-full sm:w-44 h-10 bg-background border-border rounded-xl text-xs font-bold text-foreground focus:border-primary/50 disabled:opacity-50">
-                          <SelectValue />
+                        <SelectTrigger
+                          className="w-full sm:w-44 h-10 bg-background border-border rounded-xl text-xs font-bold text-foreground focus:border-primary/50 disabled:opacity-50"
+                          aria-label={`Change role for ${member.user.email}`}
+                        >
+                          <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-border backdrop-blur-xl">
                           {availableRoles

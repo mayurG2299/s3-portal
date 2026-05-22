@@ -431,7 +431,7 @@ export function RoleManagement({ teamId, open: openProp, onOpenChange }: Props) 
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-medium text-muted-foreground/80 italic leading-relaxed">{role.description}</p>
+                <p className="text-xs font-medium text-muted-foreground italic leading-relaxed">{role.description}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="h-1 w-1 rounded-full bg-slate-700" />
                   <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Authority Tier {role.level}</p>

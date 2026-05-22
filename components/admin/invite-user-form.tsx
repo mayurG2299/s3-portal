@@ -267,7 +267,7 @@ export function InviteUserForm({ teamId }: Props) {
       <div className="space-y-2">
         <Label htmlFor="role" className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1">Role</Label>
         <Select value={roleId} onValueChange={(value) => setRoleId(value)}>
-          <SelectTrigger className="h-12 bg-muted border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50">
+          <SelectTrigger className="h-12 bg-muted border-border rounded-xl text-sm font-bold text-foreground focus:border-primary/50" aria-label="Select role for new team member">
             <SelectValue placeholder="Assign role" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border backdrop-blur-xl">

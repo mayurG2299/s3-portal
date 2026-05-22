@@ -180,7 +180,7 @@ export default async function TeamsPage({
                   <Users size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground tracking-tight">Active Members</h3>
+                  <h2 className="font-bold text-foreground tracking-tight">Active Members</h2>
                   <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Review and update member roles</p>
                 </div>
               </div>
@@ -292,7 +292,9 @@ export default async function TeamsPage({
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Manage Team</h4>
                   <form action={updateTeamAction} className="space-y-2" key={`crud-${team.id}`}>
                     <input type="hidden" name="teamId" value={team.id} />
+                    <Label htmlFor={`team-name-${team.id}`} className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1 block mb-1.5">Team Name</Label>
                     <input
+                      id={`team-name-${team.id}`}
                       name="name"
                       defaultValue={team.name}
                       className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold"
@@ -319,6 +321,11 @@ export default async function TeamsPage({
   )
 }
 
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
+function Label({ children, className, htmlFor }: { children: React.ReactNode, className?: string, htmlFor?: string }) {
+  // If htmlFor is provided, render as label (for form inputs)
+  // Otherwise render as span (for display labels)
+  if (htmlFor) {
+    return <label htmlFor={htmlFor} className={className}>{children}</label>
+  }
   return <span className={className}>{children}</span>
 }

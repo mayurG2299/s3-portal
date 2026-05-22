@@ -17,9 +17,9 @@ export function PermissionManagement({ teamId }: Props) {
       {/* Page header with Engineer Role button */}
       <div className="flex items-center justify-between animate-fade-in">
         <div className="hidden md:block">
-          <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
+          <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
             Access <span className="gradient-text">Permissions</span>
-          </h2>
+          </h1>
           <p className="text-muted-foreground font-medium">
             Control team synergy through precise role and screen access management.
           </p>
@@ -35,7 +35,7 @@ export function PermissionManagement({ teamId }: Props) {
 
       <div className="glass-card !p-0 overflow-hidden animate-fade-in">
         <div className="p-6 border-b border-border bg-muted">
-          <h3 className="text-lg font-black text-foreground tracking-tight">Access Control Hierarchies</h3>
+          <h2 className="text-lg font-black text-foreground tracking-tight">Access Control Hierarchies</h2>
           <p className="text-sm text-muted-foreground font-medium">Engineer specialized roles with granular permission protocols.</p>
         </div>
         <div className="p-2 sm:p-6">

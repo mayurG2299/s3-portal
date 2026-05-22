@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown, MoreHorizontal } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown } from 'lucide-react'
+import { FilesActionBar } from '@/components/files/action-bar'
+import { MobileFilesFAB } from '@/components/files/mobile-fab'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -107,7 +109,6 @@ export default function FilesPage() {
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
   const { isShortcutsOpen } = useShortcutsModal()
   const [isTruncated, setIsTruncated] = useState(false)
-  const [isHeaderActionsOpen, setIsHeaderActionsOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; file: StoredFile | null }>({ open: false, file: null })
   // All useState hooks must be above the early return guard (Rules of Hooks)
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
@@ -139,7 +140,6 @@ export default function FilesPage() {
   const uploadAbortControllers = useRef<Map<number, AbortController>>(new Map())
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
-  const headerActionsRef = useRef<HTMLDivElement | null>(null)
   const fetchFilesRef = useRef<() => void>(() => {})
   const activeIdentity = identities.find((identity) => identity.id === selectedIdentityId)
   const availableBuckets = activeIdentity?.buckets || []
@@ -188,30 +188,6 @@ export default function FilesPage() {
     })
   }, [searchParams])
 
-  useEffect(() => {
-    if (!isHeaderActionsOpen) return
-
-    const handleOutsidePointer = (event: MouseEvent) => {
-      const target = event.target as Node | null
-      if (target && headerActionsRef.current && !headerActionsRef.current.contains(target)) {
-        setIsHeaderActionsOpen(false)
-      }
-    }
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsHeaderActionsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleOutsidePointer)
-    document.addEventListener('keydown', handleEscape)
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsidePointer)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [isHeaderActionsOpen])
 
   const fetchFiles = useCallback(async () => {
     if (!selectedBucketId) {
@@ -1068,186 +1044,76 @@ export default function FilesPage() {
   return (
     <div className="min-h-screen">
       <header className="mb-5">
-        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <FolderOpen size={20} strokeWidth={2.5} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
-                <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <FolderOpen size={20} strokeWidth={2.5} />
             </div>
-            {selectedBucketId && (() => {
-              const breadcrumbs = getBreadcrumbs()
-              const currentFolderName = breadcrumbs[breadcrumbs.length - 1]?.name || 'Root'
-
-              return (
-                <div className="mt-2 space-y-2">
-                  <nav
-                    aria-label="Folder breadcrumbs"
-                    className="overflow-x-auto whitespace-nowrap pb-1"
-                  >
-                    <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground min-w-max">
-                      {breadcrumbs.map((crumb, index) => {
-                        const isLast = index === breadcrumbs.length - 1
-
-                        return (
-                          <div key={crumb.path} className="inline-flex items-center gap-1.5">
-                            {index > 0 && <span className="text-muted-foreground/60">/</span>}
-                            <button
-                              onClick={() => setCurrentPath(crumb.path)}
-                              aria-current={isLast ? 'page' : undefined}
-                              className={cn(
-                                'rounded-full px-2.5 py-0.5 transition-colors',
-                                isLast
-                                  ? 'bg-primary/10 text-primary font-medium'
-                                  : 'hover:bg-muted hover:text-foreground'
-                              )}
-                            >
-                              {crumb.name}
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </nav>
-
-                  <p className="text-xs text-muted-foreground">
-                    Current Folder: <span className="font-medium text-foreground">{currentFolderName}</span>
-                  </p>
-                </div>
-              )
-            })()}
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
+              <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
+            </div>
           </div>
-          <div ref={headerActionsRef} className="relative flex flex-wrap items-center gap-3">
-            <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucketId}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="md:hidden"
-                onClick={() => setIsHeaderActionsOpen((prev) => !prev)}
-                aria-expanded={isHeaderActionsOpen}
-                aria-haspopup="menu"
-              >
-                <MoreHorizontal className="mr-2 h-4 w-4" />
-                Actions
-              </Button>
-              {isHeaderActionsOpen && (
-                <Card
-                  role="menu"
-                  aria-label="Header actions"
-                  className="absolute right-0 top-full mt-2 w-52 p-1.5 z-30 md:hidden border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur shadow-lg"
+          {selectedBucketId && (() => {
+            const breadcrumbs = getBreadcrumbs()
+            const currentFolderName = breadcrumbs[breadcrumbs.length - 1]?.name || 'Root'
+
+            return (
+              <div className="space-y-2">
+                <nav
+                  aria-label="Folder breadcrumbs"
+                  className="overflow-x-auto whitespace-nowrap pb-1"
                 >
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      handleShareSelected()
-                      setIsHeaderActionsOpen(false)
-                    }}
-                    disabled={!selectedBucketId || selectedFileIds.length === 0}
-                  >
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share Selected
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      handleDownloadSelected()
-                      setIsHeaderActionsOpen(false)
-                    }}
-                    disabled={!selectedBucketId || selectedFileIds.length === 0 || isDownloadingFolder}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Selected
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      setIsFolderDialogOpen(true)
-                      setIsHeaderActionsOpen(false)
-                    }}
-                    disabled={!selectedBucketId}
-                  >
-                    <Folder className="mr-2 h-4 w-4" />
-                    New Folder
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      handleRefresh()
-                      setIsHeaderActionsOpen(false)
-                    }}
-                    disabled={!selectedBucketId || isRefreshing}
-                  >
-                    <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-                    Refresh
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      handleDownloadFolder()
-                      setIsHeaderActionsOpen(false)
-                    }}
-                    disabled={!selectedBucketId || isDownloadingFolder}
-                  >
-                    <Download className={isDownloadingFolder ? 'mr-2 h-4 w-4 animate-pulse' : 'mr-2 h-4 w-4'} />
-                    {isDownloadingFolder ? 'Preparing...' : 'Download Folder'}
-                  </Button>
-                </Card>
-              )}
-              <Button
-                onClick={handleShareSelected}
-              disabled={!selectedBucketId || selectedFileIds.length === 0}
-                variant="secondary"
-                className="hidden md:inline-flex"
-              >
-                <Share2 className="mr-2 h-4 w-4" />
-                Share Selected
-              </Button>
-              <Button
-                onClick={handleDownloadSelected}
-                disabled={!selectedBucketId || selectedFileIds.length === 0 || isDownloadingFolder}
-                variant="secondary"
-                className="hidden md:inline-flex"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Selected
-              </Button>
-            <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucketId} variant="outline" className="hidden md:inline-flex">
-                <Folder className="mr-2 h-4 w-4" />
-                New Folder
-              </Button>
-              <Button
-                onClick={handleRefresh}
-              disabled={!selectedBucketId || isRefreshing}
-                variant="outline"
-                className="hidden md:inline-flex"
-              >
-                <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-              Refresh
-              </Button>
-              <Button
-                onClick={handleDownloadFolder}
-                disabled={!selectedBucketId || isDownloadingFolder}
-                variant="outline"
-                className="hidden md:inline-flex"
-              >
-                <Download className={isDownloadingFolder ? 'mr-2 h-4 w-4 animate-pulse' : 'mr-2 h-4 w-4'} />
-                {isDownloadingFolder ? 'Preparing...' : 'Download Folder'}
-              </Button>
-            </div>
+                  <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground min-w-max">
+                    {breadcrumbs.map((crumb, index) => {
+                      const isLast = index === breadcrumbs.length - 1
+
+                      return (
+                        <div key={crumb.path} className="inline-flex items-center gap-1.5">
+                          {index > 0 && <span className="text-muted-foreground/60">/</span>}
+                          <button
+                            onClick={() => setCurrentPath(crumb.path)}
+                            aria-current={isLast ? 'page' : undefined}
+                            className={cn(
+                              'rounded-full px-2.5 py-0.5 transition-colors',
+                              isLast
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'hover:bg-muted hover:text-foreground'
+                            )}
+                          >
+                            {crumb.name}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </nav>
+
+                <p className="text-xs text-muted-foreground">
+                  Current Folder: <span className="font-medium text-foreground">{currentFolderName}</span>
+                </p>
+              </div>
+            )
+          })()}
         </div>
       </header>
+
+      {/* Desktop Action Bar - hidden on mobile */}
+      <div className="hidden md:block mb-5">
+        <FilesActionBar
+          selectedCount={selectedFileIds.length}
+          currentPath={currentPath}
+          onUpload={() => setIsUploadOpen(true)}
+          onShare={handleShareSelected}
+          onDownload={handleDownloadSelected}
+          onNewFolder={() => setIsFolderDialogOpen(true)}
+          onRefresh={handleRefresh}
+          onDownloadFolder={currentPath !== '/' ? handleDownloadFolder : undefined}
+          disabled={!selectedBucketId}
+          isRefreshing={isRefreshing}
+          isDownloading={isDownloadingFolder}
+        />
+      </div>
 
       <div>
         {/* Sticky context bar — collapses to a single summary pill on small screens */}
@@ -1398,35 +1264,6 @@ export default function FilesPage() {
             </Button>
           )}
         </div>
-        {selectedBucketId && selectedFileIds.length > 0 && (
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-1rem)] max-w-2xl">
-            <Card className="px-3 py-2.5 border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur shadow-lg">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium text-foreground">
-                  {selectedFileIds.length} selected
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={handleShareSelected}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleDownloadSelected}
-                    disabled={isDownloadingFolder}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSelectedFileIds([])}>
-                    Clear Selection
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
         {!selectedBucketId ? (
           <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
@@ -2011,6 +1848,19 @@ export default function FilesPage() {
         destructive
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDelete({ open: false, file: null })}
+      />
+
+      {/* Mobile FAB - hidden on desktop */}
+      <MobileFilesFAB
+        selectedCount={selectedFileIds.length}
+        onUpload={() => setIsUploadOpen(true)}
+        onShare={handleShareSelected}
+        onDownload={handleDownloadSelected}
+        onNewFolder={() => setIsFolderDialogOpen(true)}
+        onRefresh={handleRefresh}
+        disabled={!selectedBucketId}
+        isRefreshing={isRefreshing}
+        isDownloading={isDownloadingFolder}
       />
     </div>
   )

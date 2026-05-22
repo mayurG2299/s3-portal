@@ -216,7 +216,6 @@ export function Sidebar({
       id: 'files',
       label: 'Files',
       items: [
-        { href: '/dashboard', label: 'Dashboard', icon: Home },
         ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
         ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
         ...(canViewInvitations
@@ -227,16 +226,12 @@ export function Sidebar({
   }, [canViewScreen, pendingInviteCount])
 
   const workspaceGroup = useMemo<NavGroup>(() => {
-    const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
     return {
       id: 'workspace',
       label: 'Workspace',
-      items: [
-        ...(canViewFiles ? [{ href: '/dashboard/search', label: 'AI Search', icon: Search }] : []),
-        ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Recents', icon: Star }] : []),
-      ],
+      items: [],
     }
-  }, [canViewScreen])
+  }, [])
 
   const adminGroup = useMemo<NavGroup>(() => {
     const canViewTeams = isAdmin

@@ -235,9 +235,9 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <h3 className="text-4xl font-black text-foreground tracking-tighter leading-none mb-1">{stat.value}</h3>
+            <div className="text-4xl font-black text-foreground tracking-tighter leading-none mb-1" role="text" aria-label={`${stat.value} ${stat.label}`}>{stat.value}</div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{stat.label}</p>
-            <p className="text-xs text-muted-foreground/70 mb-3">{stat.description}</p>
+            <p className="text-xs text-muted-foreground mb-3">{stat.description}</p>
 
             {stat.status !== 'ready' && (
               <p className={cn(
