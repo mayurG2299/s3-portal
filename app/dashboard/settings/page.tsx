@@ -354,14 +354,14 @@ export default function SettingsPage() {
       {activeTab === 'ai' && <AiCredentialsTab />}
 
       {activeTab !== 'ai' && <>
-      {/* Appearance Section */}
+      {/* Personalization Section */}
       <div className="glass-card mb-10 animate-slide-up">
         <div className="flex items-center gap-4 mb-8">
           <div className="h-12 w-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand border border-brand/20">
             <Palette size={24} strokeWidth={2} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-foreground tracking-tight">Appearance</h3>
+            <h3 className="text-xl font-bold text-foreground tracking-tight">Personalization</h3>
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Customize your portal theme and color mode</p>
           </div>
         </div>
