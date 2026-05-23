@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Upload, Download, Trash2, Share2, Folder, FolderOpen, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, FolderOpen, FolderPlus, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown } from 'lucide-react'
 import { FilesActionBar } from '@/components/files/action-bar'
 import { MobileFilesFAB } from '@/components/files/mobile-fab'
 import { ShareModal, ShareLinkOptions } from '@/components/files/share-modal'
