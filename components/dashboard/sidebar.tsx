@@ -17,6 +17,7 @@ import {
   Database,
   Star,
   Activity,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -234,6 +235,7 @@ export function Sidebar({
     const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
     const canViewPermissions = isAdmin
     const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
+    const canViewSettings = canViewScreen(SCREENS.CREDENTIALS_LIST) || canViewScreen(SCREENS.TEAM_SETTINGS)
     return {
       id: 'admin',
       label: 'Admin',
@@ -250,6 +252,9 @@ export function Sidebar({
           : []),
         ...(isAdmin
           ? [{ href: '/dashboard/admin/indexing', label: 'Indexing Pipeline', icon: Activity }]
+          : []),
+        ...(canViewSettings
+          ? [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }]
           : []),
       ],
     }
