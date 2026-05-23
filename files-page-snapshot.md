@@ -1,0 +1,92 @@
+- generic [active] [ref=e1] [box=0,0,1280,928]:
+  - generic [ref=e3] [box=0,0,1280,928]:
+    - complementary [ref=e4] [box=0,0,80,800]:
+      - link "S3" [ref=e168] [cursor=pointer] [box=20,32,40,40]:
+        - /url: /dashboard
+        - generic [ref=e9] [box=31,42,17,20]: S3
+      - button "Open AI search (⌘K)" [ref=e169] [cursor=pointer] [box=20,104,40,40]:
+        - img [ref=e12] [box=30,114,20,20]
+      - navigation "Main navigation" [ref=e15] [box=0,156,79,644]:
+        - generic [ref=e170] [box=16,164,47,160]:
+          - link "Files" [ref=e171] [cursor=pointer] [box=16,164,47,52]:
+            - /url: /dashboard/files
+            - img [ref=e174] [box=29,179,22,22]
+          - link "Shared Links" [ref=e176] [cursor=pointer] [box=16,218,47,52]:
+            - /url: /dashboard/links
+            - img [ref=e178] [box=30,234,20,20]
+          - link "Invitations" [ref=e181] [cursor=pointer] [box=16,272,47,52]:
+            - /url: /dashboard/invitations
+            - img [ref=e183] [box=30,288,20,20]
+        - generic [ref=e186] [box=16,341,47,214]:
+          - link "Teams" [ref=e187] [cursor=pointer] [box=16,341,47,52]:
+            - /url: /dashboard/teams
+            - img [ref=e189] [box=30,357,20,20]
+          - link "Permissions" [ref=e194] [cursor=pointer] [box=16,395,47,52]:
+            - /url: /dashboard/admin/permissions
+            - img [ref=e196] [box=30,411,20,20]
+          - link "Audit Logs" [ref=e198] [cursor=pointer] [box=16,449,47,52]:
+            - /url: /dashboard/admin/audit
+            - img [ref=e200] [box=30,465,20,20]
+          - link "Indexing Pipeline" [ref=e203] [cursor=pointer] [box=16,503,47,52]:
+            - /url: /dashboard/admin/indexing
+            - img [ref=e205] [box=30,519,20,20]
+    - generic [ref=e16] [box=80,0,1200,928]:
+      - banner [ref=e17] [box=80,0,1200,64]:
+        - generic [ref=e20] [box=112,16,448,32]:
+          - generic [box=112,16,24,32]:
+            - img [box=122,25,14,14]
+          - combobox "Search" [ref=e21] [box=112,16,448,32]
+        - button "Profile menu" [ref=e23] [cursor=pointer] [box=1071,9,177,46]:
+          - generic [ref=e24] [box=1084,17,87,29]:
+            - paragraph [ref=e25] [box=1084,17,80,15]: Mayur
+            - paragraph [ref=e26] [box=1084,32,87,14]: Administrator
+          - generic [ref=e27] [box=1181,16,32,32]: MA
+          - img [ref=e28] [box=1223,26,12,12]
+      - main [ref=e30] [box=80,64,1200,864]:
+        - generic [ref=e81] [box=112,96,1136,800]:
+          - generic [ref=e84] [box=112,96,1136,52]:
+            - img [ref=e86] [box=122,112,20,20]
+            - generic [ref=e88] [box=164,96,258,52]:
+              - heading "Files" [level=1] [ref=e89] [box=164,96,258,32]
+              - paragraph [ref=e90] [box=164,128,258,20]: Browse and manage your storage files.
+          - generic [ref=e92] [box=112,168,1136,73]:
+            - button "Upload" [disabled] [box=128,184,104,40]:
+              - img [box=144,196,16,16]
+              - text: Upload
+            - button "New Folder" [disabled] [box=265,186,126,36]:
+              - img [box=278,196,16,16]
+              - generic [box=302,194,76,20]: New Folder
+            - button "Refresh" [disabled] [box=1192,186,40,36]:
+              - img [box=1204,196,16,16]
+              - generic [box=1212,204,1,1]: Refresh
+          - generic [ref=e94] [box=112,261,1136,410]:
+            - generic [ref=e97] [box=113,262,1134,98]:
+              - generic [ref=e98] [box=129,278,545,66]:
+                - text: AWS Credentials
+                - combobox "AWS Credentials" [ref=e99] [cursor=pointer] [box=129,308,545,36]:
+                  - generic [ref=e100] [box=142,316,103,20]:
+                    - img [ref=e101] [box=142,319,14,14]
+                    - generic [box=164,316,81,20]: All Identities
+                  - img [ref=e103] [box=645,318,16,16]
+              - generic [ref=e105] [box=686,278,545,66]:
+                - text: Storage Bucket
+                - combobox "Storage Bucket" [disabled] [ref=e106] [box=686,308,545,36]:
+                  - generic [ref=e107] [box=699,316,95,20]:
+                    - img [ref=e108] [box=699,319,14,14]
+                    - generic [box=721,316,73,20]: All Buckets
+                  - img [ref=e112] [box=1202,318,16,16]
+            - generic [ref=e114] [box=112,377,1136,40]:
+              - generic [ref=e115] [box=112,379,283,36]:
+                - button "All" [ref=e116] [cursor=pointer] [box=116,383,59,28]
+                - button "Favorites" [ref=e117] [cursor=pointer] [box=179,383,111,28]
+                - button "Recents" [ref=e118] [cursor=pointer] [box=293,383,97,28]
+              - textbox "Filter by tag" [ref=e119] [box=407,377,320,40]
+            - generic [ref=e120] [box=112,441,1136,230]:
+              - img [ref=e122] [box=666,492,28,28]
+              - heading "No Bucket Selected" [level=2] [ref=e124] [box=597,562,167,28]
+              - paragraph [ref=e125] [box=520,598,320,40]: Select a credential and bucket from the sidebar to browse your files.
+  - region "Notifications (F8)" [box=0,928,1280,0]:
+    - list [box=860,768,420,32]
+  - button "Open Next.js Dev Tools" [ref=e36] [cursor=pointer] [box=22,746,32,32]:
+    - img [ref=e37] [box=22,742,40,40]
+  - alert [ref=e40] [box=-1,927,1,1]
