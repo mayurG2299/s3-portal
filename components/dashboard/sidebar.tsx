@@ -211,19 +211,15 @@ export function Sidebar({
   const filesGroup = useMemo<NavGroup>(() => {
     const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
     const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
-    const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
     return {
       id: 'files',
       label: 'Files',
       items: [
         ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
         ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
-        ...(canViewInvitations
-          ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
-          : []),
       ],
     }
-  }, [canViewScreen, pendingInviteCount])
+  }, [canViewScreen])
 
   const workspaceGroup = useMemo<NavGroup>(() => {
     return {
@@ -235,6 +231,7 @@ export function Sidebar({
 
   const adminGroup = useMemo<NavGroup>(() => {
     const canViewTeams = isAdmin
+    const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
     const canViewPermissions = isAdmin
     const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
     return {
@@ -242,6 +239,9 @@ export function Sidebar({
       label: 'Admin',
       items: [
         ...(canViewTeams ? [{ href: '/dashboard/teams', label: 'Teams', icon: Users }] : []),
+        ...(canViewInvitations
+          ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
+          : []),
         ...(canViewPermissions
           ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
           : []),
@@ -253,7 +253,7 @@ export function Sidebar({
           : []),
       ],
     }
-  }, [canViewScreen, isAdmin])
+  }, [canViewScreen, isAdmin, pendingInviteCount])
 
   const handleNavClick = useCallback(() => { onClose() }, [onClose])
 
