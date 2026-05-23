@@ -130,58 +130,59 @@ export default function IndexingDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header with inline controls */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Activity size={20} strokeWidth={2.5} />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Activity size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Indexing <span className="text-gradient">Pipeline</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Monitor and control the AI indexing queue.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-foreground">
-              Indexing <span className="text-gradient">Pipeline</span>
-            </h1>
-            <p className="text-sm text-muted-foreground">Monitor and control the AI indexing queue.</p>
+          <div className="hidden md:flex items-center gap-3">
+            {/* Pipeline status badge */}
+            <div className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold',
+              paused
+                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                : 'bg-green-500/10 border-green-500/20 text-green-400'
+            )}>
+              <span className={cn('h-2 w-2 rounded-full', paused ? 'bg-amber-400' : 'bg-green-400 animate-pulse')} />
+              {paused ? 'Paused' : 'Live'}
+            </div>
+
+            <button
+              onClick={togglePause}
+              disabled={togglingPause}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all',
+                paused
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'
+                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+              )}
+            >
+              {togglingPause
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />
+              }
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+
+            <button
+              onClick={fetchStats}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-card/80 transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
+              Refresh
+            </button>
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-          {/* Pipeline status badge */}
-          <div className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold',
-            paused
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-              : 'bg-green-500/10 border-green-500/20 text-green-400'
-          )}>
-            <span className={cn('h-2 w-2 rounded-full', paused ? 'bg-amber-400' : 'bg-green-400 animate-pulse')} />
-            {paused ? 'Paused' : 'Live'}
-          </div>
-
-          <button
-            onClick={togglePause}
-            disabled={togglingPause}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all',
-              paused
-                ? 'bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20'
-                : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
-            )}
-          >
-            {togglingPause
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />
-            }
-            {paused ? 'Resume' : 'Pause'}
-          </button>
-
-          <button
-            onClick={fetchStats}
-            disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-border bg-card hover:bg-card/80 transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', loading && 'animate-spin')} />
-            Refresh
-          </button>
       </div>
 
       {/* Stat cards */}
