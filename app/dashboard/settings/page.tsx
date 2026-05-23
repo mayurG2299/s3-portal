@@ -336,6 +336,7 @@ export default function SettingsPage() {
         {[
           { id: 'config', label: 'Configuration' },
           { id: 'ai', label: 'AI & Indexing' },
+          { id: 'personalization', label: 'Personalization' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -353,7 +354,8 @@ export default function SettingsPage() {
 
       {activeTab === 'ai' && <AiCredentialsTab />}
 
-      {activeTab !== 'ai' && <>
+      {activeTab === 'personalization' && (
+      <>
       {/* Personalization Section */}
       <div className="glass-card mb-10 animate-slide-up">
         <div className="flex items-center gap-4 mb-8">
@@ -430,7 +432,11 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
+      {activeTab === 'config' && (
+      <>
       {credentials.length === 0 ? (
         <div className="space-y-8">
           <div className="max-w-xl mx-auto glass-card animate-slide-up" style={{ animationDelay: '100ms' }}>
@@ -771,7 +777,8 @@ export default function SettingsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      </>}
+      </>
+      )}
     </div>
   )
 }
