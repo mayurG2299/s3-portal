@@ -318,38 +318,33 @@ export default function SettingsPage() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <SettingsIcon size={20} strokeWidth={2.5} />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <SettingsIcon size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Platform <span className="text-gradient">Settings</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Configure appearance, credentials, and AI integrations.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-foreground">
-              Platform <span className="text-gradient">Settings</span>
-            </h1>
-            <p className="text-sm text-muted-foreground">Configure appearance, credentials, and AI integrations.</p>
+
+          {/* Settings Section Selector */}
+          <div className="min-w-[200px]">
+            <Select value={activeTab} onValueChange={(value) => router.push(`/dashboard/settings?tab=${value}`)}>
+              <SelectTrigger className="h-10 bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="config">Configuration</SelectItem>
+                <SelectItem value="ai">AI & Indexing</SelectItem>
+                <SelectItem value="personalization">Personalization</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
-
-      {/* Tab navigation */}
-      <div className="flex gap-1 p-1 bg-muted/50 border border-border rounded-2xl w-fit mb-8">
-        {[
-          { id: 'config', label: 'Configuration' },
-          { id: 'ai', label: 'AI & Indexing' },
-          { id: 'personalization', label: 'Personalization' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => router.push(`/dashboard/settings?tab=${tab.id}`)}
-            className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-              activeTab === tab.id
-                ? 'bg-brand text-white shadow-lg'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
       </div>
 
       {activeTab === 'ai' && <AiCredentialsTab />}
