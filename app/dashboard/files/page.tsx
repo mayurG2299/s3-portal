@@ -1033,13 +1033,33 @@ export default function FilesPage() {
     <div className="min-h-screen">
       <header className="mb-5">
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <FolderOpen size={20} strokeWidth={2.5} />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <FolderOpen size={20} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
+                <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
-              <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
+            <div className="hidden md:flex items-center gap-2">
+              <Button
+                onClick={() => setIsUploadOpen(true)}
+                disabled={!selectedBucketId}
+                className="btn-primary-gradient"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+              <Button
+                onClick={() => setIsFolderDialogOpen(true)}
+                disabled={!selectedBucketId}
+                variant="outline"
+              >
+                <FolderPlus className="h-4 w-4 mr-2" />
+                New Folder
+              </Button>
             </div>
           </div>
           {selectedBucketId && (() => {
@@ -1086,22 +1106,32 @@ export default function FilesPage() {
         </div>
       </header>
 
-      {/* Desktop Action Bar - hidden on mobile */}
-      <div className="hidden md:block mb-5">
-        <FilesActionBar
-          selectedCount={selectedFileIds.length}
-          currentPath={currentPath}
-          onUpload={() => setIsUploadOpen(true)}
-          onShare={handleShareSelected}
-          onDownload={handleDownloadSelected}
-          onNewFolder={() => setIsFolderDialogOpen(true)}
-          onRefresh={handleRefresh}
-          onDownloadFolder={currentPath !== '/' ? handleDownloadFolder : undefined}
-          disabled={!selectedBucketId}
-          isRefreshing={isRefreshing}
-          isDownloading={isDownloadingFolder}
-        />
-      </div>
+      {/* Desktop Action Bar - only shows when files are selected */}
+      {selectedFileIds.length > 0 && (
+        <div className="hidden md:block mb-5">
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border border-border">
+            <span className="text-sm font-medium text-muted-foreground mr-2">
+              {selectedFileIds.length} selected
+            </span>
+            <Button
+              onClick={handleShareSelected}
+              variant="outline"
+              size="sm"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            <Button
+              onClick={handleDownloadSelected}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div>
         {/* Sticky context bar — collapses to a single summary pill on small screens */}
