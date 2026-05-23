@@ -121,7 +121,7 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted-foreground max-w-xs mb-6">
           Create a team to get started with your storage workspace.
         </p>
-        <Button asChild className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+        <Button asChild className="btn-primary-gradient h-9 px-6 text-xs font-black uppercase tracking-widest">
           <Link href="/dashboard/teams">Create Team</Link>
         </Button>
       </div>
