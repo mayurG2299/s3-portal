@@ -339,7 +339,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Settings Section Selector */}
-          <div className="min-w-[200px]">
+          <div className="w-[220px]">
             <Select value={activeTab} onValueChange={(value) => router.push(`/dashboard/settings?tab=${value}`)}>
               <SelectTrigger className="h-10 bg-background border-border">
                 <SelectValue />
