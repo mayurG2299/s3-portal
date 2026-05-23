@@ -356,7 +356,7 @@ export function Sidebar({
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Team</p>
               <Select value={selectedTeamId || currentTeamId || undefined} onValueChange={setTeam}>
                 <SelectTrigger className={cn(
-                  'w-full h-10 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20',
+                  'w-full h-10 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20 focus-visible:ring-2 focus-visible:ring-purple-500/20 focus-visible:ring-offset-0',
                   isLoading && 'animate-pulse opacity-50 pointer-events-none'
                 )}>
                   <div className="flex items-center gap-2 truncate">
