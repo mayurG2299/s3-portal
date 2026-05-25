@@ -13,7 +13,7 @@ export class LoginPage {
     this.errorMessage = page.getByRole('alert').or(page.locator('[data-error]'))
   }
 
-  async goto() { await this.page.goto('/login') }
+  async goto() { await this.page.goto('http://localhost:3000/login') }
 
   async login(email: string, password: string) {
     await this.emailInput.fill(email)

@@ -13,7 +13,7 @@ export class RegisterPage {
     this.errorMessage = page.getByRole('alert').or(page.locator('[data-error]'))
   }
 
-  async goto() { await this.page.goto('/register') }
+  async goto() { await this.page.goto('http://localhost:3000/register') }
 
   async register(email: string, password: string) {
     await this.emailInput.fill(email)
