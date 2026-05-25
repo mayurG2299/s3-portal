@@ -17,5 +17,5 @@ export class ProfilePage {
     this.errorMessage = page.getByRole('alert').or(page.getByText(/error|invalid|weak/i))
   }
 
-  async goto() { await this.page.goto('/dashboard/profile') }
+  async goto() { await this.page.goto('http://localhost:3000/dashboard/profile') }
 }
