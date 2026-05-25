@@ -11,5 +11,5 @@ export class AdminIndexingPage {
     this.retryButton = page.getByRole('button', { name: /retry/i })
   }
 
-  async goto() { await this.page.goto('/dashboard/admin/indexing') }
+  async goto() { await this.page.goto('http://localhost:3000/dashboard/admin/indexing') }
 }

@@ -9,5 +9,5 @@ export class AdminPermissionsPage {
     this.accessDenied = page.getByText(/access denied|forbidden|not authorized/i)
   }
 
-  async goto() { await this.page.goto('/dashboard/admin/permissions') }
+  async goto() { await this.page.goto('http://localhost:3000/dashboard/admin/permissions') }
 }
