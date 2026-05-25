@@ -92,3 +92,4 @@ utilScripts/
 /*.jpg
 /*.jpeg
 /*.webp
+e2e/.auth/*.json
