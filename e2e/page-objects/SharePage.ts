@@ -17,5 +17,5 @@ export class SharePage {
     this.limitMessage = page.getByText(/limit|maximum downloads/i)
   }
 
-  async goto(hash: string) { await this.page.goto(`/share/${hash}`) }
+  async goto(hash: string) { await this.page.goto(`http://localhost:3000/share/${hash}`) }
 }

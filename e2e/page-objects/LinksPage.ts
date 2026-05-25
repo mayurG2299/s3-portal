@@ -7,5 +7,5 @@ export class LinksPage {
     this.createButton = page.getByRole('button', { name: /create|new link|share/i })
   }
 
-  async goto() { await this.page.goto('/dashboard/links') }
+  async goto() { await this.page.goto('http://localhost:3000/dashboard/links') }
 }
