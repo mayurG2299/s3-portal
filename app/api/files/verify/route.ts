@@ -6,6 +6,7 @@ import { decryptAWSConfig, getS3ObjectMetadata } from '@/lib/aws'
 import { logUserAction } from '@/lib/audit'
 import { canAccessBucket } from '@/lib/bucket-access'
 import { checkQuotaBeforeUpload, incrementUsage, decrementUsage } from '@/lib/storage-quota'
+import { enqueueFileIndexing } from '@/lib/indexing/queue'
 
 /**
  * POST /api/files/verify
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
       // update DB and increment usage
       await prisma.file.update({ where: { id: file.id }, data: { size: meta.size, contentType: meta.contentType ?? file.contentType } })
       await incrementUsage(file.teamId || file.credential.teamId, delta)
+      await enqueueFileIndexing(file.id, 1)
 
       await logUserAction({ request, action: 'FILE_VERIFY', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { oldSize: oldSize.toString(), newSize: newSize.toString() } })
       return NextResponse.json({ ok: true, updated: true })
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
       const delta = oldSize - newSize
       await prisma.file.update({ where: { id: file.id }, data: { size: meta.size, contentType: meta.contentType ?? file.contentType } })
       await decrementUsage(file.teamId || file.credential.teamId, delta)
+      await enqueueFileIndexing(file.id, 1)
       await logUserAction({ request, action: 'FILE_VERIFY', success: true, userId: session.user.id, teamId: file.teamId, resourceType: 'file', resourceId: file.id, metadata: { oldSize: oldSize.toString(), newSize: newSize.toString() } })
       return NextResponse.json({ ok: true, updated: true })
     }

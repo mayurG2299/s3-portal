@@ -7,6 +7,65 @@ import { verifyPassword } from '@/lib/crypto'
 import { logUserAction } from '@/lib/audit'
 import type { Role } from '@prisma/client'
 
+type AuthenticatedUser = {
+  id: string
+  email: string
+  name?: string | null
+  roleId?: string
+  roleLevel?: number
+  teamId?: string
+}
+
+export type CredentialValidationResult =
+  | { status: 'user-not-found' }
+  | { status: 'invalid-password' }
+  | { status: 'success'; user: AuthenticatedUser }
+
+export async function validateCredentials(
+  email: string,
+  password: string,
+): Promise<CredentialValidationResult> {
+  const user = await prisma.user.findUnique({
+    where: { email, deletedAt: null },
+    include: {
+      teamMembers: {
+        include: {
+          team: true,
+          role: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        take: 1,
+      },
+    },
+  })
+
+  if (!user) {
+    return { status: 'user-not-found' }
+  }
+
+  const isValid = await verifyPassword(password, user.passwordHash)
+
+  if (!isValid) {
+    return { status: 'invalid-password' }
+  }
+
+  const primaryTeamMember = user.teamMembers[0]
+
+  return {
+    status: 'success',
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roleId: primaryTeamMember?.roleId,
+      roleLevel: primaryTeamMember?.role?.level ?? 1,
+      teamId: primaryTeamMember?.team.id,
+    },
+  }
+}
+
 // Extend the next-auth JWT type
 declare module 'next-auth/jwt' {
   interface JWT {
@@ -52,49 +111,16 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string, deletedAt: null },
-          include: {
-            teamMembers: {
-              include: {
-                team: true,
-                role: true,
-              },
-              orderBy: {
-                createdAt: "asc",
-              },
-              take: 1,
-            },
-          },
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const isValid = await verifyPassword(
+        const result = await validateCredentials(
+          credentials.email as string,
           credentials.password as string,
-          user.passwordHash,
-        );
+        )
 
-        if (!isValid) {
-          return null;
+        if (result.status !== 'success') {
+          return null
         }
 
-        // Get the user's roleId and role level from first team membership
-        const primaryTeamMember = user.teamMembers[0];
-        const roleId = primaryTeamMember?.roleId;
-        const roleLevel = primaryTeamMember?.role?.level ?? 1;
-        const teamId = primaryTeamMember?.team.id
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          roleId,
-          roleLevel,
-          teamId,
-        };
+        return result.user
       },
     }),
   ],

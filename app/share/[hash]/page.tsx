@@ -316,7 +316,7 @@ export default function SharePage({ params }: { params: { hash: string } }) {
               <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   onClick={() => handleCopyCode(file.textContent)}
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   className={cn(
                     "flex items-center gap-2 h-8 text-xs font-mono shadow-lg transition-all border",

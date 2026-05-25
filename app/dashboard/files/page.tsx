@@ -1,15 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Upload, Download, Trash2, Share2, Folder, Tag, Star, RefreshCw, Eye, Database } from 'lucide-react'
+import { Upload, Download, Trash2, Share2, Folder, FolderOpen, FolderPlus, Tag, Star, RefreshCw, Eye, Database, Shield, ChevronDown } from 'lucide-react'
+import { FilesActionBar } from '@/components/files/action-bar'
+import { MobileFilesFAB } from '@/components/files/mobile-fab'
+import { ShareModal, ShareLinkOptions } from '@/components/files/share-modal'
+import { FileActionsMenu } from '@/components/files/file-actions-menu'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -25,11 +30,15 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { useKeyboardNav } from '@/hooks/use-keyboard-nav'
+import { useShortcutsModal } from '@/lib/contexts/shortcuts-modal-context'
 import { cn, formatFileSize, formatRelativeTime } from '@/lib/utils'
 import { getPreviewType } from '@/lib/preview-utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import type { FileChangedPayload } from '@/lib/events/types'
+import { IndexingBadge, type IndexingStatus } from '@/components/dashboard/indexing-badge'
 
 const FilePreviewModal = dynamic(() => import('@/components/file-preview-modal'), { ssr: false })
 const DirectLinkModal = dynamic(() => import('@/components/DirectLinkModal'), { ssr: false })
@@ -60,10 +69,20 @@ interface StoredFile {
 }
 export default function FilesPage() {
   const router = useRouter()
-  const { selectedIdentityId, selectedBucketId, selectedTeamId, handleTeamAccessFailure } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const {
+    selectedTeamId,
+    selectedIdentityId,
+    selectedBucketId,
+    identities,
+    isLoading: isDashboardLoading,
+    setIdentity,
+    setBucket,
+    handleTeamAccessFailure,
+  } = useDashboard()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions, isAdmin } = useRBAC()
   const canAccessFiles = canViewScreen(SCREENS.FILES_LIST)
   const [files, setFiles] = useState<StoredFile[]>([])
+  const [indexingStatuses, setIndexingStatuses] = useState<Record<string, IndexingStatus>>({})
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -76,6 +95,7 @@ export default function FilesPage() {
   const [isSharing, setIsSharing] = useState(false)
   const [tagFilter, setTagFilter] = useState('')
   const searchParams = useSearchParams()
+  const pathname = usePathname()
   const searchQuery = (searchParams.get('q') || '').trim()
   const [viewMode, setViewMode] = useState<'all' | 'favorites' | 'recents'>('all')
   const [editingTagsFile, setEditingTagsFile] = useState<StoredFile | null>(null)
@@ -83,31 +103,17 @@ export default function FilesPage() {
   const [descriptionInput, setDescriptionInput] = useState('')
   const [isSavingTags, setIsSavingTags] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isDownloadingFolder, setIsDownloadingFolder] = useState(false)
   const [uploadTags, setUploadTags] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [previewFile, setPreviewFile] = useState<StoredFile | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isDirectLinkOpen, setIsDirectLinkOpen] = useState(false)
   const [directLinkFile, setDirectLinkFile] = useState<StoredFile | null>(null)
+  const { isShortcutsOpen } = useShortcutsModal()
   const [isTruncated, setIsTruncated] = useState(false)
-  const [truncationDismissed, setTruncationDismissed] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalFiles, setTotalFiles] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const PAGE_SIZE = 200
-
-  useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessFiles) {
-      router.replace('/dashboard')
-    }
-  }, [canAccessFiles, loading, loadingScreenPermissions, router])
-
-  if (loading || loadingScreenPermissions || !canAccessFiles) {
-    return null
-  }
-
-  // CDN Configuration Modal State
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; file: StoredFile | null }>({ open: false, file: null })
+  // All useState hooks must be above the early return guard (Rules of Hooks)
   const [isCdnDialogOpen, setIsCdnDialogOpen] = useState(false)
   const [cdnConfig, setCdnConfig] = useState({
     cloudfrontDomain: '',
@@ -115,25 +121,25 @@ export default function FilesPage() {
     cloudfrontPrivateKey: '',
   })
   const [isSavingCdn, setIsSavingCdn] = useState(false)
-
-  const [shareSettings, setShareSettings] = useState({
-    linkMode: 'preview' as 'preview' | 'download' | 'direct' | 'raw',
-    expiryMode: 'preset' as 'preset' | 'custom' | 'never',
-    expiresIn: '86400',
-    customExpiry: '',
-    password: '',
-    maxDownloads: '',
-    previewOnly: false,
-    allowPreview: true,
-  })
-  const [currentPath, setCurrentPath] = useState('/')
+  const [isContextExpanded, setIsContextExpanded] = useState(false)
+  const [currentPath, setCurrentPath] = useState(() => searchParams.get('path') ?? '/')
+  const [truncationDismissed, setTruncationDismissed] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalFiles, setTotalFiles] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const PAGE_SIZE = 200
   const abortControllerRef = useRef<AbortController | null>(null)
+  const uploadAbortControllers = useRef<Map<number, AbortController>>(new Map())
   const inFlightRequestKeyRef = useRef<string | null>(null)
   const lastEffectRequestKeyRef = useRef<string | null>(null)
+  const fetchFilesRef = useRef<() => void>(() => {})
+  const activeIdentity = identities.find((identity) => identity.id === selectedIdentityId)
+  const availableBuckets = activeIdentity?.buckets || []
 
   const isAnyModalOpen =
     isUploadOpen || isShareOpen || isFolderDialogOpen ||
-    !!editingTagsFile || isDirectLinkOpen
+    !!editingTagsFile || isDirectLinkOpen || isCdnDialogOpen || isShortcutsOpen
 
   const { focusedIndex, itemRefs } = useKeyboardNav({
     files,
@@ -145,6 +151,16 @@ export default function FilesPage() {
       setPreviewFile(file as StoredFile)
       setIsPreviewOpen(true)
     },
+    onClosePreview: () => setIsPreviewOpen(false),
+    onDelete: (file) => handleDelete(file as StoredFile),
+    onSelectAll: () => setSelectedFileIds(files.map((f) => f.id)),
+    selectedFileIds,
+    onSetSelectedFileIds: setSelectedFileIds,
+    onFavorite: (file) => handleToggleFavorite(file as StoredFile),
+    onDirectLink: (file) => { setDirectLinkFile(file as StoredFile); setIsDirectLinkOpen(true) },
+    onShare: (file) => { setShareTargets([file as StoredFile]); setIsShareOpen(true) },
+    onUpload: () => setIsUploadOpen(true),
+    onNewFolder: () => setIsFolderDialogOpen(true),
   })
 
   useEffect(() => {
@@ -165,6 +181,7 @@ export default function FilesPage() {
     })
   }, [searchParams])
 
+
   const fetchFiles = useCallback(async () => {
     if (!selectedBucketId) {
       setFiles([])
@@ -173,6 +190,7 @@ export default function FilesPage() {
     }
 
     const action = viewMode === 'favorites' ? 'favorites' : viewMode === 'recents' ? 'recents' : 'list'
+    const apiUrl = action === 'favorites' ? '/api/files/favorites' : action === 'recents' ? '/api/files/recents' : '/api/files'
     const requestPayload = {
       action,
       bucketId: selectedBucketId,
@@ -198,7 +216,7 @@ export default function FilesPage() {
     try {
       setIsRefreshing(true)
       setLoadError(null)
-      const response = await fetch('/api/files', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         signal: abortControllerRef.current.signal,
         headers: { 'Content-Type': 'application/json' },
@@ -244,9 +262,31 @@ export default function FilesPage() {
     }
   }, [selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage, handleTeamAccessFailure])
 
+  useEffect(() => { fetchFilesRef.current = fetchFiles }, [fetchFiles])
+
   const isFolder = useCallback((file: StoredFile) => {
     return file.key.endsWith('/') || file.contentType === 'application/x-directory'
   }, [])
+
+  const currentFolderSummary = useMemo(() => {
+    const foldersCount = files.filter((file) => isFolder(file)).length
+    const regularFiles = files.filter((file) => !isFolder(file))
+    const filesCount = regularFiles.length
+    const usedBytes = regularFiles.reduce((sum, file) => sum + Number(file.size || 0), 0)
+
+    return {
+      foldersCount,
+      filesCount,
+      usedBytes,
+      itemsCount: files.length,
+    }
+  }, [files, isFolder])
+
+  useEffect(() => {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessFiles) {
+      router.replace('/dashboard')
+    }
+  }, [canAccessFiles, loading, loadingScreenPermissions, screenPermissions, router])
 
   useEffect(() => {
     if (!selectedBucketId) {
@@ -271,6 +311,43 @@ export default function FilesPage() {
   }, [fetchFiles, selectedBucketId, currentPath, tagFilter, searchQuery, viewMode, currentPage])
 
   useEffect(() => {
+    if (!selectedTeamId || !selectedBucketId) return
+    const evtSource = new EventSource(`/api/events/files?teamId=${selectedTeamId}`)
+    evtSource.addEventListener('file-changed', (e: MessageEvent) => {
+      const payload = JSON.parse(e.data) as FileChangedPayload
+      if (payload.bucketId !== selectedBucketId) return
+      if (payload.action === 'indexing-status-changed' && payload.indexingStatus) {
+        // Find fileId by key and update badge in place — no full refetch needed
+        setFiles((prev) => {
+          const file = prev.find((f) => f.key === payload.key)
+          if (file) {
+            setIndexingStatuses((s) => ({ ...s, [file.id]: payload.indexingStatus as IndexingStatus }))
+          }
+          return prev
+        })
+        return
+      }
+      // Clear dedup guard so SSE-triggered fetch always issues a fresh request.
+      inFlightRequestKeyRef.current = null
+      fetchFilesRef.current()
+    })
+    return () => evtSource.close()
+  }, [selectedTeamId, selectedBucketId])  // fetchFiles intentionally excluded — stable via ref
+
+  // Batch-fetch indexing statuses for visible files (admin/owner only)
+  useEffect(() => {
+    if (!isAdmin || files.length === 0) return
+    const fileIds = files.filter((f) => !f.key.endsWith('/')).map((f) => f.id)
+    if (fileIds.length === 0) return
+    const url = new URL('/api/admin/indexing/file-statuses', window.location.origin)
+    url.searchParams.set('ids', fileIds.join(','))
+    if (selectedTeamId) url.searchParams.set('teamId', selectedTeamId)
+    fetch(url).then((res) => res.json()).then((data: Record<string, IndexingStatus>) => {
+      setIndexingStatuses((prev) => ({ ...prev, ...data }))
+    }).catch(() => { /* non-fatal */ })
+  }, [files, isAdmin, selectedTeamId])
+
+  useEffect(() => {
     setSelectedFileIds([])
     setShareTargets([])
     setCurrentPage(1)
@@ -293,6 +370,18 @@ export default function FilesPage() {
     }
   }, [isUploadOpen])
 
+  const handleAbort = useCallback(async (fileIndex: number) => {
+    const controller = uploadAbortControllers.current.get(fileIndex)
+    if (controller) {
+      controller.abort()
+      uploadAbortControllers.current.delete(fileIndex)
+    }
+  }, [])
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessFiles) {
+    return null
+  }
+
 
   async function handleUpload(uploadFiles: File[], onProgress?: (fileIndex: number, progress: number) => void) {
 
@@ -312,10 +401,8 @@ export default function FilesPage() {
     const PART_SIZE = 10 * 1024 * 1024 // 10MB
     const MAX_CONCURRENT_PARTS = 3
 
-    const uploadAbortControllers = new Map<string, AbortController>()
-
     const uploadPart = async (
-      key: string,
+      signal: AbortSignal | undefined,
       uploadId: string,
       partNumber: number,
       blobPart: Blob,
@@ -325,7 +412,7 @@ export default function FilesPage() {
         const partUpload = await fetch(url, {
           method: 'PUT',
           body: blobPart,
-          signal: uploadAbortControllers.get(key)?.signal,
+          signal,
         })
         if (!partUpload.ok) {
           throw new Error(`Part ${partNumber} upload failed with status ${partUpload.status}`)
@@ -349,7 +436,7 @@ export default function FilesPage() {
     const uploadWithConcurrency = async (
       parts: Array<{ partNumber: number; blobPart: Blob; url: string }>,
       uploadId: string,
-      key: string
+      signal: AbortSignal | undefined
     ): Promise<Array<{ ETag: string; PartNumber: number }>> => {
       const results: Array<{ ETag: string; PartNumber: number } | null> = new Array(parts.length).fill(null)
       let index = 0
@@ -359,7 +446,7 @@ export default function FilesPage() {
           const currentIndex = index++
           const part = parts[currentIndex]
           try {
-            results[currentIndex] = await uploadPart(key, uploadId, part.partNumber, part.blobPart, part.url)
+            results[currentIndex] = await uploadPart(signal, uploadId, part.partNumber, part.blobPart, part.url)
           } catch (error) {
             throw error
           }
@@ -382,13 +469,13 @@ export default function FilesPage() {
 
     for (let fileIndex = 0; fileIndex < uploadFiles.length; fileIndex++) {
       const file = uploadFiles[fileIndex]
-      const progressKey = `${file.name}-${fileIndex}`
-      uploadAbortControllers.set(progressKey, new AbortController())
+      const controller = new AbortController()
+      uploadAbortControllers.current.set(fileIndex, controller)
 
       try {
         if (file.size < MULTIPART_THRESHOLD) {
           // Simple PUT upload
-          const response = await fetch('/api/files', {
+          const response = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -412,7 +499,7 @@ export default function FilesPage() {
               method: 'PUT',
               headers: { 'Content-Type': file.type },
               body: file,
-              signal: uploadAbortControllers.get(progressKey)?.signal,
+              signal: controller.signal,
             })
             if (!uploadResponse.ok) {
               throw new Error(`Upload failed with status ${uploadResponse.status}`)
@@ -439,7 +526,7 @@ export default function FilesPage() {
           onProgress?.(fileIndex, 100)
         } else {
           // Multipart upload
-          const initRes = await fetch('/api/files', {
+          const initRes = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -466,7 +553,7 @@ export default function FilesPage() {
             const end = Math.min(start + PART_SIZE, file.size)
             const blobPart = file.slice(start, end)
 
-            const presignRes = await fetch('/api/files', {
+            const presignRes = await fetch('/api/files/upload', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -484,10 +571,10 @@ export default function FilesPage() {
           }
 
           // Upload parts in parallel with concurrency limit
-          const uploadedParts = await uploadWithConcurrency(parts, uploadId, key)
+          const uploadedParts = await uploadWithConcurrency(parts, uploadId, controller.signal)
           onProgress?.(fileIndex, 90)
 
-          const completeRes = await fetch('/api/files', {
+          const completeRes = await fetch('/api/files/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -506,9 +593,8 @@ export default function FilesPage() {
           onProgress?.(fileIndex, 100)
         }
       } catch (error: any) {
-        // Abort on error: delete incomplete upload if multipart
-        uploadAbortControllers.delete(progressKey)
-        
+        uploadAbortControllers.current.delete(fileIndex)
+
         // Detect CORS errors
         if (error.message.includes('Failed to fetch') || 
             error.message.includes('NetworkError') ||
@@ -532,13 +618,14 @@ export default function FilesPage() {
     fetchFiles()
   }
 
-  const handleAbort = async (fileIndex: number) => {
-    // Stub for abort handling - can be extended to cancel partial multipart uploads
-    console.log(`Upload ${fileIndex} aborted by user`)
+  function handleDelete(file: StoredFile) {
+    setConfirmDelete({ open: true, file })
   }
 
-  async function handleDelete(file: StoredFile) {
-    if (!confirm(`Delete ${file.name}?`)) return
+  async function handleConfirmDelete() {
+    const file = confirmDelete.file
+    if (!file) return
+    setConfirmDelete({ open: false, file: null })
 
     try {
       const response = await fetch(`/api/files?id=${file.id}`, {
@@ -564,43 +651,39 @@ export default function FilesPage() {
     }
   }
 
-  function resolveExpirySeconds() {
-    if (shareSettings.expiryMode === 'preset') {
-      return Number(shareSettings.expiresIn)
-    }
-
-    if (!shareSettings.customExpiry) return null
-    const customDate = new Date(shareSettings.customExpiry)
-    const seconds = Math.floor((customDate.getTime() - Date.now()) / 1000)
-    return seconds > 0 ? seconds : null
-  }
-
-  async function handleShare() {
+  async function handleShare(options: ShareLinkOptions) {
     if (shareTargets.length === 0) return
 
-    const expiresIn = resolveExpirySeconds()
+    // Calculate expiry seconds based on options
+    let expiresIn: number | undefined
 
-    if (!expiresIn) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid expiry',
-        description: 'Choose a preset or pick a future date/time',
-      })
-      return
+    if (options.expiryMode === 'never') {
+      expiresIn = undefined
+    } else if (options.expiryMode === 'preset' && options.expiresIn) {
+      expiresIn = Number(options.expiresIn)
+    } else if (options.expiryMode === 'custom' && options.customExpiry) {
+      const customDate = new Date(options.customExpiry)
+      if (isNaN(customDate.getTime()) || customDate <= new Date()) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid expiry',
+          description: 'Please pick a future date and time for the custom expiry.',
+        })
+        return
+      }
+      expiresIn = Math.floor((customDate.getTime() - Date.now()) / 1000)
     }
 
     setIsSharing(true)
 
     const payloadBase = {
       type: 'PRESIGNED',
-      expiresIn: expiresIn || undefined,
-      mode: shareSettings.linkMode,
-      password: shareSettings.password || undefined,
-      maxDownloads: shareSettings.maxDownloads
-        ? Number(shareSettings.maxDownloads)
-        : undefined,
-      allowDownload: shareSettings.linkMode !== 'preview',
-      allowPreview: shareSettings.allowPreview ?? true,
+      expiresIn,
+      mode: options.mode,
+      password: options.password || undefined,
+      maxDownloads: options.maxDownloads ? Number(options.maxDownloads) : undefined,
+      allowDownload: options.mode !== 'preview',
+      allowPreview: true,
     }
 
     try {
@@ -650,7 +733,6 @@ export default function FilesPage() {
       setIsShareOpen(false)
       setShareTargets([])
       setSelectedFileIds([])
-      setShareSettings((prev) => ({ ...prev, password: '', maxDownloads: '' }))
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -711,7 +793,7 @@ export default function FilesPage() {
       .filter((tag) => tag.length > 0)
 
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -749,13 +831,21 @@ export default function FilesPage() {
 
   function navigateToFolder(folderPath: string) {
     setCurrentPath(folderPath)
+    const params = new URLSearchParams(searchParams.toString())
+    if (folderPath === '/') {
+      params.delete('path')
+    } else {
+      params.set('path', folderPath)
+    }
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   function navigateUp() {
     if (currentPath === '/') return
     const parts = currentPath.split('/').filter(Boolean)
     parts.pop()
-    setCurrentPath(parts.length ? '/' + parts.join('/') + '/' : '/')
+    const newPath = parts.length ? '/' + parts.join('/') + '/' : '/'
+    navigateToFolder(newPath)
   }
 
   function getBreadcrumbs() {
@@ -780,7 +870,7 @@ export default function FilesPage() {
 
     setIsSavingTags(true)
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/folder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -818,7 +908,7 @@ export default function FilesPage() {
     if (isFolder(file)) return
 
     try {
-      const response = await fetch('/api/files', {
+      const response = await fetch('/api/files/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -843,100 +933,341 @@ export default function FilesPage() {
   }
 
   async function handleRefresh() {
-    if (isRefreshing) return
-    setIsRefreshing(true)
+    await fetchFiles()
+  }
+
+  async function handleDownloadSelected() {
+    if (!selectedBucketId || isDownloadingFolder) return
+
+    const selectedFiles = files.filter((f) => selectedFileIds.includes(f.id))
+    const keys = selectedFiles.map((f) => f.key)
+
+    if (keys.length === 0) return
+
     try {
-      await fetchFiles()
+      setIsDownloadingFolder(true)
+
+      const response = await fetch('/api/files/download-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucketId: selectedBucketId, keys }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || 'Failed to download selected files')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `selected-files-${Date.now()}.zip`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+
+      toast({ title: 'Download ready', description: `${keys.length} file(s) downloaded as zip` })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to download selected files'
+      toast({ variant: 'destructive', title: 'Error', description: message })
     } finally {
-      setIsRefreshing(false)
+      window.setTimeout(() => setIsDownloadingFolder(false), 1200)
+    }
+  }
+
+  function handleShareSelected() {
+    if (!selectedBucketId) return
+
+    const targets = files.filter(
+      (file) => selectedFileIds.includes(file.id) && !isFolder(file)
+    )
+
+    if (targets.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No files selected',
+        description: 'Select one or more files to share.',
+      })
+      return
+    }
+
+    setShareTargets(targets)
+    setIsShareOpen(true)
+  }
+
+  async function handleDownloadFolder() {
+    if (!selectedBucketId || isDownloadingFolder) return
+
+    try {
+      setIsDownloadingFolder(true)
+      const params = new URLSearchParams({
+        bucketId: selectedBucketId,
+        path: currentPath,
+      })
+      const link = document.createElement('a')
+      link.href = `/api/files/download-folder?${params.toString()}`
+      link.setAttribute('download', '')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      toast({
+        title: 'Folder download started',
+        description: 'Preparing zip archive for download',
+      })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to start folder download'
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: message,
+      })
+    } finally {
+      window.setTimeout(() => setIsDownloadingFolder(false), 1200)
     }
   }
 
   return (
     <div className="min-h-screen">
-      <header className="mb-8">
-        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">Files</h1>
-            {selectedBucketId && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                {getBreadcrumbs().map((crumb, index) => (
-                  <div key={crumb.path} className="flex items-center gap-2">
-                    {index > 0 && <span>/</span>}
-                    <button
-                      onClick={() => setCurrentPath(crumb.path)}
-                      className="hover:text-primary hover:underline transition-colors"
-                    >
-                      {crumb.name}
-                    </button>
-                  </div>
-                ))}
+      <header className="mb-5">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <FolderOpen size={20} strokeWidth={2.5} />
               </div>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => setIsUploadOpen(true)} disabled={!selectedBucketId}>
-                <Upload className="mr-2 h-4 w-4" />
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-foreground">Files</h1>
+                <p className="text-sm text-muted-foreground">Browse and manage your storage files.</p>
+              </div>
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <Button
+                onClick={() => setIsUploadOpen(true)}
+                disabled={!selectedBucketId}
+                className="btn-primary-gradient"
+              >
+                <Upload className="h-4 w-4 mr-2" />
                 Upload
               </Button>
               <Button
-                onClick={() => {
-                  const targets = files.filter(
-                    (file) => selectedFileIds.includes(file.id) && !isFolder(file)
-                  )
-                  if (targets.length === 0) return
-                  setShareTargets(targets)
-                  setIsShareOpen(true)
-                }}
-              disabled={!selectedBucketId || selectedFileIds.length === 0}
-                variant="secondary"
-              >
-                <Share2 className="mr-2 h-4 w-4" />
-                Share Selected
-              </Button>
-            <Button onClick={() => setIsFolderDialogOpen(true)} disabled={!selectedBucketId} variant="outline">
-                <Folder className="mr-2 h-4 w-4" />
-                New Folder
-              </Button>
-              <Button
-                onClick={handleRefresh}
-              disabled={!selectedBucketId || isRefreshing}
+                onClick={() => setIsFolderDialogOpen(true)}
+                disabled={!selectedBucketId}
                 variant="outline"
               >
-                <RefreshCw className={isRefreshing ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />
-              Refresh
+                <FolderPlus className="h-4 w-4 mr-2" />
+                New Folder
               </Button>
             </div>
+          </div>
+          {selectedBucketId && (() => {
+            const breadcrumbs = getBreadcrumbs()
+            const currentFolderName = breadcrumbs[breadcrumbs.length - 1]?.name || 'Root'
+
+            return (
+              <div className="space-y-2">
+                <nav
+                  aria-label="Folder breadcrumbs"
+                  className="overflow-x-auto whitespace-nowrap pb-1"
+                >
+                  <div className="inline-flex items-center gap-1.5 text-sm text-muted-foreground min-w-max">
+                    {breadcrumbs.map((crumb, index) => {
+                      const isLast = index === breadcrumbs.length - 1
+
+                      return (
+                        <div key={crumb.path} className="inline-flex items-center gap-1.5">
+                          {index > 0 && <span className="text-muted-foreground/60">/</span>}
+                          <button
+                            onClick={() => setCurrentPath(crumb.path)}
+                            aria-current={isLast ? 'page' : undefined}
+                            className={cn(
+                              'rounded-full px-2.5 py-0.5 transition-colors',
+                              isLast
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'hover:bg-muted hover:text-foreground'
+                            )}
+                          >
+                            {crumb.name}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </nav>
+
+                <p className="text-xs text-muted-foreground">
+                  Current Folder: <span className="font-medium text-foreground">{currentFolderName}</span>
+                </p>
+              </div>
+            )
+          })()}
         </div>
       </header>
 
-      <main>
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border">
+      {/* Desktop Action Bar - only shows when files are selected */}
+      {selectedFileIds.length > 0 && (
+        <div className="hidden md:block mb-5">
+          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border border-border">
+            <span className="text-sm font-medium text-muted-foreground mr-2">
+              {selectedFileIds.length} selected
+            </span>
             <Button
-              variant={viewMode === 'all' ? 'default' : 'ghost'}
+              onClick={handleShareSelected}
+              variant="outline"
               size="sm"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+            <Button
+              onClick={handleDownloadSelected}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div>
+        {/* Sticky context bar — collapses to a single summary pill on small screens */}
+        <div className="sticky top-0 z-20 mb-4">
+          <Card className="border-border/80 bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur overflow-hidden">
+            {/* Collapsed pill row — visible on small screens, hidden on lg+ */}
+            <button
+              type="button"
+              onClick={() => setIsContextExpanded((prev) => !prev)}
+              className="lg:hidden w-full flex items-center justify-between px-4 py-3 text-left"
+              aria-expanded={isContextExpanded}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Shield size={14} className="text-primary shrink-0" />
+                <span className="text-sm text-muted-foreground truncate">
+                  {activeIdentity ? activeIdentity.name : 'No credentials'}
+                </span>
+                {activeIdentity && (
+                  <>
+                    <span className="text-muted-foreground/40 text-sm">·</span>
+                    <Database size={14} className="text-primary shrink-0" />
+                    <span className="text-sm text-muted-foreground truncate">
+                      {availableBuckets.find((b) => b.id === selectedBucketId)?.bucket || 'No bucket'}
+                    </span>
+                  </>
+                )}
+              </div>
+              <ChevronDown
+                size={16}
+                className={cn(
+                  'text-muted-foreground shrink-0 transition-transform duration-200',
+                  isContextExpanded && 'rotate-180'
+                )}
+              />
+            </button>
+
+            {/* Full selector grid — always visible on lg+, toggled on small */}
+            <div className={cn(
+              'grid grid-cols-1 lg:grid-cols-2 gap-3 p-3 lg:p-4',
+              'lg:block',
+              isContextExpanded ? 'block' : 'hidden lg:grid'
+            )}>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AWS Credentials</Label>
+                <Select value={selectedIdentityId || 'all'} onValueChange={(val) => { setIdentity(val === 'all' ? null : val); setIsContextExpanded(false) }}>
+                  <SelectTrigger aria-label="AWS Credentials" className={cn(
+                    'h-9 bg-card border-border text-sm',
+                    isDashboardLoading && 'animate-pulse opacity-50 pointer-events-none'
+                  )}>
+                    <div className="flex items-center gap-2 truncate">
+                      <Shield size={14} className="text-primary shrink-0" />
+                      <SelectValue placeholder={isDashboardLoading ? 'Loading...' : 'Select credentials'} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Identities</SelectItem>
+                    {identities.map((identity) => (
+                      <SelectItem key={identity.id} value={identity.id}>
+                        {identity.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Storage Bucket</Label>
+                <Select
+                  value={selectedBucketId || 'all'}
+                  onValueChange={(val) => { setBucket(val === 'all' ? null : val); setIsContextExpanded(false) }}
+                  disabled={!selectedIdentityId}
+                >
+                  <SelectTrigger aria-label="Storage Bucket" className={cn(
+                    'h-9 bg-card border-border text-sm disabled:opacity-50',
+                    isDashboardLoading && 'animate-pulse opacity-50 pointer-events-none'
+                  )}>
+                    <div className="flex items-center gap-2 truncate">
+                      <Database size={14} className="text-primary shrink-0" />
+                      <SelectValue placeholder={isDashboardLoading ? 'Loading...' : 'Select bucket'} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Buckets</SelectItem>
+                    {availableBuckets.map((bucket) => (
+                      <SelectItem key={bucket.id} value={bucket.id}>
+                        {bucket.bucket}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {selectedBucketId && (
+          <Card className="mb-4 p-3 bg-muted/20 border-border">
+            <p className="text-sm text-muted-foreground">
+              Folder details: {currentFolderSummary.itemsCount} items • {currentFolderSummary.foldersCount} folders • {currentFolderSummary.filesCount} files • {formatFileSize(currentFolderSummary.usedBytes)} used
+            </p>
+          </Card>
+        )}
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-2xl">
+            <button
               onClick={() => setViewMode('all')}
-              className={viewMode === 'all' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'all'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               All
-            </Button>
-            <Button
-              variant={viewMode === 'favorites' ? 'default' : 'ghost'}
-              size="sm"
+            </button>
+            <button
               onClick={() => setViewMode('favorites')}
-              className={viewMode === 'favorites' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'favorites'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               Favorites
-            </Button>
-            <Button
-              variant={viewMode === 'recents' ? 'default' : 'ghost'}
-              size="sm"
+            </button>
+            <button
               onClick={() => setViewMode('recents')}
-              className={viewMode === 'recents' ? 'shadow-sm' : ''}
+              className={cn(
+                "px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                viewMode === 'recents'
+                  ? "bg-brand text-white shadow-lg shadow-brand/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
               Recents
-            </Button>
+            </button>
           </div>
           <Input
             placeholder="Filter by tag"
@@ -952,11 +1283,15 @@ export default function FilesPage() {
           )}
         </div>
         {!selectedBucketId ? (
-          <Card className="p-12 text-center bg-muted/30 border-border">
-            <p className="text-muted-foreground">
-              Please select your AWS Credentials and Storage Bucket in the header to browse files
+          <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+              <FolderOpen size={28} className="text-primary/60" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Bucket Selected</h2>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Select a credential and bucket from the sidebar to browse your files.
             </p>
-          </Card>
+          </div>
         ) : loadError ? (
           <Card className="p-12 text-center bg-destructive/10 border-destructive/30">
             <Folder className="mx-auto h-12 w-12 text-destructive mb-4" />
@@ -968,18 +1303,18 @@ export default function FilesPage() {
             </Button>
           </Card>
           ) : files.length === 0 && !isRefreshing ? (
-            <Card className="p-12 text-center bg-muted/30 border-border">
-              <Folder className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  {searchQuery.trim().length >= 3 ? `No results found for "${searchQuery}"` : 'No files yet'}
-                </p>
-                {!searchQuery && (
-                  <Button onClick={() => setIsUploadOpen(true)}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Files
-                  </Button>
-                )}
-            </Card>
+            <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <FolderOpen size={28} className="text-primary/60" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-lg font-black text-foreground tracking-tight mb-2">This Folder Is Empty</h2>
+              <p className="text-sm text-muted-foreground max-w-xs mb-6">
+                Upload files to populate this folder.
+              </p>
+              <Button onClick={() => setIsUploadOpen(true)} className="h-9 px-6 text-xs font-black uppercase tracking-widest">
+                Upload Files
+              </Button>
+            </div>
         ) : (
                 <>
                   {isTruncated && !truncationDismissed && (
@@ -1033,7 +1368,7 @@ export default function FilesPage() {
                           }}
                         />
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {isFolder(file) && <Folder className="h-4 w-4 text-blue-600" />}
                             <button
                               type="button"
@@ -1050,6 +1385,20 @@ export default function FilesPage() {
                             >
                               {file.name}
                             </button>
+                            {isAdmin && !isFolder(file) && indexingStatuses[file.id] !== undefined && (
+                              <IndexingBadge
+                                fileId={file.id}
+                                initialStatus={indexingStatuses[file.id]}
+                                onRetry={async (fid) => {
+                                  await fetch('/api/admin/indexing/retry-failed', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ fileId: fid }),
+                                  })
+                                  setIndexingStatuses((s) => ({ ...s, [fid]: 'PENDING' }))
+                                }}
+                              />
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {isFolder(file)
@@ -1078,83 +1427,30 @@ export default function FilesPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                    {!isFolder(file) && (
-                      <Button
-                        variant="ghost"
-                            size="sm"
-                        onClick={() => handleToggleFavorite(file)}
-                      >
-                            <Star
-                              className={
-                                file.isFavorite
-                                  ? 'h-4 w-4 text-yellow-500'
-                                  : 'h-4 w-4 text-gray-400'
-                              }
-                            />
-                      </Button>
-                    )}
-                        {/* Preview button remains for non-direct mode */}
-                    {!isFolder(file) && (() => {
-                      const t = getPreviewType(file.contentType, file.name)
-                      if (t !== 'UNSUPPORTED') {
-                        return (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setPreviewFile(file)
-                              setIsPreviewOpen(true)
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )
-                      }
-                      return null
-                    })()}
-                        {/* Direct S3/CDN link button */}
-                        {!isFolder(file) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setIsShareOpen(false)
-                              setShareTargets([])
-                              setDirectLinkFile(file)
-                              setIsDirectLinkOpen(true)
-                            }}
-                          >
-                            <Database className="h-4 w-4" />
-                          </Button>
-                        )}
-                    <Button
-                      variant="ghost"
-                          size="sm"
-                      onClick={() => setEditingTagsFile(file)}
-                    >
-                      <Tag className="h-4 w-4" />
-                    </Button>
-                    {!isFolder(file) && (
-                      <Button
-                        variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setDirectLinkFile(null)
-                              setIsDirectLinkOpen(false)
-                              setShareTargets([file])
-                              setIsShareOpen(true)
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                          size="sm"
-                      onClick={() => handleDelete(file)}
-                    >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                        <FileActionsMenu
+                          file={file}
+                          isFolder={isFolder(file)}
+                          canPreview={!isFolder(file) && getPreviewType(file.contentType, file.name) !== 'UNSUPPORTED'}
+                          onPreview={() => {
+                            setPreviewFile(file)
+                            setIsPreviewOpen(true)
+                          }}
+                          onShare={() => {
+                            setDirectLinkFile(null)
+                            setIsDirectLinkOpen(false)
+                            setShareTargets([file])
+                            setIsShareOpen(true)
+                          }}
+                          onDirectLink={() => {
+                            setIsShareOpen(false)
+                            setShareTargets([])
+                            setDirectLinkFile(file)
+                            setIsDirectLinkOpen(true)
+                          }}
+                          onEditTags={() => setEditingTagsFile(file)}
+                          onToggleFavorite={() => handleToggleFavorite(file)}
+                          onDelete={() => handleDelete(file)}
+                        />
                   </div>
                 </div>
                   </Card>
@@ -1190,7 +1486,7 @@ export default function FilesPage() {
                   )}
                 </>
         )}
-      </main>
+      </div>
 
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
         <DialogContent className="max-w-2xl">
@@ -1202,7 +1498,7 @@ export default function FilesPage() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="upload-tags">Tags (optional)</Label>
+              <Label htmlFor="upload-tags" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tags (optional)</Label>
               <Input
                 id="upload-tags"
                 value={uploadTags}
@@ -1220,13 +1516,13 @@ export default function FilesPage() {
               />
             </div>
             <FileUpload
+              onAbort={handleAbort}
               onUpload={async (files, onProgress) => {
                 try {
                   await handleUpload(files, onProgress)
                   setIsUploadOpen(false)
                   setUploadTags('')
                   setUploadDescription('')
-                  fetchFiles()
                 } catch (error: any) {
                   toast({
                     variant: 'destructive',
@@ -1234,6 +1530,8 @@ export default function FilesPage() {
                     description: error.message || 'Failed to upload files',
                   })
                   throw error
+                } finally {
+                  fetchFiles()
                 }
               }}
             />
@@ -1241,136 +1539,16 @@ export default function FilesPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <ShareModal
         open={isShareOpen}
         onOpenChange={(open) => {
           setIsShareOpen(open)
           if (!open) setShareTargets([])
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Share File</DialogTitle>
-            <DialogDescription>
-              {shareTargets.length === 0
-                ? 'Select at least one file to share'
-                : `Generate a shareable link for ${shareTargets.length === 1 ? shareTargets[0].name : `${shareTargets.length} files`}`}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              handleShare()
-            }}
-          >
-            <div className="space-y-6">
-              {shareTargets.length > 1 && (
-                <Card className="p-3 text-sm text-muted-foreground bg-muted/50 border-border">
-                  {shareTargets.slice(0, 3).map((file) => file.name).join(', ')}
-                  {shareTargets.length > 3 && ` +${shareTargets.length - 3} more`}
-                </Card>
-              )}
-
-              <div className="space-y-2">
-                <Label>Link Type</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Preview Page', value: 'preview' },
-                    { label: 'Auto Download', value: 'download' },
-                    { label: 'Direct S3/CDN', value: 'direct' },
-                  ].map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={shareSettings.linkMode === option.value ? 'default' : 'outline'}
-                      onClick={() => {
-                        setShareSettings((prev) => ({
-                          ...prev,
-                          linkMode: option.value as 'preview' | 'download' | 'direct',
-                        }))
-                      }}
-                      className="h-auto py-2 whitespace-normal text-xs"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Expiration</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: '1 hour', value: '3600' },
-                    { label: '1 day', value: '86400' },
-                    { label: '1 week', value: '604800' },
-                    { label: '30 days', value: '2592000' },
-                  ].map((option) => (
-                    <Button
-                      key={option.value}
-                      type="button"
-                      variant={
-                        shareSettings.expiryMode === 'preset' && shareSettings.expiresIn === option.value
-                          ? 'default'
-                          : 'outline'
-                      }
-                      onClick={() => setShareSettings((prev) => ({ ...prev, expiryMode: 'preset', expiresIn: option.value }))}
-                      className="h-auto py-2 whitespace-normal text-xs"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {shareSettings.linkMode !== 'direct' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="share-password">Password (optional)</Label>
-                    <Input
-                      id="share-password"
-                      type="password"
-                      value={shareSettings.password}
-                      onChange={(e) => setShareSettings((prev) => ({ ...prev, password: e.target.value }))}
-                      placeholder="Set a password for this link"
-                      autoComplete="new-password"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="share-max-downloads">Download Limit (optional)</Label>
-                    <Input
-                      id="share-max-downloads"
-                      type="number"
-                      value={shareSettings.maxDownloads}
-                      onChange={(e) => setShareSettings((prev) => ({ ...prev, maxDownloads: e.target.value }))}
-                      placeholder="Max downloads allowed"
-                      autoComplete="off"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  type="button"
-                  onClick={() => setIsShareOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSharing || shareTargets.length === 0}
-                  className="btn-primary-gradient"
-                >
-                  {isSharing ? 'Generating...' : 'Generate Link'}
-                </Button>
-              </div>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        shareTargets={shareTargets}
+        onCreateLink={handleShare}
+        isCreating={isSharing}
+      />
 
       <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
         <DialogContent>
@@ -1411,15 +1589,15 @@ export default function FilesPage() {
                 placeholder="Short note for this folder"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
-                Create Folder
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
+              Create Folder
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1453,15 +1631,15 @@ export default function FilesPage() {
                 placeholder="Short note about this item"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingTagsFile(null)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveTags} disabled={isSavingTags}>
-                {isSavingTags ? 'Saving...' : 'Save Details'}
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTagsFile(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTags} disabled={isSavingTags}>
+              {isSavingTags ? 'Saving...' : 'Save Details'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1473,6 +1651,30 @@ export default function FilesPage() {
           setDirectLinkFile(null)
         }} />
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        title="Delete file"
+        description={`"${confirmDelete.file?.name}" will be permanently deleted from S3. This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete({ open: false, file: null })}
+      />
+
+      {/* Mobile FAB - hidden on desktop */}
+      <MobileFilesFAB
+        selectedCount={selectedFileIds.length}
+        onUpload={() => setIsUploadOpen(true)}
+        onShare={handleShareSelected}
+        onDownload={handleDownloadSelected}
+        onNewFolder={() => setIsFolderDialogOpen(true)}
+        onRefresh={handleRefresh}
+        disabled={!selectedBucketId}
+        isRefreshing={isRefreshing}
+        isDownloading={isDownloadingFolder}
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { searchAndRank, type SearchItem } from "@/lib/search-utils";
 import { getAccessibleBucketIds } from '@/lib/bucket-access'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +44,12 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('q')
-    const teamId =
-      searchParams.get('teamId') ||
-      request.cookies.get('selectedTeamId')?.value?.trim() ||
-      session.user.teamId
+    const { teamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: searchParams.get('teamId'),
+      cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
     const identityId = searchParams.get('identityId') || undefined
     const bucketId = searchParams.get('bucketId') || undefined
 
@@ -57,19 +60,6 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id
     const isTeamScoped = Boolean(teamId)
-
-    if (isTeamScoped) {
-      const membership = await prisma.teamMember.findFirst({
-        where: {
-          teamId: teamId!,
-          userId,
-        },
-      })
-
-      if (!membership) {
-        return NextResponse.json({ results: [] })
-      }
-    }
 
     let bucketFilter: { in: string[] } | undefined = undefined
     if (teamId) {
@@ -232,6 +222,7 @@ export async function GET(request: NextRequest) {
       // 4. Teams - searched by name or slug
       prisma.team.findMany({
         where: {
+          ...(teamId ? { id: teamId } : {}),
           members: { some: { userId } },
           OR: [{ name: dbQuery }, { slug: dbQuery }],
         },

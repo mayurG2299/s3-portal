@@ -80,6 +80,7 @@ model File {
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites    FileFavorite[]
   links        Link[]
+  embedding    FileEmbedding?
 
   @@unique([bucketId, key])
   @@index([bucketId])
@@ -326,4 +327,26 @@ enum ScreenName {
   LINKS_DELETE
   ADMIN_AUDIT_LOG
   ADMIN_SETTINGS
+}
+
+enum IndexingStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model FileEmbedding {
+  id          String        @id @default(cuid())
+  fileId      String        @unique
+  status      IndexingStatus @default(PENDING)
+  summary     String?
+  // embedding vector(1536) added via raw SQL migration (pgvector not in Prisma DSL)
+  errorMessage String?
+  processedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  file        File          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }

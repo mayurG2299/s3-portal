@@ -53,9 +53,17 @@ jest.mock('@/lib/utils', () => ({
   buildS3Key: jest.fn((_path: string, folderName: string) => `docs/${folderName}`),
 }));
 
+jest.mock('next/cache', () => ({
+  revalidateTag: jest.fn(),
+}));
+
+jest.mock('@/lib/events/files', () => ({
+  publishFileChanged: jest.fn(),
+}));
+
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
-import { POST as filesPost } from '@/app/api/files/route';
+import { POST as filesPost } from '@/app/api/files/folder/route';
 
 const awsMocks = jest.requireMock('@/lib/aws') as {
   createFolderMarkerObject: jest.Mock;

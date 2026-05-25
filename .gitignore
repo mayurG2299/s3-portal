@@ -77,7 +77,7 @@ Thumbs.db
 *.sqlite3
 *.db
 
-/docs
+# /docs tracked for design specs
 .agents/
 .github/
 utilScripts/
@@ -86,3 +86,10 @@ utilScripts/
 .superpowers/
 # playwright mcp screenshots and snapshots
 .playwright-mcp/
+
+# local screenshots generated in repository root during testing
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+e2e/.auth/*.json

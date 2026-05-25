@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
-import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye } from 'lucide-react'
+import { CheckCircle, XCircle, Users, Clock, Shield, Mail, Crown, Eye, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
-import { formatRelativeTime } from '@/lib/utils'
+import { formatRelativeTime, cn } from '@/lib/utils'
+import { useListNav } from '@/hooks/use-list-nav'
 import { useRBAC } from '@/components/rbac-provider'
 import { SCREENS } from '@/lib/screen-permissions'
 
@@ -30,18 +31,27 @@ function RoleIcon({ name, level }: { name: string; level?: number }) {
 export default function InvitationsPage() {
   const router = useRouter()
   const { invitations, acceptInvitation, rejectInvitation, isLoading } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions } = useRBAC()
   const invites = useMemo(() => invitations as Invite[], [invitations])
   const [processing, setProcessing] = useState<string | null>(null)
   const canAccessInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
 
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessInvitations) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessInvitations) {
       router.replace('/dashboard')
     }
-  }, [canAccessInvitations, loading, loadingScreenPermissions, router])
+  }, [canAccessInvitations, loading, loadingScreenPermissions, screenPermissions, router])
 
-  if (loading || loadingScreenPermissions || !canAccessInvitations) {
+  const { focusedIndex, itemRefs } = useListNav({
+    items: invites,
+    isModalOpen: false,
+    keyActions: {
+      onAccept: (invite) => handleAction(invite.id, 'accept'),
+      onDecline: (invite) => handleAction(invite.id, 'decline'),
+    },
+  })
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessInvitations) {
     return null
   }
 
@@ -86,7 +96,7 @@ export default function InvitationsPage() {
     <div className="max-w-3xl">
       {/* Header */}
       <div className="mb-8 animate-slide-up">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
             <Mail size={20} strokeWidth={2.5} />
           </div>
@@ -94,19 +104,19 @@ export default function InvitationsPage() {
             <h1 className="text-2xl font-black tracking-tight text-foreground">
               Team <span className="text-gradient">Invitations</span>
             </h1>
-            <p className="text-sm text-muted-foreground">Accept or decline pending workspace invitations</p>
+            <p className="text-sm text-muted-foreground">Accept or decline pending workspace invitations.</p>
           </div>
         </div>
       </div>
 
       {invites.length === 0 ? (
-        <div className="glass-card flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-          <div className="h-20 w-20 rounded-3xl bg-muted flex items-center justify-center mb-6">
-            <Mail size={36} className="text-muted-foreground/80" strokeWidth={1.5} />
+        <div className="glass-card flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <Mail size={28} className="text-primary/60" strokeWidth={1.5} />
           </div>
-          <h2 className="text-lg font-black text-foreground tracking-tight mb-1">No Pending Invitations</h2>
+          <h2 className="text-lg font-black text-foreground tracking-tight mb-2">No Pending Invitations</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            You&apos;re all caught up! When someone invites you to their workspace, it will appear here.
+            You&apos;re all caught up. When someone invites you to their workspace, it will appear here.
           </p>
         </div>
       ) : (
@@ -114,7 +124,12 @@ export default function InvitationsPage() {
           {invites.map((invite, idx) => (
             <div
               key={invite.id}
-              className="glass-card !p-0 overflow-hidden animate-slide-up hover:border-primary/50 transition-all duration-300"
+              ref={itemRefs[idx]}
+              tabIndex={0}
+              className={cn(
+                "glass-card !p-0 overflow-hidden animate-slide-up hover:border-primary/50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary",
+                focusedIndex === idx && "ring-2 ring-primary"
+              )}
               style={{ animationDelay: `${idx * 60}ms` }}
             >
               <div className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
@@ -155,11 +170,9 @@ export default function InvitationsPage() {
                     disabled={processing === invite.id}
                     className="h-9 px-4 rounded-xl text-xs font-bold border-rose-500/30 text-rose-500 hover:bg-rose-500/5 hover:border-rose-500/50 dark:border-rose-500/20 transition-all"
                   >
-                    {processing === invite.id ? (
-                      <div className="h-3.5 w-3.5 border-2 border-rose-400/40 border-t-rose-400 rounded-full animate-spin" />
-                    ) : (
-                      <><XCircle size={14} className="mr-1.5" /> Decline</>
-                    )}
+                    {processing === invite.id && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                    <XCircle size={14} className="mr-1.5" />
+                    Decline
                   </Button>
                   <Button
                     size="sm"
@@ -167,11 +180,9 @@ export default function InvitationsPage() {
                     disabled={processing === invite.id}
                     className="h-9 px-5 rounded-xl text-xs font-black bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 transition-all"
                   >
-                    {processing === invite.id ? (
-                      <div className="h-3.5 w-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <><CheckCircle size={14} className="mr-1.5" /> Accept</>
-                    )}
+                    {processing === invite.id && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                    <CheckCircle size={14} className="mr-1.5" />
+                    Accept
                   </Button>
                 </div>
               </div>

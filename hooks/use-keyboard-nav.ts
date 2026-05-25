@@ -15,6 +15,16 @@ interface UseKeyboardNavOptions {
   onNavigateToFolder: (file: StoredFile) => void
   onNavigateUp: () => void
   onPreview: (file: StoredFile) => void
+  onClosePreview?: () => void
+  onDelete?: (file: StoredFile) => void
+  onSelectAll?: () => void
+  selectedFileIds?: string[]
+  onSetSelectedFileIds?: (ids: string[]) => void
+  onFavorite?: (file: StoredFile) => void
+  onDirectLink?: (file: StoredFile) => void
+  onShare?: (file: StoredFile) => void
+  onUpload?: () => void
+  onNewFolder?: () => void
 }
 
 interface UseKeyboardNavReturn {
@@ -50,6 +60,16 @@ export function useKeyboardNav({
   onNavigateToFolder,
   onNavigateUp,
   onPreview,
+  onClosePreview,
+  onDelete,
+  onSelectAll,
+  selectedFileIds = [],
+  onSetSelectedFileIds,
+  onFavorite,
+  onDirectLink,
+  onShare,
+  onUpload,
+  onNewFolder,
 }: UseKeyboardNavOptions): UseKeyboardNavReturn {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null)
 
@@ -76,6 +96,16 @@ export function useKeyboardNav({
   filesLengthRef.current = files.length
 
   // Single throttled moveFocus instance — created once, reads filesLengthRef for current length
+  const typeAheadRef = useRef('')
+  const typeAheadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up the type-ahead reset timer on unmount
+  useEffect(() => {
+    return () => {
+      if (typeAheadTimerRef.current) clearTimeout(typeAheadTimerRef.current)
+    }
+  }, [])
+
   const moveFocusRef = useRef(
     throttle((direction: 'up' | 'down') => {
       setFocusedIndex((prev) => {
@@ -108,6 +138,15 @@ export function useKeyboardNav({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (isModalOpen) return
+        if (isPreviewOpen) {
+          onClosePreview?.()
+        }
+        setFocusedIndex(null)
+        return
+      }
+
       // While preview is open: only allow arrow keys to navigate between files
       if (isPreviewOpen) {
         if (e.key === 'ArrowDown') { e.preventDefault(); moveFocusRef.current('down') }
@@ -119,14 +158,60 @@ export function useKeyboardNav({
       if (isEditableElement(document.activeElement)) return
 
       switch (e.key) {
-        case 'ArrowDown':
+        case 'ArrowUp': {
+          if (e.metaKey) {
+            if (e.repeat) return
+            e.preventDefault()
+            onNavigateUp()
+            return
+          }
           e.preventDefault()
-          moveFocusRef.current('down')
-          break
-        case 'ArrowUp':
-          e.preventDefault()
+          if (e.shiftKey && onSetSelectedFileIds && focusedIndex !== null) {
+            const prevIndex = focusedIndex > 0 ? focusedIndex - 1 : focusedIndex
+            const file = files[prevIndex]
+            if (file) {
+              const alreadySelected = selectedFileIds.includes(file.id)
+              onSetSelectedFileIds(
+                alreadySelected
+                  ? selectedFileIds.filter((id) => id !== file.id)
+                  : [...selectedFileIds, file.id]
+              )
+            }
+          }
           moveFocusRef.current('up')
           break
+        }
+        case 'ArrowDown': {
+          if (e.metaKey) {
+            if (e.repeat) return
+            if (focusedIndex === null) return
+            e.preventDefault()
+            const file = files[focusedIndex]
+            if (!file) return
+            if (isFolder(file)) {
+              onNavigateToFolder(file)
+              setFocusedIndex(null)
+            } else {
+              onPreview(file)
+            }
+            return
+          }
+          e.preventDefault()
+          if (e.shiftKey && onSetSelectedFileIds && focusedIndex !== null) {
+            const nextIndex = focusedIndex < files.length - 1 ? focusedIndex + 1 : focusedIndex
+            const file = files[nextIndex]
+            if (file) {
+              const alreadySelected = selectedFileIds.includes(file.id)
+              onSetSelectedFileIds(
+                alreadySelected
+                  ? selectedFileIds.filter((id) => id !== file.id)
+                  : [...selectedFileIds, file.id]
+              )
+            }
+          }
+          moveFocusRef.current('down')
+          break
+        }
         case 'Enter': {
           if (e.repeat) return
           if (focusedIndex === null) return
@@ -154,12 +239,96 @@ export function useKeyboardNav({
           onNavigateUp()
           break
         }
+        case 'Delete': {
+          if (e.repeat) return
+          if (focusedIndex === null) return
+          e.preventDefault()
+          const file = files[focusedIndex]
+          if (!file || !onDelete) return
+          onDelete(file)
+          break
+        }
+        case 'a': {
+          if (!e.metaKey) break
+          e.preventDefault()
+          onSelectAll?.()
+          break
+        }
+        case 'f': {
+          if (e.repeat) break
+          // Cmd+Shift+F = new folder (no file focus needed)
+          if (e.metaKey && e.shiftKey) {
+            e.preventDefault()
+            onNewFolder?.()
+            return
+          }
+          // Plain F = favorite (no modifier allowed)
+          if (e.metaKey || e.shiftKey || e.altKey) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const filef = files[focusedIndex]
+          if (!filef || isFolder(filef)) break
+          onFavorite?.(filef)
+          return // prevents type-ahead
+        }
+        case 'l': {
+          if (!e.metaKey || e.shiftKey || e.repeat) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const filel = files[focusedIndex]
+          if (!filel || isFolder(filel)) break
+          onDirectLink?.(filel)
+          return
+        }
+        case 's': {
+          if (!e.metaKey || !e.shiftKey || e.repeat) break
+          if (focusedIndex === null) break
+          e.preventDefault()
+          const files_ = files[focusedIndex]
+          if (!files_) break
+          onShare?.(files_)
+          return
+        }
+        case 'u': {
+          if (!e.metaKey || e.shiftKey || e.repeat) break
+          e.preventDefault()
+          onUpload?.()
+          return
+        }
+      }
+
+      // Type-ahead: single printable character, no modifier keys
+      if (
+        e.key.length === 1 &&
+        !e.metaKey && !e.ctrlKey && !e.altKey &&
+        !isEditableElement(document.activeElement)
+      ) {
+        e.preventDefault()
+        typeAheadRef.current += e.key.toLowerCase()
+
+        if (typeAheadTimerRef.current) clearTimeout(typeAheadTimerRef.current)
+        typeAheadTimerRef.current = setTimeout(() => {
+          typeAheadRef.current = ''
+        }, 500)
+
+        const query = typeAheadRef.current
+        const startIndex = focusedIndex === null ? 0 : focusedIndex + 1
+
+        // Search from current position forward, then wrap
+        const ordered = [
+          ...files.slice(startIndex),
+          ...files.slice(0, startIndex),
+        ]
+        const match = ordered.find((f) => f.name.toLowerCase().startsWith(query))
+        if (match) {
+          setFocusedIndex(files.indexOf(match))
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview])
+  }, [files, focusedIndex, isModalOpen, isPreviewOpen, onNavigateToFolder, onNavigateUp, onPreview, onClosePreview, onDelete, onSelectAll, selectedFileIds, onSetSelectedFileIds, onFavorite, onDirectLink, onShare, onUpload, onNewFolder])
 
   return { focusedIndex, itemRefs: refsRef.current }
 }

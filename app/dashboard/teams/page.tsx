@@ -12,7 +12,9 @@ import { InviteUserForm } from '@/components/admin/invite-user-form'
 import { PendingInvitesList } from '@/components/dashboard/PendingInvitesList'
 import { UserRoleManagement } from '@/components/admin/user-role-management'
 import { cn } from '@/lib/utils'
-import { Users, Info, UserPlus, PlusCircle, Pencil, Trash2 } from 'lucide-react'
+import { Users, Info, UserPlus, PlusCircle, Pencil } from 'lucide-react'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
+import { DeleteTeamButton } from '@/components/dashboard/DeleteTeamButton'
 
 async function updateTeamAction(formData: FormData) {
   'use server'
@@ -44,16 +46,19 @@ async function updateTeamAction(formData: FormData) {
   revalidatePath('/dashboard/teams')
 }
 
-async function deleteTeamAction(formData: FormData) {
+async function deleteTeamAction(
+  _prevState: { error?: string },
+  formData: FormData
+): Promise<{ error?: string }> {
   'use server'
 
   const session = await requireUser()
   const teamId = String(formData.get('teamId') || '')
 
-  if (!teamId) return
+  if (!teamId) return { error: 'Team ID is missing.' }
 
   const team = await prisma.team.findUnique({ where: { id: teamId } })
-  if (!team || team.ownerId !== session.user.id) return
+  if (!team || team.ownerId !== session.user.id) return { error: 'You do not own this team.' }
 
   const [memberCount, credentialCount, fileCount] = await Promise.all([
     prisma.teamMember.count({ where: { teamId } }),
@@ -61,9 +66,15 @@ async function deleteTeamAction(formData: FormData) {
     prisma.file.count({ where: { teamId } }),
   ])
 
-  // Safety check: avoid destructive cascades when team still has active data.
   if (memberCount > 1 || credentialCount > 0 || fileCount > 0) {
-    return
+    const reasons = [
+      memberCount > 1 && `${memberCount} active members`,
+      credentialCount > 0 && `${credentialCount} credentials`,
+      fileCount > 0 && `${fileCount} files`,
+    ]
+      .filter(Boolean)
+      .join(', ')
+    return { error: `Cannot delete: team still has ${reasons}. Remove these first.` }
   }
 
   await prisma.team.delete({ where: { id: teamId } })
@@ -79,6 +90,7 @@ async function deleteTeamAction(formData: FormData) {
   })
 
   revalidatePath('/dashboard/teams')
+  return {}
 }
 
 export default async function TeamsPage({
@@ -90,25 +102,16 @@ export default async function TeamsPage({
   const cookieStore = await cookies()
   const resolvedSearchParams = (await searchParams) || {}
   const queryTeamId = resolvedSearchParams.teamId?.trim()
-  const selectedTeamId = cookieStore.get('selectedTeamId')?.value?.trim()
-  const teamId = queryTeamId || selectedTeamId || session.user.teamId
+  const { teamId } = await getResolvedUserTeamScope({
+    userId: session.user.id,
+    requestedTeamId: queryTeamId,
+    cookieTeamId: cookieStore.get('selectedTeamId')?.value?.trim(),
+    sessionTeamId: session.user.teamId,
+  })
 
   if (!teamId) {
     redirect('/dashboard')
   }
-
-  const userTeams = await prisma.teamMember.findMany({
-    where: { userId: session.user.id },
-    include: {
-      team: {
-        select: { id: true, name: true, slug: true, ownerId: true },
-      },
-      role: {
-        select: { name: true, level: true },
-      },
-    },
-    orderBy: { createdAt: 'asc' },
-  })
 
   const hasAccess = await canManageTeam(session.user.id, teamId)
   if (!hasAccess) {
@@ -138,20 +141,19 @@ export default async function TeamsPage({
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Team <span className="gradient-text">Management</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Organize your workspace, manage roles and collaborate securely.
-        </p>
-        <div className="mt-4 flex items-center gap-2 justify-center lg:justify-start">
-          <Button asChild className="h-9 rounded-xl">
-            <Link href="/dashboard/teams/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Team
-            </Link>
-          </Button>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <Users size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Manage <span className="text-gradient">Teams</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Organize and manage your workspaces.</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -165,7 +167,7 @@ export default async function TeamsPage({
                   <Users size={20} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground tracking-tight">Active Members</h3>
+                  <h2 className="font-bold text-foreground tracking-tight">Active Members</h2>
                   <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Review and update member roles</p>
                 </div>
               </div>
@@ -244,40 +246,14 @@ export default async function TeamsPage({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-border space-y-3">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Your Teams</h4>
-                <div className="space-y-2">
-                  {userTeams.map((membership) => {
-                    const isActive = membership.team.id === team.id
-                    return (
-                      <div
-                        key={membership.id}
-                        className={cn(
-                          'rounded-lg border px-3 py-2 flex items-center justify-between gap-2',
-                          isActive ? 'border-primary/40 bg-primary/5' : 'border-border bg-muted/20'
-                        )}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-foreground truncate">{membership.team.name}</p>
-                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{membership.role.name}</p>
-                        </div>
-                        {!isActive && (
-                          <Button variant="outline" size="sm" asChild className="h-7 px-2 text-[10px]">
-                            <Link href={`/dashboard/teams?teamId=${membership.team.id}`}>Manage</Link>
-                          </Button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
               {team.ownerId === session.user.id && (
                 <div className="pt-4 border-t border-border space-y-3">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team CRUD</h4>
-                  <form action={updateTeamAction} className="space-y-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Manage Team</h4>
+                  <form action={updateTeamAction} className="space-y-2" key={`crud-${team.id}`}>
                     <input type="hidden" name="teamId" value={team.id} />
+                    <Label htmlFor={`team-name-${team.id}`} className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground ml-1 block mb-1.5">Team Name</Label>
                     <input
+                      id={`team-name-${team.id}`}
                       name="name"
                       defaultValue={team.name}
                       className="w-full h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold"
@@ -290,13 +266,7 @@ export default async function TeamsPage({
                     </Button>
                   </form>
 
-                  <form action={deleteTeamAction}>
-                    <input type="hidden" name="teamId" value={team.id} />
-                    <Button type="submit" variant="destructive" className="h-8 w-full text-[10px] font-black uppercase tracking-widest">
-                      <Trash2 className="mr-2 h-3 w-3" />
-                      Delete Empty Team
-                    </Button>
-                  </form>
+                  <DeleteTeamButton teamId={team.id} action={deleteTeamAction} />
                   <p className="text-[10px] text-muted-foreground leading-relaxed">
                     Team delete is allowed only when this team has no files, no credentials, and no other members.
                   </p>
@@ -310,6 +280,11 @@ export default async function TeamsPage({
   )
 }
 
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
+function Label({ children, className, htmlFor }: { children: React.ReactNode, className?: string, htmlFor?: string }) {
+  // If htmlFor is provided, render as label (for form inputs)
+  // Otherwise render as span (for display labels)
+  if (htmlFor) {
+    return <label htmlFor={htmlFor} className={className}>{children}</label>
+  }
   return <span className={className}>{children}</span>
 }

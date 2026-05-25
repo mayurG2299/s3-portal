@@ -44,11 +44,19 @@ jest.mock('@/lib/utils', () => ({
   buildS3Key: jest.fn(() => 'docs/big-video.mov'),
 }))
 
+jest.mock('next/cache', () => ({
+  revalidateTag: jest.fn(),
+}))
+
+jest.mock('@/lib/events/files', () => ({
+  publishFileChanged: jest.fn(),
+}))
+
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { generatePresignedUploadUrl, initMultipartUpload } from '@/lib/aws'
 import { checkQuotaBeforeUpload, incrementUsage } from '@/lib/storage-quota'
-import { POST as filesPost } from '@/app/api/files/route'
+import { POST as filesPost } from '@/app/api/files/upload/route'
 
 describe('Files Route multipart quota enforcement', () => {
   beforeEach(() => {

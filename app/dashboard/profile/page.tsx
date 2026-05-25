@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -75,8 +76,18 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto py-6 animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Profile</h1>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <User size={20} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              My <span className="text-gradient">Account</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">Manage your personal details and security.</p>
+          </div>
+        </div>
       </div>
 
       <div>

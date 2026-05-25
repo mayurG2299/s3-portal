@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 import { getUserRoleInTeam, isOwner } from '@/lib/permissions'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export const dynamic = "force-dynamic";
 
@@ -14,19 +15,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const selectedTeamId =
-      request.nextUrl.searchParams.get('teamId') ||
-      request.cookies.get('selectedTeamId')?.value?.trim() ||
-      session.user.teamId ||
-      null
-
     const ownedTeams = await prisma.team.findMany({
       where: { ownerId: session.user.id },
       select: { id: true, name: true },
       orderBy: { createdAt: 'asc' },
     })
 
-    const effectiveTeamId = ownedTeams.length === 1 ? ownedTeams[0].id : selectedTeamId
+    const { teamId: effectiveTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: request.nextUrl.searchParams.get('teamId'),
+      cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
     if (!effectiveTeamId) {
       return NextResponse.json({

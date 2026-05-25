@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -9,16 +9,16 @@ import {
   Users,
   Users as UsersIcon,
   Link as LinkIcon,
-  Settings,
   Shield,
   ClipboardList,
-  ChevronLeft,
-  ChevronRight,
-  X,
   Mail,
-  Database
+  Search,
+  ChevronDown,
+  Database,
+  Star,
+  Activity,
+  Settings,
 } from 'lucide-react'
-import { ProfileActions } from './profile-actions'
 import { cn } from '@/lib/utils'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
 import { useRBAC } from '@/components/rbac-provider'
@@ -50,6 +50,19 @@ interface SidebarProps {
   pendingInviteCount?: number
 }
 
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ElementType
+  badge?: number
+}
+
+interface NavGroup {
+  id: string
+  label: string
+  items: NavItem[]
+}
+
 function formatBytes(bytes: number, decimals = 1) {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
@@ -57,6 +70,101 @@ function formatBytes(bytes: number, decimals = 1) {
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+}
+
+function NavLink({
+  href,
+  label,
+  icon: Icon,
+  badge,
+  isActive,
+  isExpanded,
+  onClick,
+  onShowTooltip,
+  onHideTooltip,
+}: NavItem & {
+  isActive: boolean
+  isExpanded: boolean
+  onClick: () => void
+  onShowTooltip?: (label: string, y: number) => void
+  onHideTooltip?: () => void
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      aria-label={label}
+      onMouseEnter={!isExpanded && onShowTooltip
+        ? (e) => onShowTooltip(label, e.currentTarget.getBoundingClientRect().top + e.currentTarget.getBoundingClientRect().height / 2)
+        : undefined}
+      onMouseLeave={!isExpanded ? onHideTooltip : undefined}
+      className={cn(
+        'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
+        isActive
+          ? 'bg-slate-100 text-brand shadow-xl dark:bg-white/[0.05] dark:text-white'
+          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
+        isExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
+      )}
+    >
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full shadow-[0_0_15px_hsl(var(--brand))]" />
+      )}
+      <div className="relative flex-shrink-0">
+        <Icon
+          className={cn(
+            'h-5 w-5 transition-all duration-500',
+            isActive ? 'text-brand scale-110' : 'text-slate-600 group-hover:text-slate-400'
+          )}
+          strokeWidth={isActive ? 2.5 : 2}
+        />
+        {badge != null && badge > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-lg shadow-rose-500/30 border border-white dark:border-slate-950">
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
+      </div>
+      {isExpanded && (
+        <div className="flex items-center justify-between flex-1 min-w-0">
+          <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+          {badge != null && badge > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-500 text-[9px] font-black border border-rose-500/20">
+              {badge}
+            </span>
+          )}
+        </div>
+      )}
+    </Link>
+  )
+}
+
+function GroupHeader({
+  label,
+  isOpen,
+  isExpanded,
+  onToggle,
+}: {
+  label: string
+  isOpen: boolean
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  if (!isExpanded) return null
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between px-3 py-1 mt-2 mb-0.5 group"
+    >
+      <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:text-slate-300 transition-colors">
+        {label}
+      </span>
+      <ChevronDown
+        className={cn(
+          'h-3 w-3 text-slate-500 transition-transform duration-200',
+          isOpen ? 'rotate-0' : '-rotate-90'
+        )}
+      />
+    </button>
+  )
 }
 
 export function Sidebar({
@@ -69,67 +177,141 @@ export function Sidebar({
   isMobile,
   onToggle,
   onClose,
+  pendingInviteCount,
 }: SidebarProps) {
   const pathname = usePathname()
-  const {
-    selectedTeamId,
-    selectedIdentityId,
-    selectedBucketId,
-    identities,
-    isLoading,
-    setIdentity,
-    setBucket,
-    setTeam,
-    pendingInviteCount
-  } = useDashboard()
-  const { canViewScreen, isAdmin, isOwner } = useRBAC()
+  const { selectedTeamId, isLoading, setTeam } = useDashboard()
+  const { canViewScreen, isAdmin } = useRBAC()
 
-  const activeIdentity = identities.find(id => id.id === selectedIdentityId)
-  const availableBuckets = activeIdentity?.buckets || []
+  const storageKey = `sidebar-groups:${email}`
 
-  const navItems = useMemo(
-    () => {
-      const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
-      const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
-      const canViewTeams = isAdmin
-      const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
-      const canViewSettings =
-        canViewScreen(SCREENS.CREDENTIALS_LIST) ||
-        canViewScreen(SCREENS.TEAM_SETTINGS)
-      const canViewPermissions = isAdmin
-      const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
+  const [tooltip, setTooltip] = useState<{ label: string; top: number } | null>(null)
+  const showTooltip = useCallback((label: string, top: number) => setTooltip({ label, top }), [])
+  const hideTooltip = useCallback(() => setTooltip(null), [])
 
-      return [
-        { href: '/dashboard', label: 'Dashboard', icon: Home },
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return { files: true, workspace: true, admin: true }
+    try {
+      const saved = localStorage.getItem(storageKey)
+      return saved ? JSON.parse(saved) : { files: true, workspace: true, admin: true }
+    } catch {
+      return { files: true, workspace: true, admin: true }
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(groupOpen))
+    } catch { /* ignore */ }
+  }, [groupOpen, storageKey])
+
+  const toggleGroup = useCallback((id: string) => {
+    setGroupOpen(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
+
+  const filesGroup = useMemo<NavGroup>(() => {
+    const canViewFiles = canViewScreen(SCREENS.FILES_LIST)
+    const canViewLinks = canViewScreen(SCREENS.LINKS_LIST)
+    return {
+      id: 'files',
+      label: 'Files',
+      items: [
         ...(canViewFiles ? [{ href: '/dashboard/files', label: 'Files', icon: FolderOpen }] : []),
         ...(canViewLinks ? [{ href: '/dashboard/links', label: 'Shared Links', icon: LinkIcon }] : []),
+      ],
+    }
+  }, [canViewScreen])
+
+  const workspaceGroup = useMemo<NavGroup>(() => {
+    return {
+      id: 'workspace',
+      label: 'Workspace',
+      items: [],
+    }
+  }, [])
+
+  const adminGroup = useMemo<NavGroup>(() => {
+    const canViewTeams = isAdmin
+    const canViewInvitations = canViewScreen(SCREENS.TEAM_INVITATIONS)
+    const canViewPermissions = isAdmin
+    const canViewAuditLogs = canViewScreen(SCREENS.ADMIN_AUDIT_LOG)
+    const canViewSettings = canViewScreen(SCREENS.CREDENTIALS_LIST) || canViewScreen(SCREENS.TEAM_SETTINGS)
+    return {
+      id: 'admin',
+      label: 'Admin',
+      items: [
         ...(canViewTeams ? [{ href: '/dashboard/teams', label: 'Teams', icon: Users }] : []),
         ...(canViewInvitations
           ? [{ href: '/dashboard/invitations', label: 'Invitations', icon: Mail, badge: pendingInviteCount }]
           : []),
-        ...(canViewSettings ? [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }] : []),
         ...(canViewPermissions
           ? [{ href: '/dashboard/admin/permissions', label: 'Permissions', icon: Shield }]
           : []),
         ...(canViewAuditLogs
           ? [{ href: '/dashboard/admin/audit', label: 'Audit Logs', icon: ClipboardList }]
           : []),
-      ]
-    },
-    [canViewScreen, isAdmin, isOwner, pendingInviteCount]
-  )
+        ...(isAdmin
+          ? [{ href: '/dashboard/admin/indexing', label: 'Indexing Pipeline', icon: Activity }]
+          : []),
+        ...(canViewSettings
+          ? [{ href: '/dashboard/settings', label: 'Settings', icon: Settings }]
+          : []),
+      ],
+    }
+  }, [canViewScreen, isAdmin, pendingInviteCount])
 
-  const handleNavClick = useCallback(() => {
-    if (isMobile) onClose()
-  }, [isMobile, onClose])
+  const handleNavClick = useCallback(() => { onClose() }, [onClose])
 
-  // On mobile: always render for transitions, but translate off-screen when closed
+  const handleLogoClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isMobile) { onClose(); return }
+    event.preventDefault()
+    onToggle()
+  }, [isMobile, onClose, onToggle])
+
   const sidebarExpanded = isMobile ? true : isOpen
 
+  const openSearchPalette = useCallback(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))
+    onClose()
+  }, [onClose])
+
+  function renderGroup(group: NavGroup) {
+    if (group.items.length === 0) return null
+
+    const isGroupOpen = groupOpen[group.id] !== false
+    const showSingleFlat = !sidebarExpanded || (!isAdmin && group.id === 'workspace' && group.items.length === 1)
+
+    return (
+      <div key={group.id} className="mb-1">
+        {sidebarExpanded && !showSingleFlat && (
+          <GroupHeader
+            label={group.label}
+            isOpen={isGroupOpen}
+            isExpanded={sidebarExpanded}
+            onToggle={() => toggleGroup(group.id)}
+          />
+        )}
+        {(isGroupOpen || !sidebarExpanded) && (
+          <div className="space-y-0.5">
+            {group.items.map((item) => (
+              <NavLink
+                key={item.href}
+                {...item}
+                isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
+                isExpanded={sidebarExpanded}
+                onClick={handleNavClick}
+                onShowTooltip={showTooltip}
+                onHideTooltip={hideTooltip}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
-      {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-40 animate-fade-in"
@@ -138,7 +320,6 @@ export function Sidebar({
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           'fixed inset-y-0 left-0 bg-white dark:bg-slate-950 flex flex-col z-[100] border-r border-slate-200 dark:border-white/5 transition-all duration-500 ease-in-out',
@@ -150,7 +331,7 @@ export function Sidebar({
         <div className="relative px-4 py-6 md:px-6 md:py-8">
           {sidebarExpanded ? (
             <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleNavClick}>
+              <Link href="/dashboard" className="flex items-center gap-2 group" onClick={handleLogoClick}>
                 <div className="w-10 h-10 shrink-0 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20 group-hover:scale-110 transition-transform duration-500">
                   <span className="text-white font-black text-sm tracking-tighter">S3</span>
                 </div>
@@ -163,29 +344,29 @@ export function Sidebar({
               </Link>
             </div>
           ) : (
-              <div className="flex justify-center">
-                <Link href="/dashboard" onClick={handleNavClick}>
-                  <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
-                    <span className="text-white font-black text-sm tracking-tighter">S3</span>
-                  </div>
-                </Link>
+            <div className="flex justify-center">
+              <Link href="/dashboard" onClick={handleLogoClick}>
+                <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand-dark rounded-2xl flex items-center justify-center shadow-lg shadow-brand/20">
+                  <span className="text-white font-black text-sm tracking-tighter">S3</span>
+                </div>
+              </Link>
             </div>
           )}
         </div>
 
-        {/* Mobile Context Selectors */}
-        {isMobile && (
-          <div className="px-4 mb-8 space-y-4">
+        {/* Team Selector */}
+        {sidebarExpanded && (
+          <div className="px-4 pb-4">
             <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Team</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Team</p>
               <Select value={selectedTeamId || currentTeamId || undefined} onValueChange={setTeam}>
                 <SelectTrigger className={cn(
-                  "w-full h-11 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-2xl focus:ring-purple-500/20",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
+                  'w-full h-10 bg-purple-500/10 border-purple-500/20 text-xs font-bold text-purple-400 rounded-xl focus:ring-purple-500/20 focus-visible:ring-2 focus-visible:ring-purple-500/20 focus-visible:ring-offset-0',
+                  isLoading && 'animate-pulse opacity-50 pointer-events-none'
                 )}>
                   <div className="flex items-center gap-2 truncate">
                     <UsersIcon size={14} className="shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "Select Team"} />
+                    <SelectValue placeholder={isLoading ? 'Loading...' : 'Select Team'} />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
@@ -197,116 +378,59 @@ export function Sidebar({
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">AWS Credentials</p>
-              <Select value={selectedIdentityId || 'all'} onValueChange={(val) => setIdentity(val === 'all' ? null : val)}>
-                <SelectTrigger className={cn(
-                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
-                )}>
-                  <div className="flex items-center gap-2 truncate">
-                    <Shield size={14} className="text-purple-400 shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "AWS Credentials"} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
-                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Identities</SelectItem>
-                  {identities.map((id) => (
-                    <SelectItem key={id.id} value={id.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
-                      <span className="whitespace-normal break-words leading-tight text-left">{id.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Storage Bucket</p>
-              <Select
-                value={selectedBucketId || 'all'}
-                onValueChange={(val) => setBucket(val === 'all' ? null : val)}
-                disabled={!selectedIdentityId}
-              >
-                <SelectTrigger className={cn(
-                  "w-full h-11 bg-white/5 border-white/10 text-slate-300 text-xs font-semibold rounded-2xl focus:ring-purple-500/20 disabled:opacity-50",
-                  isLoading && "animate-pulse opacity-50 pointer-events-none"
-                )}>
-                  <div className="flex items-center gap-2 truncate">
-                    <Database size={14} className="text-blue-400 shrink-0" />
-                    <SelectValue placeholder={isLoading ? "Loading..." : "Storage Bucket"} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="!bg-slate-950 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,1)] z-[110] rounded-2xl w-[var(--radix-select-trigger-width)]" position="popper">
-                  <SelectItem value="all" className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5 whitespace-normal break-words leading-tight text-left">All Buckets</SelectItem>
-                  {availableBuckets.map((bucket) => (
-                    <SelectItem key={bucket.id} value={bucket.id} className="text-sm py-3 transition-colors hover:bg-white/5 data-[highlighted]:bg-white/5">
-                      <span className="whitespace-normal break-words leading-tight text-left">{bucket.bucket}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         )}
+
+        {/* AI Search bar */}
+        <div className={cn('px-4 pb-3', !sidebarExpanded && 'flex justify-center')}>
+          {sidebarExpanded ? (
+            <button
+              onClick={openSearchPalette}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 hover:border-brand/40 hover:text-slate-600 dark:hover:text-slate-300 transition-all duration-200 group"
+              aria-label="Open AI search"
+            >
+              <Search className="h-4 w-4 text-slate-400 group-hover:text-brand transition-colors shrink-0" />
+              <span className="text-xs font-medium flex-1 text-left">AI Search…</span>
+              <kbd className="text-[9px] font-bold bg-slate-200 dark:bg-white/10 text-slate-500 px-1.5 py-0.5 rounded-md shrink-0">⌘K</kbd>
+            </button>
+          ) : (
+            <button
+              onClick={openSearchPalette}
+              onMouseEnter={(e) => showTooltip('AI Search ⌘K', e.currentTarget.getBoundingClientRect().top + e.currentTarget.getBoundingClientRect().height / 2)}
+              onMouseLeave={hideTooltip}
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] text-slate-400 hover:border-brand/40 hover:text-brand transition-all duration-200"
+              aria-label="Open AI search (⌘K)"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-2 py-4" aria-label="Main navigation">
-          {navItems.map(({ href, label, icon: Icon, badge }: any) => {
-            const isActive = pathname === href
+        <nav className="flex-1 overflow-y-auto no-scrollbar px-4 py-2" aria-label="Main navigation">
+          {renderGroup(filesGroup)}
 
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={handleNavClick}
-                className={cn(
-                  'flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden',
-                  isActive
-                    ? 'bg-slate-100 text-brand shadow-xl dark:bg-white/[0.05] dark:text-white'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:hover:text-slate-200 dark:hover:bg-white/[0.02]',
-                  sidebarExpanded ? 'px-4 py-3' : 'justify-center py-4 px-0'
-                )}
-                aria-label={label}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-brand rounded-full shadow-[0_0_15px_hsl(var(--brand))]" />
-                )}
+          {workspaceGroup.items.length > 0 && (
+            <>
+              <div className="border-t border-slate-200 dark:border-white/5 my-2" />
+              {renderGroup(workspaceGroup)}
+            </>
+          )}
 
-                <div className="relative flex-shrink-0">
-                  <Icon
-                    className={cn(
-                      'h-5 w-5 transition-all duration-500',
-                      isActive ? 'text-brand scale-110' : 'text-slate-600 group-hover:text-slate-400'
-                    )}
-                    strokeWidth={isActive ? 2.5 : 2}
-                  />
-                  {badge > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-lg shadow-rose-500/30 border border-white dark:border-slate-950">
-                      {badge > 9 ? '9+' : badge}
-                    </span>
-                  )}
-                </div>
-                {sidebarExpanded && (
-                  <div className="flex items-center justify-between flex-1 min-w-0">
-                    <span className="text-xs font-black uppercase tracking-widest">{label}</span>
-                    {badge > 0 && (
-                      <span className="ml-2 px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-500 text-[9px] font-black border border-rose-500/20">
-                        {badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </Link>
-            )
-          })}
+          {adminGroup.items.length > 0 && (
+            <>
+              <div className="border-t border-slate-200 dark:border-white/5 my-2" />
+              {renderGroup(adminGroup)}
+            </>
+          )}
         </nav>
 
-        {/* Storage Metrics - New Section */}
+        {/* Storage Metrics */}
         {sidebarExpanded && (
           <div className="px-6 py-8 border-t border-slate-200 dark:border-white/5 bg-gradient-to-t from-slate-50 to-transparent dark:from-slate-900/40 dark:to-transparent">
             <div className="flex items-center justify-between mb-4">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Main Usage Plan</span>
-              <span className="text-[10px] font-black text-slate-900 dark:text-white px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-[0_0_10px_rgba(0,0,0,0.05)] dark:shadow-[0_0_10px_rgba(255,255,255,0.05)]">
+              <span className="text-[10px] font-black text-slate-900 dark:text-white px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                 {Math.min(100, Math.round((storageUsedBytes / storageLimitBytes) * 100))}%
               </span>
             </div>
@@ -323,11 +447,18 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Footer */}
-        <div className="px-4 py-6 border-t border-slate-200 dark:border-white/5">
-          <ProfileActions isCollapsed={!sidebarExpanded} />
-        </div>
       </aside>
+
+      {!sidebarExpanded && tooltip && (
+        <div
+          className="fixed z-[200] pointer-events-none"
+          style={{ left: 88, top: tooltip.top, transform: 'translateY(-50%)' }}
+        >
+          <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest whitespace-nowrap shadow-xl">
+            {tooltip.label}
+          </div>
+        </div>
+      )}
     </>
   )
 }

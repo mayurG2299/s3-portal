@@ -1,5 +1,18 @@
 import { prisma } from '@/lib/db'
-import { hashPassword } from '@/lib/crypto'
+import { hashPassword, verifyPassword } from '@/lib/crypto'
+
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  getServerSession: jest.fn(),
+}))
+
+jest.mock('next-auth/providers/credentials', () => ({
+  __esModule: true,
+  default: jest.fn((config) => config),
+}))
+
+import { validateCredentials } from '@/lib/auth'
 
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
@@ -180,6 +193,72 @@ describe('Auth Flows', () => {
 
       expect(mockSession.user.id).toBe('user-id')
       expect(mockSession.user.teamId).toBe('team-id')
+    })
+  })
+
+  describe('Credential Validation', () => {
+    it('should return user-not-found when no matching user exists', async () => {
+      const mockPrisma = prisma as jest.Mocked<typeof prisma>
+      ;(mockPrisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null)
+
+      await expect(
+        validateCredentials('missing@example.com', 'Password@123')
+      ).resolves.toEqual({
+        status: 'user-not-found',
+      })
+    })
+
+    it('should return invalid-password when password verification fails', async () => {
+      const mockPrisma = prisma as jest.Mocked<typeof prisma>
+      ;(mockPrisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'user-id',
+        email: 'user@example.com',
+        name: 'Test User',
+        passwordHash: 'hashed-password',
+        teamMembers: [],
+        deletedAt: null,
+      } as any)
+      ;(verifyPassword as jest.Mock).mockResolvedValueOnce(false)
+
+      await expect(
+        validateCredentials('user@example.com', 'WrongPassword@123')
+      ).resolves.toEqual({
+        status: 'invalid-password',
+      })
+    })
+
+    it('should return success with auth payload when credentials are valid', async () => {
+      const mockPrisma = prisma as jest.Mocked<typeof prisma>
+      ;(mockPrisma.user.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'user-id',
+        email: 'user@example.com',
+        name: 'Test User',
+        passwordHash: 'hashed-password',
+        teamMembers: [
+          {
+            teamId: 'team-id',
+            team: { id: 'team-id' },
+            roleId: 'role-id',
+            role: { level: 50 },
+          },
+        ],
+        deletedAt: null,
+      } as any)
+      ;(verifyPassword as jest.Mock).mockResolvedValueOnce(true)
+
+      await expect(
+        validateCredentials('user@example.com', 'CorrectPassword@123')
+      ).resolves.toEqual({
+        status: 'success',
+        user: {
+          id: 'user-id',
+          email: 'user@example.com',
+          name: 'Test User',
+          roleId: 'role-id',
+          roleLevel: 50,
+          teamId: 'team-id',
+        },
+      })
     })
   })
 

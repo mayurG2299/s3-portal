@@ -1,10 +1,18 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { AiCredentialsTab } from '@/components/dashboard/ai-credentials-tab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import CredentialForm from '@/components/CredentialForm'
 import {
   Dialog,
@@ -15,7 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { ToastAction } from '@/components/ui/toast'
-import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette } from 'lucide-react'
+import { Pencil, Trash2, Key, Globe, ShieldCheck, AlertCircle, Cloud, Server, Users, User, PlusCircle, Moon, Sun, Palette, Settings as SettingsIcon, Loader2 } from 'lucide-react'
 import { THEMES, getSavedTheme, getSavedMode, applyThemeAndMode } from '@/lib/theme-store'
 import type { ThemeId, ThemeMode } from '@/lib/theme-store'
 import { useDashboard } from '@/lib/contexts/dashboard-context'
@@ -42,6 +50,8 @@ type BucketInput = {
 
 export default function SettingsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'config'
   const [credentials, setCredentials] = useState<Credential[]>([])
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null)
   const [isAddCredentialOpen, setIsAddCredentialOpen] = useState(false)
@@ -51,20 +61,18 @@ export default function SettingsPage() {
   const [activeMode, setActiveMode] = useState<ThemeMode>('dark')
 
   const { selectedTeamId, handleTeamAccessFailure } = useDashboard()
-  const { canViewScreen, loading, loadingScreenPermissions } = useRBAC()
+  const { canViewScreen, loading, loadingScreenPermissions, screenPermissions } = useRBAC()
   const canAccessSettings =
     canViewScreen(SCREENS.CREDENTIALS_LIST) ||
     canViewScreen(SCREENS.TEAM_SETTINGS)
 
+  const activeTeamId = selectedTeamId
+
   useEffect(() => {
-    if (!loading && !loadingScreenPermissions && !canAccessSettings) {
+    if (!loading && !loadingScreenPermissions && screenPermissions !== null && !canAccessSettings) {
       router.replace('/dashboard')
     }
-  }, [canAccessSettings, loading, loadingScreenPermissions, router])
-
-  if (loading || loadingScreenPermissions || !canAccessSettings) {
-    return null
-  }
+  }, [canAccessSettings, loading, loadingScreenPermissions, screenPermissions, router])
 
   useEffect(() => {
     setActiveTheme(getSavedTheme())
@@ -80,7 +88,6 @@ export default function SettingsPage() {
     setActiveMode(mode)
     applyThemeAndMode(activeTheme, mode)
   }, [activeTheme])
-  const activeTeamId = selectedTeamId
 
   const fetchCredentials = useCallback(async () => {
     try {
@@ -122,6 +129,10 @@ export default function SettingsPage() {
       )
     }
   }, [editingCredential])
+
+  if (loading || loadingScreenPermissions || screenPermissions === null || !canAccessSettings) {
+    return null
+  }
 
   async function handleDeleteCredential(id: string) {
     if (!confirm('Are you sure you want to delete this credential?')) return
@@ -313,23 +324,48 @@ export default function SettingsPage() {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-10 animate-fade-in text-center lg:text-left hidden md:block">
-        <h2 className="text-3xl sm:text-4xl font-black text-foreground leading-tight tracking-tight mb-2">
-          Platform <span className="gradient-text">Configuration</span>
-        </h2>
-        <p className="text-muted-foreground font-medium">
-          Connect and manage your cloud infrastructure integrations.
-        </p>
+      <div className="mb-8 animate-slide-up">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+              <SettingsIcon size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Platform <span className="text-gradient">Settings</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">Configure appearance, credentials, and AI integrations.</p>
+            </div>
+          </div>
+
+          {/* Settings Section Selector */}
+          <div className="w-[220px]">
+            <Select value={activeTab} onValueChange={(value) => router.push(`/dashboard/settings?tab=${value}`)}>
+              <SelectTrigger className="h-10 bg-background border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="config">Configuration</SelectItem>
+                <SelectItem value="ai">AI & Indexing</SelectItem>
+                <SelectItem value="personalization">Personalization</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      {/* Appearance Section */}
+      {activeTab === 'ai' && <AiCredentialsTab />}
+
+      {activeTab === 'personalization' && (
+      <>
+      {/* Personalization Section */}
       <div className="glass-card mb-10 animate-slide-up">
         <div className="flex items-center gap-4 mb-8">
           <div className="h-12 w-12 rounded-2xl bg-brand/10 flex items-center justify-center text-brand border border-brand/20">
             <Palette size={24} strokeWidth={2} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-foreground tracking-tight">Appearance</h3>
+            <h3 className="text-xl font-bold text-foreground tracking-tight">Personalization</h3>
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Customize your portal theme and color mode</p>
           </div>
         </div>
@@ -398,7 +434,11 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
 
+      {activeTab === 'config' && (
+      <>
       {credentials.length === 0 ? (
         <div className="space-y-8">
           <div className="max-w-xl mx-auto glass-card animate-slide-up" style={{ animationDelay: '100ms' }}>
@@ -730,7 +770,8 @@ export default function SettingsPage() {
                     disabled={isUpdatingCredential}
                     className="h-11 px-8 rounded-xl bg-brand hover:bg-brand text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-brand/20"
                   >
-                    {isUpdatingCredential ? 'Applying Changes...' : 'Save Configuration'}
+                    {isUpdatingCredential && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Configuration
                   </Button>
                 </div>
               </form>
@@ -738,6 +779,8 @@ export default function SettingsPage() {
           </div>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   )
 }

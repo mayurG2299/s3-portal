@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { canManageTeam } from '@/lib/permissions'
+import { isTeamOwner } from '@/lib/permissions'
 import { logUserAction } from '@/lib/audit'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +22,12 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { roleId, screenName, permissionLevel } = body;
-    const selectedTeamFromCookie = request.cookies
-      .get("selectedTeamId")
-      ?.value?.trim();
-    const targetTeamId =
-      body?.teamId?.toString()?.trim() ||
-      selectedTeamFromCookie ||
-      session.user.teamId;
+    const { teamId: targetTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: body?.teamId?.toString()?.trim(),
+      cookieTeamId: request.cookies.get("selectedTeamId")?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
     if (!targetTeamId) {
       return NextResponse.json({ error: "Team not selected" }, { status: 400 });
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
-    if (!(await canManageTeam(session.user.id, targetTeamId))) {
+    // Only OWNER can modify role permissions
+    if (!(await isTeamOwner(session.user.id, targetTeamId))) {
       await logUserAction({
         request,
         action: "ROLE_PERMISSION_UPDATE",

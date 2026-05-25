@@ -1,66 +1,59 @@
-import { redirect } from 'next/navigation'
-import { requireUser } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-async function createTeam(formData: FormData) {
-  'use server'
-
-  const session = await requireUser()
-  const name = formData.get('name') as string
-  const slug = formData.get('slug') as string
-
-  if (!name || !slug) {
-    throw new Error('Name and slug are required')
-  }
-
-  // Validate slug format
-  if (!/^[a-z0-9-]+$/.test(slug)) {
-    throw new Error('Slug must contain only lowercase letters, numbers, and hyphens')
-  }
-
-  // Check if slug is unique
-  const existing = await prisma.team.findUnique({
-    where: { slug },
-  })
-
-  if (existing) {
-    throw new Error('Team slug already exists')
-  }
-
-  // Create team
-  const team = await prisma.team.create({
-    data: {
-      name,
-      slug,
-      ownerId: session.user.id,
-    },
-  })
-
-  // Add owner as team member
-  const ownerRole = await prisma.role.findUnique({
-    where: { name: 'OWNER' },
-  })
-
-  if (ownerRole) {
-    await prisma.teamMember.create({
-      data: {
-        userId: session.user.id,
-        teamId: team.id,
-        roleId: ownerRole.id,
-      },
-    })
-  }
-
-  redirect(`/dashboard/teams`)
+function toSlug(name: string) {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
-export default async function NewTeamPage() {
-  const session = await requireUser()
+export default function NewTeamPage() {
+  const router = useRouter()
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleNameChange = (value: string) => {
+    setName(value)
+    if (!slugTouched) setSlug(toSlug(value))
+  }
+
+  const handleSlugChange = (value: string) => {
+    setSlug(value)
+    setSlugTouched(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (!name.trim() || !slug.trim()) { setError('Name and slug are required'); return }
+    if (!/^[a-z0-9-]+$/.test(slug)) { setError('Slug must contain only lowercase letters, numbers, and hyphens'); return }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data?.message || 'Failed to create team'); return }
+      router.push('/dashboard/teams')
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 p-8">
@@ -74,44 +67,49 @@ export default async function NewTeamPage() {
       <Card>
         <CardHeader>
           <CardTitle>Team Information</CardTitle>
-          <CardDescription>
-            Choose a name and unique slug for your team
-          </CardDescription>
+          <CardDescription>Choose a name and unique slug for your team</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={createTeam} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Team Name</Label>
+              <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team Name</Label>
               <Input
                 id="name"
-                name="name"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="e.g., Marketing Team"
                 required
-                minLength={1}
                 maxLength={100}
+                disabled={loading}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="slug">Team Slug</Label>
+              <Label htmlFor="slug" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team Slug</Label>
               <Input
                 id="slug"
-                name="slug"
+                value={slug}
+                onChange={(e) => handleSlugChange(e.target.value)}
                 placeholder="e.g., marketing-team"
-                pattern="^[a-z0-9-]+$"
                 required
-                minLength={1}
                 maxLength={50}
-                title="Lowercase letters, numbers, and hyphens only"
+                disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
                 Used in URLs and API calls. Must be unique.
               </p>
             </div>
 
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+
             <div className="flex gap-2">
-              <Button type="submit">Create Team</Button>
-              <Button variant="outline" asChild>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading ? 'Creating…' : 'Create Team'}
+              </Button>
+              <Button variant="outline" asChild disabled={loading}>
                 <Link href="/dashboard/teams">Cancel</Link>
               </Button>
             </div>
@@ -125,15 +123,9 @@ export default async function NewTeamPage() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm">
-            <li>
-              <span className="font-medium">OWNER:</span> Full control of team and settings
-            </li>
-            <li>
-              <span className="font-medium">ADMIN:</span> Can manage files, members, and roles
-            </li>
-            <li>
-              <span className="font-medium">VIEWER:</span> Can view files and shared links only
-            </li>
+            <li><span className="font-medium">OWNER:</span> Full control of team and settings</li>
+            <li><span className="font-medium">ADMIN:</span> Can manage files, members, and roles</li>
+            <li><span className="font-medium">VIEWER:</span> Can view files and shared links only</li>
           </ul>
         </CardContent>
       </Card>

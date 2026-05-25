@@ -71,13 +71,14 @@ export function FirstTimeWizard({
     trimmedBucketName.length > 0
 
   useEffect(() => {
-    if (currentCredentialsCount === 0) {
+    if (currentCredentialsCount === 0 && !sessionStorage.getItem('onboarding-skipped')) {
       setInternalOpen(true)
       setCurrentStep('welcome')
     }
   }, [currentCredentialsCount])
 
   const handleSkip = () => {
+    sessionStorage.setItem('onboarding-skipped', '1')
     setOpen(false)
   }
 

@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
-import { ThemeProvider } from '@/components/theme-provider'
 import AppSessionProvider from '@/components/session-provider'
 import AppQueryProvider from '@/components/query-provider'
 
@@ -31,15 +30,8 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <AppSessionProvider>
           <AppQueryProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="dark"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster />
-            </ThemeProvider>
+            {children}
+            <Toaster />
           </AppQueryProvider>
         </AppSessionProvider>
       </body>

@@ -29,9 +29,14 @@ jest.mock('@/lib/permissions', () => ({
   canManageTeam: jest.fn(),
 }))
 
+jest.mock('@/lib/team-selection', () => ({
+  getResolvedUserTeamScope: jest.fn().mockResolvedValue({ teamId: 'team-1', teams: [] }),
+}))
+
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { canManageTeam } from '@/lib/permissions'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 import { GET, PATCH } from '@/app/api/roles/[id]/route'
 
 const makeRequest = (url: string, body?: unknown) =>
@@ -49,12 +54,14 @@ const makeContext = (id: string) =>
 describe('GET /api/roles/[id]', () => {
   beforeEach(() => {
     jest.resetAllMocks()
+    ;(getResolvedUserTeamScope as jest.Mock).mockResolvedValue({ teamId: 'team-1', teams: [] })
   })
 
   it('returns the role with its permissions', async () => {
     ;(getServerSession as jest.Mock).mockResolvedValue({
       user: { id: 'user-1', teamId: 'team-1' },
     })
+    ;(canManageTeam as jest.Mock).mockResolvedValue(true)
     ;(prisma.role.findUnique as jest.Mock).mockResolvedValue({
       id: 'role-1',
       name: 'EDITOR',
@@ -76,6 +83,7 @@ describe('GET /api/roles/[id]', () => {
 describe('PATCH /api/roles/[id]', () => {
   beforeEach(() => {
     jest.resetAllMocks()
+    ;(getResolvedUserTeamScope as jest.Mock).mockResolvedValue({ teamId: 'team-1', teams: [] })
   })
 
   it('updates a role and replaces its permissions', async () => {

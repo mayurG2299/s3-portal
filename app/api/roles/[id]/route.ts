@@ -7,6 +7,7 @@ import { logUserAction } from '@/lib/audit'
 import { canManageTeam } from '@/lib/permissions'
 import { z } from 'zod'
 import { PermissionLevel, ScreenName } from '@prisma/client'
+import { getResolvedUserTeamScope } from '@/lib/team-selection'
 
 const updateRoleSchema = z.object({
   name: z.string().min(1),
@@ -25,7 +26,7 @@ const getRoleLevel = (
   }>
 ) => {
   const editCount = permissions.filter(permission => permission.permissionLevel === 'EDIT').length
-  return Math.max(20, Math.min(80, 20 + editCount * 3))
+  return Math.max(20, Math.min(49, 20 + editCount * 3))
 }
 
 export async function GET(
@@ -37,6 +38,19 @@ export async function GET(
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url)
+    const { teamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: searchParams.get('teamId')?.trim() ?? undefined,
+      cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
+
+    const allowed = await canManageTeam(session.user.id, teamId ?? '')
+    if (!allowed) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { id } = await context.params;
@@ -79,13 +93,12 @@ export async function PATCH(
     }
 
     const { searchParams } = new URL(request.url)
-    const selectedTeamFromCookie = request.cookies
-      .get('selectedTeamId')
-      ?.value?.trim()
-    const targetTeamId =
-      searchParams.get('teamId')?.trim() ||
-      selectedTeamFromCookie ||
-      session.user.teamId
+    const { teamId: targetTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: searchParams.get('teamId')?.trim(),
+      cookieTeamId: request.cookies.get('selectedTeamId')?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
     if (!targetTeamId) {
       return NextResponse.json({ error: 'Team not selected' }, { status: 400 })
@@ -242,13 +255,12 @@ export async function DELETE(
     }
 
     const { searchParams } = new URL(request.url);
-    const selectedTeamFromCookie = request.cookies
-      .get("selectedTeamId")
-      ?.value?.trim();
-    const targetTeamId =
-      searchParams.get("teamId")?.trim() ||
-      selectedTeamFromCookie ||
-      session.user.teamId;
+    const { teamId: targetTeamId } = await getResolvedUserTeamScope({
+      userId: session.user.id,
+      requestedTeamId: searchParams.get("teamId")?.trim(),
+      cookieTeamId: request.cookies.get("selectedTeamId")?.value?.trim(),
+      sessionTeamId: session.user.teamId,
+    })
 
     if (!targetTeamId) {
       return NextResponse.json({ error: "Team not selected" }, { status: 400 });

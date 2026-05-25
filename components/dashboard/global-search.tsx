@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search, HardDrive, File, FolderOpen, Users, User, Link as LinkIcon, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -47,7 +47,12 @@ const HighlightMatch = ({ text, query }: { text: string; query: string }) => {
   )
 }
 
-export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: boolean) => void }) {
+export interface GlobalSearchHandle {
+  focus: () => void
+}
+
+export const GlobalSearch = forwardRef<GlobalSearchHandle, { onFocusChange?: (focused: boolean) => void }>(
+function GlobalSearch({ onFocusChange }, ref) {
   const {
     selectedTeamId,
     selectedIdentityId,
@@ -68,6 +73,10 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
 
   const inputRef = useRef<HTMLInputElement>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }))
   const abortControllerRef = useRef<AbortController | null>(null)
   const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -477,4 +486,5 @@ export function GlobalSearch({ onFocusChange }: { onFocusChange?: (focused: bool
       )}
     </div>
   )
-}
+})
+GlobalSearch.displayName = 'GlobalSearch'
